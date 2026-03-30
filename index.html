@@ -3,120 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RH Command Center - Dashboard</title>
+    <title>RH Command Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
+    <style>body { font-family: 'Inter', sans-serif; }</style>
 </head>
-<body class="bg-slate-100 flex h-screen overflow-hidden">
+<body class="bg-slate-50 flex h-screen overflow-hidden">
 
-    <aside class="w-64 bg-[#1a2b4b] text-white flex flex-col p-6 shadow-xl">
+    <aside class="w-64 bg-[#0a1629] text-white flex flex-col p-6 shadow-xl">
         <div class="text-2xl font-bold mb-10 flex items-center gap-2">
-            <span class="bg-blue-500 p-1 rounded text-sm text-white">R</span> HR Core
+            <span class="bg-blue-600 p-1 rounded text-sm text-white">R</span> HR Core
         </div>
         <nav class="space-y-4 flex-1">
-            <a href="#" class="block bg-blue-600 p-2 rounded-md font-semibold">Command Center</a>
-            <a href="#" class="block text-slate-400 hover:text-white transition">Recrutamento</a>
-            <a href="#" class="block text-slate-400 hover:text-white transition">Admissões</a>
-            <a href="#" class="block text-slate-400 hover:text-white transition">Operações RH</a>
-            <a href="#" class="block text-slate-400 hover:text-white transition">Treinamentos</a>
-            <a href="#" class="block text-slate-400 hover:text-white transition">Analytics</a>
+            <a href="#" class="block bg-blue-600/20 text-blue-400 p-2 rounded-md font-semibold border-l-4 border-blue-600">Command Center</a>
+            <a href="#" class="block text-slate-400 hover:text-white transition p-2">Recrutamento</a>
+            <a href="#" class="block text-slate-400 hover:text-white transition p-2">Admissões</a>
+            <a href="#" class="block text-slate-400 hover:text-white transition p-2">Analytics</a>
         </nav>
+        <div class="mt-auto pt-6 border-t border-slate-700 text-slate-400 text-sm italic">Sair</div>
     </aside>
 
     <main class="flex-1 overflow-y-auto p-8">
         <header class="flex justify-between items-center mb-8">
             <div>
-                <h1 class="text-2xl font-bold text-slate-800 uppercase tracking-tight">Dashboard de Vagas</h1>
-                <p class="text-slate-500 text-sm">Monitoramento em tempo real</p>
+                <h1 class="text-3xl font-bold text-slate-800">RH Command Center</h1>
+                <p class="text-slate-500">Painel estratégico de recrutamento e indicadores.</p>
             </div>
-            <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 shadow-sm">
-                Unidade: Sede Principal
+            <div class="flex items-center gap-4">
+                <div class="text-right">
+                    <p class="font-bold text-slate-700">Luiz Silva</p>
+                    <p class="text-xs text-slate-500">Diretor de RH</p>
+                </div>
+                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">LS</div>
             </div>
         </header>
 
-        <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
-            <h2 class="text-lg font-bold text-slate-700 mb-6">Vagas Abertas por Setor</h2>
-            <div class="h-[450px]">
-                <canvas id="chartSetor"></canvas>
+        <div class="grid grid-cols-5 gap-4 mb-8">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <p class="text-slate-500 text-sm">Headcount Atual</p>
+                <h3 class="text-2xl font-bold">842 <span class="text-xs text-emerald-500">↗ 12%</span></h3>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <p class="text-slate-500 text-sm">Vagas Abertas</p>
+                <h3 class="text-2xl font-bold">23 <span class="text-xs text-red-500">↘ 2%</span></h3>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <p class="text-slate-500 text-sm">Turnover Mensal</p>
+                <h3 class="text-2xl font-bold">3.2% <span class="text-xs text-red-500">↘ 0.5%</span></h3>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <p class="text-slate-500 text-sm">SLA de Contratação</p>
+                <h3 class="text-2xl font-bold">18 dias <span class="text-xs text-emerald-500">↗ 2%</span></h3>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <p class="text-slate-500 text-sm">Taxa de Desistência</p>
+                <h3 class="text-2xl font-bold">12% <span class="text-xs text-emerald-500">↗ 1.5%</span></h3>
             </div>
         </div>
 
-        <p class="text-xs text-slate-400 mt-8 text-center uppercase tracking-widest">
-            Sincronizado via dados.csv
-        </p>
+        <div class="grid grid-cols-2 gap-8">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="font-bold text-slate-700 mb-4">Vagas Abertas por Setor</h2>
+                <div class="h-[300px]"><canvas id="chartSetor"></canvas></div>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="font-bold text-slate-700 mb-4">Contratações ao Longo do Tempo</h2>
+                <div class="h-[300px]"><canvas id="chartLinha"></canvas></div>
+            </div>
+        </div>
     </main>
 
     <script>
         function carregarDados() {
-            // PapaParse configurado para ler o arquivo dados.csv
-            Papa.parse("dados.csv", {
+            Papa.parse("dados.csv?v=" + new Date().getTime(), {
                 download: true,
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    // Tratamento para garantir que pegue as colunas mesmo com letras minúsculas/maiúsculas
-                    const labels = results.data.map(item => item.Setor || item.setor || "Indefinido");
-                    const valores = results.data.map(item => parseFloat(item.Vagas || item.vagas || 0));
-                    
-                    gerarGrafico(labels, valores);
-                },
-                error: function(err) {
-                    console.error("Erro ao carregar o CSV:", err);
+                    const labels = results.data.map(item => item.Setor || "");
+                    const valores = results.data.map(item => parseFloat(item.Vagas || 0));
+                    gerarGraficoBarras(labels, valores);
+                    gerarGraficoLinha(); // Gráfico de linha fixo como o do Luiz
                 }
             });
         }
 
-        function gerarGrafico(labels, valores) {
-            const ctx = document.getElementById('chartSetor').getContext('2d');
-            
-            // Destruir gráfico anterior se existir (para evitar bugs de sobreposição)
-            if (window.meuGrafico) {
-                window.meuGrafico.destroy();
-            }
-
-            window.meuGrafico = new Chart(ctx, {
+        function gerarGraficoBarras(labels, valores) {
+            new Chart(document.getElementById('chartSetor'), {
                 type: 'bar',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Quantidade de Vagas',
                         data: valores,
-                        backgroundColor: '#3b82f6', // Azul do Luiz
-                        borderRadius: 10,           // Barras arredondadas
-                        borderSkipped: false,
-                        barThickness: 32
+                        backgroundColor: '#8b5cf6', // Roxo igual ao da imagem do Luiz
+                        borderRadius: 5,
+                        barThickness: 20
                     }]
                 },
                 options: {
-                    indexAxis: 'y', // Gráfico horizontal igual ao dele
+                    indexAxis: 'y',
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false } // Remove a legenda para ficar mais limpo
-                    },
-                    scales: {
-                        x: { 
-                            grid: { color: '#f1f5f9' },
-                            ticks: { color: '#94a3b8' }
-                        },
-                        y: { 
-                            grid: { display: false },
-                            ticks: { 
-                                color: '#475569',
-                                font: { weight: '600', size: 13 }
-                            }
-                        }
-                    }
+                    plugins: { legend: { display: false } },
+                    scales: { x: { display: false }, y: { grid: { display: false } } }
                 }
             });
         }
 
-        // Inicia a carga dos dados
+        function gerarGraficoLinha() {
+            new Chart(document.getElementById('chartLinha'), {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
+                    datasets: [{
+                        label: 'Contratações',
+                        data: [6, 9, 8, 11, 13, 10],
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, grid: { borderDash: [5, 5] } }, x: { grid: { display: false } } }
+                }
+            });
+        }
         carregarDados();
     </script>
 </body>

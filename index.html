@@ -76,16 +76,15 @@
                         <h2 class="font-bold text-slate-800">Painel de Alertas</h2>
                         <span id="cont-alertas" class="bg-blue-100 text-blue-600 text-[10px] px-2 py-1 rounded-full font-bold uppercase">0 Ativos</span>
                     </div>
-                    <div id="lista-alertas" class="space-y-4">
-                        </div>
+                    <div id="lista-alertas" class="space-y-4"></div>
                 </div>
             </div>
         </div>
     </main>
 
     <script>
-        // Link CSV atualizado para leitura de dados
-        const urlPlanilha = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
+        // Link CSV direto da aba "dados"
+        const urlPlanilha = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?gid=0&single=true&output=csv";
 
         let chartSetor, chartLinha, chartFunil;
 
@@ -95,14 +94,19 @@
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    const dados = results.data;
-                    renderizarInterface(dados);
+                    if (results.data && results.data.length > 0) {
+                        console.log("Dados carregados:", results.data);
+                        renderizarInterface(results.data);
+                    }
+                },
+                error: function(err) {
+                    console.error("Erro ao carregar CSV:", err);
                 }
             });
         }
 
         function renderizarInterface(dados) {
-            // 1. Renderizar Cards (Filtra por 'Card' na coluna Tipo)
+            // 1. CARDS
             const cards = dados.filter(d => d.Tipo === "Card");
             document.getElementById('container-cards').innerHTML = cards.map(c => `
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-border-blue">
@@ -110,7 +114,7 @@
                     <h3 class="text-3xl font-bold text-slate-800">${c.Valor}</h3>
                 </div>`).join('');
 
-            // 2. Gráfico de Setores
+            // 2. VAGAS POR SETOR (Barras Horizontais)
             if (chartSetor) chartSetor.destroy();
             const dSetor = dados.filter(d => d.Tipo === "Setor");
             chartSetor = new Chart(document.getElementById('chartSetor'), {
@@ -122,7 +126,7 @@
                 options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
 
-            // 3. Gráfico de Linha
+            // 3. EVOLUÇÃO MENSAL (Linha)
             if (chartLinha) chartLinha.destroy();
             const dLinha = dados.filter(d => d.Tipo === "Linha");
             chartLinha = new Chart(document.getElementById('chartLinha'), {
@@ -134,7 +138,7 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
 
-            // 4. Gráfico de Funil
+            // 4. FUNIL DE RECRUTAMENTO
             if (chartFunil) chartFunil.destroy();
             const dFunil = dados.filter(d => d.Tipo === "Funil");
             chartFunil = new Chart(document.getElementById('chartFunil'), {
@@ -145,13 +149,13 @@
                         data: dFunil.map(d => d.Valor),
                         backgroundColor: ['#4c1d95', '#7c3aed', '#a78bfa', '#c4b5fd', '#ddd6fe'],
                         borderRadius: 10,
-                        barThickness: 35
+                        barThickness: 30
                     }]
                 },
                 options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
 
-            // 5. Painel de Alertas
+            // 5. ALERTAS
             const alertas = dados.filter(d => d.Tipo === "Alerta");
             document.getElementById('cont-alertas').innerText = `${alertas.length} ATIVOS`;
             document.getElementById('lista-alertas').innerHTML = alertas.map(a => `

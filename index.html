@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR Core - Dashboard & Insights</title>
+    <title>HR Core - Dashboard & Triagem</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -11,11 +11,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        .active-menu { background-color: #2563eb !important; color: white !important; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4); }
         .sidebar-item { cursor: pointer; transition: 0.3s; color: #94a3b8; }
         .sidebar-item:hover { background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-        .insight-card-red { background: #fff5f5; border: 1px solid #fed7d7; }
-        .insight-card-dark { background: #0a1629; color: white; }
+        .active-menu { background-color: #2563eb !important; color: white !important; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4); }
         .hidden { display: none; }
         .card-border-blue { border-bottom: 4px solid #3b82f6; }
     </style>
@@ -24,13 +22,13 @@
 
     <aside class="w-64 bg-[#0a1629] text-white flex flex-col shadow-2xl z-10">
         <div class="p-6 text-2xl font-bold border-b border-slate-700 flex items-center gap-3">
-            <div class="bg-blue-600 p-2 rounded-lg text-xs italic text-white w-8 h-8 flex items-center justify-center">R</div> HR Core
+            <div class="bg-blue-600 p-2 rounded-lg text-xs italic text-white text-center w-8 h-8 flex items-center justify-center">R</div> HR Core
         </div>
         <nav class="flex-1 p-4 space-y-2 mt-4 text-sm">
-            <div onclick="trocarPagina('dashboard')" id="menu-dashboard" class="sidebar-item active-menu p-3 rounded-xl flex items-center gap-3">
+            <div id="menu-dashboard" onclick="trocarPagina('dashboard')" class="sidebar-item active-menu p-3 rounded-xl flex items-center gap-3">
                 <i class="fas fa-th-large"></i> Command Center
             </div>
-            <div onclick="trocarPagina('triagem')" id="menu-triagem" class="sidebar-item p-3 rounded-xl flex items-center gap-3">
+            <div id="menu-triagem" onclick="trocarPagina('triagem')" class="sidebar-item p-3 rounded-xl flex items-center gap-3">
                 <i class="fas fa-users"></i> Triagem
             </div>
         </nav>
@@ -49,60 +47,40 @@
         </header>
 
         <div id="pagina-dashboard" class="flex-1 overflow-y-auto p-8">
+            <div id="container-cards" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-10"></div>
             
-            <h2 class="text-lg font-bold text-slate-800 mb-6">Insights Estratégicos</h2>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
-                <div class="insight-card-red p-8 rounded-[2rem] flex gap-6 items-start relative overflow-hidden shadow-sm">
-                    <div class="bg-white p-4 rounded-2xl shadow-sm text-red-500 border border-red-100">
-                        <i class="fas fa-exclamation-circle text-xl"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-red-900 font-bold text-lg mb-2">Alerta de Turnover</h3>
-                        <p class="text-red-700 text-sm leading-relaxed mb-6">
-                            Identificamos um aumento de <span class="font-bold">2.5%</span> no turnover do setor de <span class="font-bold text-red-800">Tecnologia</span> nos últimos 30 dias. O motivo principal reportado foi "Incompatibilidade Cultural".
-                        </p>
-                        <button class="bg-white text-red-600 px-5 py-2.5 rounded-xl text-xs font-bold border border-red-200 flex items-center gap-2 hover:bg-red-50 transition-all">
-                            Verificar Análise Detalhada <i class="fas fa-arrow-up-right-from-square"></i>
-                        </button>
-                    </div>
+            <div class="grid grid-cols-12 gap-8 mb-10">
+                <div class="col-span-12 lg:col-span-7 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase tracking-wide">Vagas por Setor</h2>
+                    <div class="h-[300px]"><canvas id="chartSetor"></canvas></div>
                 </div>
-
-                <div class="insight-card-dark p-8 rounded-[2rem] flex gap-6 items-start relative overflow-hidden shadow-lg">
-                    <div class="bg-slate-800 p-4 rounded-2xl text-blue-400 border border-slate-700">
-                        <i class="fas fa-check-circle text-xl"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-white font-bold text-lg mb-2">Pipeline Otimizado</h3>
-                        <p class="text-slate-400 text-sm leading-relaxed mb-6">
-                            A triagem de IA identificou 12 novos candidatos de alta performance para a vaga de <span class="text-white font-bold">Senior Frontend</span>. O SLA de contratação está 15% mais rápido este mês.
-                        </p>
-                        <button class="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-blue-700 transition-all">
-                            Aprovar Convites Automatically <i class="fas fa-arrow-right"></i>
-                        </button>
-                    </div>
+                <div class="col-span-12 lg:col-span-5 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase tracking-wide">Evolução Mensal</h2>
+                    <div class="h-[300px]"><canvas id="chartLinha"></canvas></div>
                 </div>
             </div>
 
-            <div id="container-cards" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-10"></div>
-
             <div class="grid grid-cols-12 gap-8">
-                <div class="col-span-12 lg:col-span-7 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                    <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase tracking-wide">Vagas por Setor</h2>
-                    <div class="h-[250px]"><canvas id="chartSetor"></canvas></div>
+                <div class="col-span-12 lg:col-span-8 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase tracking-wide">Funil de Recrutamento</h2>
+                    <div class="h-[350px]"><canvas id="chartFunil"></canvas></div>
                 </div>
-                <div class="col-span-12 lg:col-span-5 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                    <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase tracking-wide">Evolução Mensal</h2>
-                    <div class="h-[250px]"><canvas id="chartLinha"></canvas></div>
+                <div class="col-span-12 lg:col-span-4 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="font-bold text-slate-800 text-sm uppercase tracking-wide">Painel de Alertas</h2>
+                        <span id="cont-alertas" class="bg-blue-100 text-blue-600 text-[10px] px-2 py-1 rounded-full font-bold uppercase">0 Ativos</span>
+                    </div>
+                    <div id="lista-alertas" class="space-y-4"></div>
                 </div>
             </div>
         </div>
 
         <div id="pagina-triagem" class="flex-1 overflow-y-auto p-8 hidden">
-            <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8">
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
                 <div class="flex justify-between items-center mb-8">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-800">Triagem de Candidatos</h2>
-                        <p class="text-slate-500 text-sm">Análise de perfis por compatibilidade.</p>
+                        <p class="text-slate-500 text-sm">Analise os perfis com maior compatibilidade para suas vagas abertas.</p>
                     </div>
                     <button class="bg-slate-50 border border-slate-200 text-slate-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-slate-100 transition-all">Exportar</button>
                 </div>
@@ -118,7 +96,8 @@
                                 <th class="pb-4 font-semibold text-right">Ações</th>
                             </tr>
                         </thead>
-                        <tbody id="lista-triagem" class="text-sm text-slate-700"></tbody>
+                        <tbody id="lista-triagem" class="text-sm text-slate-700">
+                            </tbody>
                     </table>
                 </div>
             </div>
@@ -126,36 +105,53 @@
     </main>
 
     <script>
-        // Use o seu link de publicação CSV do Google Sheets aqui
         const urlPlanilha = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?gid=1728295734&single=true&output=csv";
         let charts = {};
 
         function trocarPagina(pagina) {
-            document.getElementById('pagina-dashboard').classList.toggle('hidden', pagina !== 'dashboard');
-            document.getElementById('pagina-triagem').classList.toggle('hidden', pagina !== 'triagem');
-            document.getElementById('menu-dashboard').classList.toggle('active-menu', pagina === 'dashboard');
-            document.getElementById('menu-triagem').classList.toggle('active-menu', pagina === 'triagem');
-            document.getElementById('titulo-pagina').innerText = pagina === 'dashboard' ? "RH Command Center" : "Triagem de Candidatos";
+            document.getElementById('pagina-dashboard').classList.add('hidden');
+            document.getElementById('pagina-triagem').classList.add('hidden');
+            document.getElementById('menu-dashboard').classList.remove('active-menu');
+            document.getElementById('menu-triagem').classList.remove('active-menu');
+
+            if(pagina === 'dashboard') {
+                document.getElementById('pagina-dashboard').classList.remove('hidden');
+                document.getElementById('menu-dashboard').classList.add('active-menu');
+                document.getElementById('titulo-pagina').innerText = "RH Command Center";
+            } else {
+                document.getElementById('pagina-triagem').classList.remove('hidden');
+                document.getElementById('menu-triagem').classList.add('active-menu');
+                document.getElementById('titulo-pagina').innerText = "Triagem de Candidatos";
+            }
         }
 
         function carregarDados() {
             Papa.parse(urlPlanilha, {
-                download: true, header: true, skipEmptyLines: true,
+                download: true, 
+                header: true, 
+                skipEmptyLines: true,
                 complete: function(results) {
                     if (results.data) {
-                        const dados = results.data.map(d => ({
+                        const dadosNormalizados = results.data.map(d => ({
                             Tipo: d.Tipo ? d.Tipo.trim() : "",
                             Rotulo: d.Rotulo ? d.Rotulo.trim() : "",
                             Valor: d.Valor ? d.Valor.trim() : ""
                         }));
-                        renderizarInterface(dados);
+                        
+                        renderizarDashboard(dadosNormalizados);
+                        
+                        // Filtro insensível a maiúsculas/minúsculas para pegar todos os "Triagem"
+                        const listaCandidatos = dadosNormalizados.filter(d => 
+                            d.Tipo.toLowerCase().includes("triagem")
+                        );
+                        renderizarTriagem(listaCandidatos);
                     }
                 }
             });
         }
 
-        function renderizarInterface(dados) {
-            // Cards de Métricas
+        function renderizarDashboard(dados) {
+            // Cards Superiores
             const cards = dados.filter(d => d.Tipo.toLowerCase() === "card");
             document.getElementById('container-cards').innerHTML = cards.map(c => `
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-border-blue">
@@ -163,65 +159,112 @@
                     <h3 class="text-2xl font-bold text-slate-800">${c.Valor}</h3>
                 </div>`).join('');
 
-            // Tabela de Triagem
-            const candidatos = dados.filter(d => d.Tipo.toLowerCase().includes("triagem"));
+            // Gráficos
+            criarGrafico('chartSetor', 'bar', dados.filter(d => d.Tipo.toLowerCase() === "setor"), true);
+            criarGrafico('chartLinha', 'line', dados.filter(d => d.Tipo.toLowerCase() === "linha"), false);
+            criarGrafico('chartFunil', 'bar', dados.filter(d => d.Tipo.toLowerCase() === "funil"), true);
+
+            // Lista de Alertas
+            const alertas = dados.filter(d => d.Tipo.toLowerCase() === "alerta");
+            document.getElementById('cont-alertas').innerText = `${alertas.length} ATIVOS`;
+            document.getElementById('lista-alertas').innerHTML = alertas.map(a => `
+                <div class="p-4 bg-orange-50 rounded-2xl flex gap-4 items-start border border-orange-100">
+                    <div class="bg-white p-2 rounded-lg text-orange-500 shadow-sm"><i class="fas fa-exclamation-circle text-xs"></i></div>
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-800">${a.Rotulo}</p>
+                        <p class="text-[10px] text-slate-500 font-semibold uppercase">${a.Valor}</p>
+                    </div>
+                </div>`).join('');
+        }
+
+        function renderizarTriagem(candidatos) {
             const tbody = document.getElementById('lista-triagem');
+            if (!tbody) return;
+
             tbody.innerHTML = candidatos.map(c => {
+                // Tratamento da string: "Score | Habilidades | Status"
                 const partes = c.Valor.includes('|') ? c.Valor.split('|').map(p => p.trim()) : [c.Valor, "", "Triagem"];
-                const score = partes[0] || "0%";
+                
+                const scoreRaw = partes[0] || "0%";
                 const skills = partes[1] ? partes[1].split(',') : [];
                 const status = partes[2] || "Triagem";
-                const iniciais = c.Rotulo.split(' ').filter(x => x).map(n => n[0]).join('').toUpperCase().substring(0,2);
+                
+                // Cálculo de iniciais dinâmicas (Ana Silva -> AS)
+                const iniciais = c.Rotulo ? c.Rotulo.split(' ').filter(x => x).map(n => n[0]).join('').toUpperCase().substring(0,2) : "??";
 
-                let statusCor = "bg-slate-100 text-slate-600";
-                if(status.toLowerCase().includes("prioridade")) statusCor = "bg-emerald-100 text-emerald-500";
-                else if(status.toLowerCase().includes("entrevista")) statusCor = "bg-blue-100 text-blue-600";
-                else if(status.toLowerCase().includes("reprovado")) statusCor = "bg-red-100 text-red-400";
+                // Lógica de cores para o badge de Status
+                let statusColorClass = "bg-slate-100 text-slate-600";
+                const sLow = status.toLowerCase();
+                if(sLow.includes("prioridade")) statusColorClass = "bg-emerald-100 text-emerald-600";
+                else if(sLow.includes("entrevista")) statusColorClass = "bg-blue-100 text-blue-600";
+                else if(sLow.includes("reprovado")) statusColorClass = "bg-red-100 text-red-600";
 
                 return `
-                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition-all">
+                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
                         <td class="py-4 flex items-center gap-3">
                             <div class="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 font-bold text-xs">${iniciais}</div>
-                            <span class="font-semibold text-slate-800">${c.Rotulo}</span>
+                            <span class="font-semibold text-slate-800 text-sm">${c.Rotulo}</span>
                         </td>
                         <td>
                             <div class="flex items-center gap-3">
-                                <div class="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                    <div class="bg-blue-600 h-full" style="width: ${score.includes('%') ? score : score+'%'}"></div>
+                                <div class="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="bg-blue-600 h-full" style="width: ${scoreRaw.includes('%') ? scoreRaw : scoreRaw + '%'}"></div>
                                 </div>
-                                <span class="font-bold text-xs">${score}</span>
+                                <span class="font-bold text-slate-700 text-xs">${scoreRaw}</span>
                             </div>
                         </td>
                         <td>
-                            <div class="flex flex-wrap gap-1">
-                                ${skills.map(s => `<span class="bg-slate-800 text-white text-[9px] px-2 py-0.5 rounded font-bold uppercase">${s.trim()}</span>`).join('')}
+                            <div class="flex flex-wrap gap-2">
+                                ${skills.length > 0 && skills[0] !== "" ? skills.map(skill => `
+                                    <span class="bg-slate-800 text-white text-[9px] px-2 py-0.5 rounded font-medium uppercase tracking-tight">${skill.trim()}</span>
+                                `).join('') : '<span class="text-slate-300 text-[10px]">Sem Skills</span>'}
                             </div>
                         </td>
-                        <td><span class="${statusCor} px-3 py-1 rounded-full font-bold text-[9px] uppercase tracking-wide">${status}</span></td>
-                        <td class="text-right text-slate-300">
-                            <div class="flex justify-end gap-3"><i class="far fa-file-alt cursor-pointer hover:text-blue-600"></i><i class="fas fa-ellipsis-h cursor-pointer hover:text-blue-600"></i></div>
+                        <td>
+                            <span class="${statusColorClass} px-3 py-1 rounded-full font-bold text-[9px] uppercase tracking-wide">${status}</span>
+                        </td>
+                        <td class="text-right text-slate-400">
+                            <div class="flex justify-end gap-3">
+                                <button class="hover:text-blue-600 transition-colors"><i class="far fa-file-alt"></i></button>
+                                <button class="hover:text-blue-600 transition-colors"><i class="fas fa-ellipsis-h"></i></button>
+                            </div>
                         </td>
                     </tr>
                 `;
             }).join('');
-
-            // Gráficos (Exemplo simples)
-            gerarGraficos(dados);
         }
 
-        function gerarGraficos(dados) {
-            const dadosSetor = dados.filter(d => d.Tipo.toLowerCase() === "setor");
-            if (charts['setor']) charts['setor'].destroy();
-            charts['setor'] = new Chart(document.getElementById('chartSetor').getContext('2d'), {
-                type: 'bar',
+        function criarGrafico(id, tipo, dFiltrado, isHorizontal) {
+            const canvas = document.getElementById(id);
+            if (!canvas) return;
+            if (charts[id]) charts[id].destroy();
+            
+            const ctx = canvas.getContext('2d');
+            charts[id] = new Chart(ctx, {
+                type: tipo,
                 data: {
-                    labels: dadosSetor.map(d => d.Rotulo),
-                    datasets: [{ data: dadosSetor.map(d => d.Valor), backgroundColor: '#3b82f6', borderRadius: 6 }]
+                    labels: dFiltrado.map(d => d.Rotulo),
+                    datasets: [{
+                        data: dFiltrado.map(d => d.Valor.replace('%', '').replace(',', '.')),
+                        backgroundColor: '#4f46e5',
+                        borderRadius: 6,
+                        barThickness: 20
+                    }]
                 },
-                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                options: {
+                    indexAxis: isHorizontal ? 'y' : 'x',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                        y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } }
+                    }
+                }
             });
         }
 
+        // Inicia a carga dos dados
         carregarDados();
     </script>
 </body>

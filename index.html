@@ -22,7 +22,7 @@
             <a href="#" class="block text-slate-400 hover:text-white transition p-2">Admissões</a>
             <a href="#" class="block text-slate-400 hover:text-white transition p-2">Analytics</a>
         </nav>
-        <div class="mt-auto pt-6 border-t border-slate-700 text-slate-400 text-sm italic">Sair</div>
+        <div class="mt-auto pt-6 border-t border-slate-700 text-slate-400 text-sm">Sistema Ativo</div>
     </aside>
 
     <main class="flex-1 overflow-y-auto p-8">
@@ -31,14 +31,7 @@
                 <h1 class="text-3xl font-bold text-slate-800">RH Command Center</h1>
                 <p class="text-slate-500">Painel estratégico de recrutamento e indicadores.</p>
             </div>
-            <div class="flex items-center gap-4">
-                <div class="text-right">
-                    <p class="font-bold text-slate-700">Luiz Silva</p>
-                    <p class="text-xs text-slate-500">Diretor de RH</p>
-                </div>
-                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">LS</div>
-            </div>
-        </header>
+            </header>
 
         <div class="grid grid-cols-5 gap-4 mb-8">
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
@@ -85,7 +78,7 @@
                     const labels = results.data.map(item => item.Setor || "");
                     const valores = results.data.map(item => parseFloat(item.Vagas || 0));
                     gerarGraficoBarras(labels, valores);
-                    gerarGraficoLinha(); // Gráfico de linha fixo como o do Luiz
+                    gerarGraficoLinha(); 
                 }
             });
         }
@@ -97,7 +90,7 @@
                     labels: labels,
                     datasets: [{
                         data: valores,
-                        backgroundColor: '#8b5cf6', // Roxo igual ao da imagem do Luiz
+                        backgroundColor: '#8b5cf6', 
                         borderRadius: 5,
                         barThickness: 20
                     }]
@@ -118,7 +111,6 @@
                 data: {
                     labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
                     datasets: [{
-                        label: 'Contratações',
                         data: [6, 9, 8, 11, 13, 10],
                         borderColor: '#8b5cf6',
                         backgroundColor: 'rgba(139, 92, 246, 0.1)',

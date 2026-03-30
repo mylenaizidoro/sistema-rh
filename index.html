@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR Core - Command Center Completo</title>
+    <title>HR Core - Dashboard Automatizado</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -84,6 +84,7 @@
     </main>
 
     <script>
+        // Link CSV atualizado para leitura de dados
         const urlPlanilha = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
 
         let chartSetor, chartLinha, chartFunil;
@@ -101,7 +102,7 @@
         }
 
         function renderizarInterface(dados) {
-            // 1. Renderizar Cards
+            // 1. Renderizar Cards (Filtra por 'Card' na coluna Tipo)
             const cards = dados.filter(d => d.Tipo === "Card");
             document.getElementById('container-cards').innerHTML = cards.map(c => `
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-border-blue">
@@ -133,7 +134,7 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
 
-            // 4. Gráfico de Funil (Barras Horizontais Coloridas)
+            // 4. Gráfico de Funil
             if (chartFunil) chartFunil.destroy();
             const dFunil = dados.filter(d => d.Tipo === "Funil");
             chartFunil = new Chart(document.getElementById('chartFunil'), {
@@ -163,7 +164,6 @@
                 </div>`).join('');
         }
 
-        // Inicia o carregamento
         carregarDados();
     </script>
 </body>

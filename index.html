@@ -11,11 +11,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        .active-menu { background-color: #2563eb !important; color: white !important; }
+        .active-menu { background-color: #2563eb !important; color: white !important; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4); }
         .sidebar-item { cursor: pointer; transition: 0.3s; color: #94a3b8; }
+        .sidebar-item:hover { background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; }
         .insight-card-red { background: #fff5f5; border: 1px solid #fed7d7; }
-        .insight-card-dark { background: #0f172a; color: white; }
+        .insight-card-dark { background: #0a1629; color: white; }
         .hidden { display: none; }
+        .card-border-blue { border-bottom: 4px solid #3b82f6; }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
@@ -35,10 +37,13 @@
     </aside>
 
     <main class="flex-1 flex flex-col overflow-hidden">
-        <header class="h-20 bg-white border-b flex items-center justify-between px-8">
+        <header class="h-20 bg-white border-b flex items-center justify-between px-8 shadow-sm">
             <h1 id="titulo-pagina" class="text-xl font-bold text-slate-800">RH Command Center</h1>
             <div class="flex items-center gap-3">
-                <div class="text-right"><p class="text-sm font-bold">Mylena Izidoro</p></div>
+                <div class="text-right">
+                    <p class="text-sm font-bold text-slate-800">Mylena Izidoro</p>
+                    <p class="text-[10px] text-slate-400 uppercase font-bold">Diretora de RH</p>
+                </div>
                 <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">MI</div>
             </div>
         </header>
@@ -46,8 +51,8 @@
         <div id="pagina-dashboard" class="flex-1 overflow-y-auto p-8">
             
             <h2 class="text-lg font-bold text-slate-800 mb-6">Insights Estratégicos</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-                <div class="insight-card-red p-8 rounded-[2rem] flex gap-6 items-start relative overflow-hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+                <div class="insight-card-red p-8 rounded-[2rem] flex gap-6 items-start relative overflow-hidden shadow-sm">
                     <div class="bg-white p-4 rounded-2xl shadow-sm text-red-500 border border-red-100">
                         <i class="fas fa-exclamation-circle text-xl"></i>
                     </div>
@@ -62,7 +67,7 @@
                     </div>
                 </div>
 
-                <div class="insight-card-dark p-8 rounded-[2rem] flex gap-6 items-start relative overflow-hidden">
+                <div class="insight-card-dark p-8 rounded-[2rem] flex gap-6 items-start relative overflow-hidden shadow-lg">
                     <div class="bg-slate-800 p-4 rounded-2xl text-blue-400 border border-slate-700">
                         <i class="fas fa-check-circle text-xl"></i>
                     </div>
@@ -80,31 +85,37 @@
 
             <div id="container-cards" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-10"></div>
 
-            <div class="grid grid-cols-12 gap-8 mb-10">
+            <div class="grid grid-cols-12 gap-8">
                 <div class="col-span-12 lg:col-span-7 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                    <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase">Vagas por Setor</h2>
+                    <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase tracking-wide">Vagas por Setor</h2>
                     <div class="h-[250px]"><canvas id="chartSetor"></canvas></div>
                 </div>
                 <div class="col-span-12 lg:col-span-5 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                    <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase">Evolução Mensal</h2>
+                    <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase tracking-wide">Evolução Mensal</h2>
                     <div class="h-[250px]"><canvas id="chartLinha"></canvas></div>
                 </div>
             </div>
         </div>
 
         <div id="pagina-triagem" class="flex-1 overflow-y-auto p-8 hidden">
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+            <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8">
                 <div class="flex justify-between items-center mb-8">
-                    <h2 class="text-2xl font-bold text-slate-800">Triagem de Candidatos</h2>
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Triagem de Candidatos</h2>
+                        <p class="text-slate-500 text-sm">Análise de perfis por compatibilidade.</p>
+                    </div>
+                    <button class="bg-slate-50 border border-slate-200 text-slate-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-slate-100 transition-all">Exportar</button>
                 </div>
+
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
                         <thead>
                             <tr class="text-slate-400 text-[11px] uppercase border-b border-slate-100">
-                                <th class="pb-4">Nome</th>
-                                <th class="pb-4">Match Score</th>
-                                <th class="pb-4">Skills</th>
-                                <th class="pb-4">Status</th>
+                                <th class="pb-4 font-semibold">Nome</th>
+                                <th class="pb-4 font-semibold">Match Score</th>
+                                <th class="pb-4 font-semibold">Skills Detectadas</th>
+                                <th class="pb-4 font-semibold">Status</th>
+                                <th class="pb-4 font-semibold text-right">Ações</th>
                             </tr>
                         </thead>
                         <tbody id="lista-triagem" class="text-sm text-slate-700"></tbody>
@@ -115,13 +126,16 @@
     </main>
 
     <script>
-        const urlPlanilha = "SUA_URL_DA_PLANILHA_AQUI"; // Lembre-se de colocar sua URL pública do CSV
+        // Use o seu link de publicação CSV do Google Sheets aqui
+        const urlPlanilha = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?gid=1728295734&single=true&output=csv";
+        let charts = {};
 
         function trocarPagina(pagina) {
             document.getElementById('pagina-dashboard').classList.toggle('hidden', pagina !== 'dashboard');
             document.getElementById('pagina-triagem').classList.toggle('hidden', pagina !== 'triagem');
             document.getElementById('menu-dashboard').classList.toggle('active-menu', pagina === 'dashboard');
             document.getElementById('menu-triagem').classList.toggle('active-menu', pagina === 'triagem');
+            document.getElementById('titulo-pagina').innerText = pagina === 'dashboard' ? "RH Command Center" : "Triagem de Candidatos";
         }
 
         function carregarDados() {
@@ -134,35 +148,35 @@
                             Rotulo: d.Rotulo ? d.Rotulo.trim() : "",
                             Valor: d.Valor ? d.Valor.trim() : ""
                         }));
-                        renderizarMétricas(dados);
-                        renderizarTabela(dados.filter(d => d.Tipo.toLowerCase() === "triagem"));
-                        gerarGraficos(dados);
+                        renderizarInterface(dados);
                     }
                 }
             });
         }
 
-        function renderizarMétricas(dados) {
+        function renderizarInterface(dados) {
+            // Cards de Métricas
             const cards = dados.filter(d => d.Tipo.toLowerCase() === "card");
             document.getElementById('container-cards').innerHTML = cards.map(c => `
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-blue-500">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-border-blue">
                     <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">${c.Rotulo}</p>
                     <h3 class="text-2xl font-bold text-slate-800">${c.Valor}</h3>
                 </div>`).join('');
-        }
 
-        function renderizarTabela(candidatos) {
+            // Tabela de Triagem
+            const candidatos = dados.filter(d => d.Tipo.toLowerCase().includes("triagem"));
             const tbody = document.getElementById('lista-triagem');
             tbody.innerHTML = candidatos.map(c => {
-                const partes = c.Valor.split('|').map(p => p.trim());
+                const partes = c.Valor.includes('|') ? c.Valor.split('|').map(p => p.trim()) : [c.Valor, "", "Triagem"];
                 const score = partes[0] || "0%";
                 const skills = partes[1] ? partes[1].split(',') : [];
                 const status = partes[2] || "Triagem";
-                const iniciais = c.Rotulo.split(' ').map(n => n[0]).join('').toUpperCase().substring(0,2);
+                const iniciais = c.Rotulo.split(' ').filter(x => x).map(n => n[0]).join('').toUpperCase().substring(0,2);
 
-                let cor = "bg-slate-100 text-slate-600";
-                if(status.toLowerCase().includes("prioridade")) cor = "bg-emerald-100 text-emerald-600";
-                if(status.toLowerCase().includes("entrevista")) cor = "bg-blue-100 text-blue-600";
+                let statusCor = "bg-slate-100 text-slate-600";
+                if(status.toLowerCase().includes("prioridade")) statusCor = "bg-emerald-100 text-emerald-500";
+                else if(status.toLowerCase().includes("entrevista")) statusCor = "bg-blue-100 text-blue-600";
+                else if(status.toLowerCase().includes("reprovado")) statusCor = "bg-red-100 text-red-400";
 
                 return `
                     <tr class="border-b border-slate-50 hover:bg-slate-50 transition-all">
@@ -172,33 +186,39 @@
                         </td>
                         <td>
                             <div class="flex items-center gap-3">
-                                <div class="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                    <div class="bg-blue-600 h-full" style="width: ${score}"></div>
+                                <div class="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="bg-blue-600 h-full" style="width: ${score.includes('%') ? score : score+'%'}"></div>
                                 </div>
                                 <span class="font-bold text-xs">${score}</span>
                             </div>
                         </td>
                         <td>
-                            <div class="flex gap-1">
-                                ${skills.map(s => `<span class="bg-slate-800 text-white text-[9px] px-2 py-0.5 rounded uppercase">${s}</span>`).join('')}
+                            <div class="flex flex-wrap gap-1">
+                                ${skills.map(s => `<span class="bg-slate-800 text-white text-[9px] px-2 py-0.5 rounded font-bold uppercase">${s.trim()}</span>`).join('')}
                             </div>
                         </td>
-                        <td><span class="${cor} px-3 py-1 rounded-full font-bold text-[9px] uppercase">${status}</span></td>
+                        <td><span class="${statusCor} px-3 py-1 rounded-full font-bold text-[9px] uppercase tracking-wide">${status}</span></td>
+                        <td class="text-right text-slate-300">
+                            <div class="flex justify-end gap-3"><i class="far fa-file-alt cursor-pointer hover:text-blue-600"></i><i class="fas fa-ellipsis-h cursor-pointer hover:text-blue-600"></i></div>
+                        </td>
                     </tr>
                 `;
             }).join('');
+
+            // Gráficos (Exemplo simples)
+            gerarGraficos(dados);
         }
 
         function gerarGraficos(dados) {
-            const ctxSetor = document.getElementById('chartSetor').getContext('2d');
             const dadosSetor = dados.filter(d => d.Tipo.toLowerCase() === "setor");
-            new Chart(ctxSetor, {
+            if (charts['setor']) charts['setor'].destroy();
+            charts['setor'] = new Chart(document.getElementById('chartSetor').getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels: dadosSetor.map(d => d.Rotulo),
-                    datasets: [{ data: dadosSetor.map(d => d.Valor), backgroundColor: '#3b82f6', borderRadius: 5 }]
+                    datasets: [{ data: dadosSetor.map(d => d.Valor), backgroundColor: '#3b82f6', borderRadius: 6 }]
                 },
-                options: { indexAxis: 'y', plugins: { legend: { display: false } } }
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
         }
 

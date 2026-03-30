@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>body { font-family: 'Inter', sans-serif; }</style>
 </head>
-<body class="bg-slate-50 flex h-screen overflow-hidden">
+<body class="bg-slate-50 flex h-screen overflow-hidden text-slate-800">
 
     <aside class="w-64 bg-[#0a1629] text-white flex flex-col p-6 shadow-xl">
         <div class="text-2xl font-bold mb-10 flex items-center gap-2">
@@ -18,52 +18,40 @@
         </div>
         <nav class="space-y-4 flex-1">
             <a href="#" class="block bg-blue-600/20 text-blue-400 p-2 rounded-md font-semibold border-l-4 border-blue-600">Command Center</a>
-            <a href="#" class="block text-slate-400 hover:text-white transition p-2">Recrutamento</a>
-            <a href="#" class="block text-slate-400 hover:text-white transition p-2">Admissões</a>
             <a href="#" class="block text-slate-400 hover:text-white transition p-2">Analytics</a>
         </nav>
-        <div class="mt-auto pt-6 border-t border-slate-700 text-slate-400 text-sm">Sistema Ativo</div>
     </aside>
 
     <main class="flex-1 overflow-y-auto p-8">
-        <header class="flex justify-between items-center mb-8">
-            <div>
-                <h1 class="text-3xl font-bold text-slate-800">RH Command Center</h1>
-                <p class="text-slate-500">Painel estratégico de recrutamento e indicadores.</p>
-            </div>
-            </header>
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-slate-800">RH Command Center</h1>
+            <p class="text-slate-500">Indicadores integrados via Excel</p>
+        </header>
 
-        <div class="grid grid-cols-5 gap-4 mb-8">
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <p class="text-slate-500 text-sm">Headcount Atual</p>
-                <h3 class="text-2xl font-bold">842 <span class="text-xs text-emerald-500">↗ 12%</span></h3>
+        <div id="container-cards" class="grid grid-cols-5 gap-4 mb-8"></div>
+
+        <div class="grid grid-cols-2 gap-8 mb-8">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="font-bold text-slate-700 mb-4">Vagas por Setor</h2>
+                <div class="h-[250px]"><canvas id="chartSetor"></canvas></div>
             </div>
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <p class="text-slate-500 text-sm">Vagas Abertas</p>
-                <h3 class="text-2xl font-bold">23 <span class="text-xs text-red-500">↘ 2%</span></h3>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <p class="text-slate-500 text-sm">Turnover Mensal</p>
-                <h3 class="text-2xl font-bold">3.2% <span class="text-xs text-red-500">↘ 0.5%</span></h3>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <p class="text-slate-500 text-sm">SLA de Contratação</p>
-                <h3 class="text-2xl font-bold">18 dias <span class="text-xs text-emerald-500">↗ 2%</span></h3>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <p class="text-slate-500 text-sm">Taxa de Desistência</p>
-                <h3 class="text-2xl font-bold">12% <span class="text-xs text-emerald-500">↗ 1.5%</span></h3>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="font-bold text-slate-700 mb-4">Evolução de Turnover</h2>
+                <div class="h-[250px]"><canvas id="chartLinha"></canvas></div>
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-8">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <h2 class="font-bold text-slate-700 mb-4">Vagas Abertas por Setor</h2>
-                <div class="h-[300px]"><canvas id="chartSetor"></canvas></div>
+        <div class="grid grid-cols-3 gap-8">
+            <div class="col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="font-bold mb-4 text-blue-600 italic">Funil de Recrutamento</h2>
+                <div class="h-[300px]"><canvas id="chartFunil"></canvas></div>
             </div>
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <h2 class="font-bold text-slate-700 mb-4">Contratações ao Longo do Tempo</h2>
-                <div class="h-[300px]"><canvas id="chartLinha"></canvas></div>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-bold">Painel de Alertas</h2>
+                    <span id="alerta-count" class="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded-full font-bold">0 Ativos</span>
+                </div>
+                <div id="lista-alertas" class="space-y-4"></div>
             </div>
         </div>
     </main>
@@ -71,59 +59,62 @@
     <script>
         function carregarDados() {
             Papa.parse("dados.csv?v=" + new Date().getTime(), {
-                download: true,
-                header: true,
+                download: true, 
+                header: true, 
                 skipEmptyLines: true,
+                delimiter: ";", // ESTA LINHA CORRIGE O PROBLEMA DO SEU EXCEL
                 complete: function(results) {
-                    const labels = results.data.map(item => item.Setor || "");
-                    const valores = results.data.map(item => parseFloat(item.Vagas || 0));
-                    gerarGraficoBarras(labels, valores);
-                    gerarGraficoLinha(); 
+                    const dados = results.data;
+                    
+                    const cards = dados.filter(d => d.Tipo === "Card");
+                    document.getElementById('container-cards').innerHTML = cards.map(c => `
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                            <p class="text-slate-500 text-sm">${c.Rotulo}</p>
+                            <h3 class="text-2xl font-bold">${c.Valor}</h3>
+                        </div>
+                    `).join('');
+
+                    const setores = dados.filter(d => d.Tipo === "Setor");
+                    gerarGrafico('chartSetor', 'bar', setores.map(s => s.Rotulo), setores.map(s => s.Valor), '#8b5cf6', true);
+
+                    const linha = dados.filter(d => d.Tipo === "Linha");
+                    gerarGrafico('chartLinha', 'line', linha.map(l => l.Rotulo), linha.map(l => l.Valor), '#8b5cf6', false);
+
+                    const funil = dados.filter(d => d.Tipo === "Funil");
+                    gerarGrafico('chartFunil', 'bar', funil.map(f => f.Rotulo), funil.map(f => f.Valor), ['#4c1d95', '#7c3aed', '#a78bfa'], true);
+
+                    const alertas = dados.filter(d => d.Tipo === "Alerta");
+                    document.getElementById('alerta-count').innerText = alertas.length + " Ativos";
+                    document.getElementById('lista-alertas').innerHTML = alertas.map(a => `
+                        <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <div class="text-red-500 font-bold">!</div>
+                            <div><p class="text-sm font-bold">${a.Rotulo}</p><p class="text-xs text-slate-500">${a.Valor}</p></div>
+                        </div>
+                    `).join('');
                 }
             });
         }
 
-        function gerarGraficoBarras(labels, valores) {
-            new Chart(document.getElementById('chartSetor'), {
-                type: 'bar',
+        function gerarGrafico(id, tipo, labels, valores, cores, isHorizontal) {
+            new Chart(document.getElementById(id), {
+                type: tipo,
                 data: {
                     labels: labels,
                     datasets: [{
                         data: valores,
-                        backgroundColor: '#8b5cf6', 
+                        backgroundColor: cores,
+                        borderColor: tipo === 'line' ? '#8b5cf6' : 'transparent',
+                        fill: tipo === 'line',
                         borderRadius: 5,
-                        barThickness: 20
+                        tension: 0.4
                     }]
                 },
                 options: {
-                    indexAxis: 'y',
+                    indexAxis: isHorizontal ? 'y' : 'x',
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
-                    scales: { x: { display: false }, y: { grid: { display: false } } }
-                }
-            });
-        }
-
-        function gerarGraficoLinha() {
-            new Chart(document.getElementById('chartLinha'), {
-                type: 'line',
-                data: {
-                    labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
-                    datasets: [{
-                        data: [6, 9, 8, 11, 13, 10],
-                        borderColor: '#8b5cf6',
-                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true, grid: { borderDash: [5, 5] } }, x: { grid: { display: false } } }
+                    scales: { x: { grid: { display: false } }, y: { grid: { borderDash: [5, 5] } } }
                 }
             });
         }

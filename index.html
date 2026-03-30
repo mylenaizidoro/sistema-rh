@@ -7,15 +7,19 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </head>
 <body class="bg-slate-100 flex h-screen overflow-hidden">
 
-    <aside class="w-64 bg-[#1a2b4b] text-white flex flex-col p-6">
+    <aside class="w-64 bg-[#1a2b4b] text-white flex flex-col p-6 shadow-xl">
         <div class="text-2xl font-bold mb-10 flex items-center gap-2">
-            <span class="bg-blue-500 p-1 rounded text-sm">R</span> HR Core
+            <span class="bg-blue-500 p-1 rounded text-sm text-white">R</span> HR Core
         </div>
         <nav class="space-y-4 flex-1">
-            <a href="#" class="block bg-blue-600 p-2 rounded-md">Command Center</a>
+            <a href="#" class="block bg-blue-600 p-2 rounded-md font-semibold">Command Center</a>
             <a href="#" class="block text-slate-400 hover:text-white transition">Recrutamento</a>
             <a href="#" class="block text-slate-400 hover:text-white transition">Admissões</a>
             <a href="#" class="block text-slate-400 hover:text-white transition">Operações RH</a>
@@ -26,37 +30,56 @@
 
     <main class="flex-1 overflow-y-auto p-8">
         <header class="flex justify-between items-center mb-8">
-            <h1 class="text-2xl font-bold text-slate-800">Dashboard de Vagas</h1>
-            <div class="text-sm text-slate-500">Unidade: Sede Principal</div>
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800 uppercase tracking-tight">Dashboard de Vagas</h1>
+                <p class="text-slate-500 text-sm">Monitoramento em tempo real</p>
+            </div>
+            <div class="bg-white px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 shadow-sm">
+                Unidade: Sede Principal
+            </div>
         </header>
 
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <h2 class="text-lg font-semibold text-slate-700 mb-6">Vagas Abertas por Setor</h2>
-            <div class="h-[400px]">
+        <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+            <h2 class="text-lg font-bold text-slate-700 mb-6">Vagas Abertas por Setor</h2>
+            <div class="h-[450px]">
                 <canvas id="chartSetor"></canvas>
             </div>
         </div>
 
-        <p class="text-xs text-slate-400 mt-6 text-center">Dados sincronizados com dados.csv</p>
+        <p class="text-xs text-slate-400 mt-8 text-center uppercase tracking-widest">
+            Sincronizado via dados.csv
+        </p>
     </main>
 
     <script>
         function carregarDados() {
+            // PapaParse configurado para ler o arquivo dados.csv
             Papa.parse("dados.csv", {
                 download: true,
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    const labels = results.data.map(item => item.Setor);
-                    const valores = results.data.map(item => parseFloat(item.Vagas));
+                    // Tratamento para garantir que pegue as colunas mesmo com letras minúsculas/maiúsculas
+                    const labels = results.data.map(item => item.Setor || item.setor || "Indefinido");
+                    const valores = results.data.map(item => parseFloat(item.Vagas || item.vagas || 0));
+                    
                     gerarGrafico(labels, valores);
+                },
+                error: function(err) {
+                    console.error("Erro ao carregar o CSV:", err);
                 }
             });
         }
 
         function gerarGrafico(labels, valores) {
             const ctx = document.getElementById('chartSetor').getContext('2d');
-            new Chart(ctx, {
+            
+            // Destruir gráfico anterior se existir (para evitar bugs de sobreposição)
+            if (window.meuGrafico) {
+                window.meuGrafico.destroy();
+            }
+
+            window.meuGrafico = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
@@ -64,23 +87,36 @@
                         label: 'Quantidade de Vagas',
                         data: valores,
                         backgroundColor: '#3b82f6', // Azul do Luiz
-                        borderRadius: 4
+                        borderRadius: 10,           // Barras arredondadas
+                        borderSkipped: false,
+                        barThickness: 32
                     }]
                 },
                 options: {
-                    indexAxis: 'y',
+                    indexAxis: 'y', // Gráfico horizontal igual ao dele
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false }
+                        legend: { display: false } // Remove a legenda para ficar mais limpo
                     },
                     scales: {
-                        x: { grid: { display: false } },
-                        y: { grid: { display: false } }
+                        x: { 
+                            grid: { color: '#f1f5f9' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        y: { 
+                            grid: { display: false },
+                            ticks: { 
+                                color: '#475569',
+                                font: { weight: '600', size: 13 }
+                            }
+                        }
                     }
                 }
             });
         }
+
+        // Inicia a carga dos dados
         carregarDados();
     </script>
 </body>

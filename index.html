@@ -11,21 +11,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        .sidebar-item { cursor: pointer; transition: 0.3s; }
-        .sidebar-item:hover { background-color: rgba(59, 130, 246, 0.1); }
-        .active-menu { background-color: #2563eb !important; color: white !important; }
+        .sidebar-item { cursor: pointer; transition: 0.3s; color: #94a3b8; }
+        .sidebar-item:hover { background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+        .active-menu { background-color: #2563eb !important; color: white !important; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4); }
         .hidden { display: none; }
+        .card-border-blue { border-bottom: 4px solid #3b82f6; }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
 
-    <aside class="w-64 bg-[#0a1629] text-white flex flex-col shadow-2xl">
-        <div class="p-6 text-2xl font-bold border-b border-slate-700">HR Core</div>
+    <aside class="w-64 bg-[#0a1629] text-white flex flex-col shadow-2xl z-10">
+        <div class="p-6 text-2xl font-bold border-b border-slate-700 flex items-center gap-3">
+            <div class="bg-blue-600 p-2 rounded-lg text-xs italic">R</div> HR Core
+        </div>
         <nav class="flex-1 p-4 space-y-2 mt-4 text-sm">
             <div id="menu-dashboard" onclick="trocarPagina('dashboard')" class="sidebar-item active-menu p-3 rounded-xl flex items-center gap-3">
                 <i class="fas fa-th-large"></i> Command Center
             </div>
-            <div id="menu-triagem" onclick="trocarPagina('triagem')" class="sidebar-item p-3 rounded-xl flex items-center gap-3 text-slate-400">
+            <div id="menu-triagem" onclick="trocarPagina('triagem')" class="sidebar-item p-3 rounded-xl flex items-center gap-3">
                 <i class="fas fa-users"></i> Triagem
             </div>
         </nav>
@@ -45,55 +48,104 @@
 
         <div id="pagina-dashboard" class="flex-1 overflow-y-auto p-8">
             <div id="container-cards" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-10"></div>
+            
             <div class="grid grid-cols-12 gap-8 mb-10">
-                <div class="col-span-12 lg:col-span-7 bg-white p-6 rounded-3xl shadow-sm border"><canvas id="chartSetor"></canvas></div>
-                <div class="col-span-12 lg:col-span-5 bg-white p-6 rounded-3xl shadow-sm border"><canvas id="chartLinha"></canvas></div>
+                <div class="col-span-12 lg:col-span-7 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="font-bold text-slate-800 mb-6">Vagas por Setor</h2>
+                    <div class="h-[300px]"><canvas id="chartSetor"></canvas></div>
+                </div>
+                <div class="col-span-12 lg:col-span-5 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="font-bold text-slate-800 mb-6">Evolução Mensal</h2>
+                    <div class="h-[300px]"><canvas id="chartLinha"></canvas></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-12 gap-8">
+                <div class="col-span-12 lg:col-span-8 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="font-bold text-slate-800 mb-6">Funil de Recrutamento</h2>
+                    <div class="h-[350px]"><canvas id="chartFunil"></canvas></div>
+                </div>
+                <div class="col-span-12 lg:col-span-4 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="font-bold text-slate-800">Painel de Alertas</h2>
+                        <span id="cont-alertas" class="bg-blue-100 text-blue-600 text-[10px] px-2 py-1 rounded-full font-bold uppercase">0 Ativos</span>
+                    </div>
+                    <div id="lista-alertas" class="space-y-4"></div>
+                </div>
             </div>
         </div>
 
         <div id="pagina-triagem" class="flex-1 overflow-y-auto p-8 hidden">
-            <div class="bg-white rounded-3xl shadow-sm border p-8">
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
                 <div class="flex justify-between items-center mb-8">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-800">Triagem de Candidatos</h2>
-                        <p class="text-slate-500 text-sm">Analise os perfis com maior compatibilidade.</p>
+                        <p class="text-slate-500 text-sm">Análise de perfis por compatibilidade.</p>
                     </div>
-                    <button class="bg-slate-100 text-slate-600 px-4 py-2 rounded-lg font-bold text-sm">Exportar</button>
+                    <button class="bg-slate-100 text-slate-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-slate-200">Exportar</button>
                 </div>
 
-                <table class="w-full text-left">
-                    <thead>
-                        <tr class="text-slate-400 text-xs uppercase border-b">
-                            <th class="pb-4">Nome</th>
-                            <th class="pb-4">Match Score</th>
-                            <th class="pb-4">Skills</th>
-                            <th class="pb-4">Status</th>
-                            <th class="pb-4">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-sm">
-                        <tr class="border-b">
-                            <td class="py-4 flex items-center gap-3"><div class="w-8 h-8 bg-blue-100 rounded-full"></div> Ana Silva</td>
-                            <td><div class="w-24 h-2 bg-slate-100 rounded-full"><div class="bg-blue-600 h-2 rounded-full" style="width: 92%"></div></div> 92%</td>
-                            <td><span class="bg-slate-800 text-white text-[10px] px-2 py-1 rounded">Excel</span></td>
-                            <td><span class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full font-bold">Alta Prioridade</span></td>
-                            <td class="text-slate-400"><i class="far fa-file-alt mr-2"></i> <i class="fas fa-ellipsis-h"></i></td>
-                        </tr>
-                        <tr class="border-b">
-                            <td class="py-4 flex items-center gap-3"><div class="w-8 h-8 bg-blue-100 rounded-full"></div> João Lima</td>
-                            <td><div class="w-24 h-2 bg-slate-100 rounded-full"><div class="bg-blue-600 h-2 rounded-full" style="width: 84%"></div></div> 84%</td>
-                            <td><span class="bg-slate-800 text-white text-[10px] px-2 py-1 rounded">Logística</span></td>
-                            <td><span class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full font-bold">Entrevista</span></td>
-                            <td class="text-slate-400"><i class="far fa-file-alt mr-2"></i> <i class="fas fa-ellipsis-h"></i></td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-slate-400 text-xs uppercase border-b">
+                                <th class="pb-4 font-semibold">Nome</th>
+                                <th class="pb-4 font-semibold">Match Score</th>
+                                <th class="pb-4 font-semibold">Skills Detectadas</th>
+                                <th class="pb-4 font-semibold">Status</th>
+                                <th class="pb-4 font-semibold text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm text-slate-700">
+                            <tr class="border-b border-slate-50">
+                                <td class="py-5 flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 font-bold">AS</div>
+                                    <span class="font-semibold">Ana Silva</span>
+                                </td>
+                                <td>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                            <div class="bg-blue-600 h-full" style="width: 92%"></div>
+                                        </div>
+                                        <span class="font-bold">92%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="flex gap-2">
+                                        <span class="bg-slate-800 text-white text-[10px] px-2 py-1 rounded">Excel</span>
+                                        <span class="bg-slate-800 text-white text-[10px] px-2 py-1 rounded">SAP</span>
+                                    </div>
+                                </td>
+                                <td><span class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full font-bold text-[10px]">ALTA PRIORIDADE</span></td>
+                                <td class="text-right text-slate-400"><i class="far fa-file-alt mr-3 cursor-pointer"></i> <i class="fas fa-ellipsis-h cursor-pointer"></i></td>
+                            </tr>
+                            <tr class="border-b border-slate-50">
+                                <td class="py-5 flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 font-bold">JL</div>
+                                    <span class="font-semibold">João Lima</span>
+                                </td>
+                                <td>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                            <div class="bg-blue-600 h-full" style="width: 84%"></div>
+                                        </div>
+                                        <span class="font-bold">84%</span>
+                                    </div>
+                                </td>
+                                <td><span class="bg-slate-800 text-white text-[10px] px-2 py-1 rounded">Logística</span></td>
+                                <td><span class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full font-bold text-[10px]">ENTREVISTA</span></td>
+                                <td class="text-right text-slate-400"><i class="far fa-file-alt mr-3 cursor-pointer"></i> <i class="fas fa-ellipsis-h cursor-pointer"></i></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </main>
 
     <script>
         const urlPlanilha = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?gid=1728295734&single=true&output=csv";
+        let charts = {};
 
         function trocarPagina(pagina) {
             document.getElementById('pagina-dashboard').classList.add('hidden');
@@ -112,21 +164,72 @@
             }
         }
 
-        // ... Mantenha sua função carregarDados() e renderizar() de antes aqui embaixo ...
         function carregarDados() {
             Papa.parse(urlPlanilha, {
                 download: true, header: true, skipEmptyLines: true,
                 complete: function(results) {
-                    const dados = results.data.map(d => ({
-                        Tipo: d.Tipo ? d.Tipo.trim() : "",
-                        Rotulo: d.Rotulo ? d.Rotulo.trim() : "",
-                        Valor: d.Valor ? d.Valor.trim() : ""
-                    }));
-                    renderizarDashboard(dados);
+                    if (results.data) {
+                        const dados = results.data.map(d => ({
+                            Tipo: d.Tipo ? d.Tipo.trim() : "",
+                            Rotulo: d.Rotulo ? d.Rotulo.trim() : "",
+                            Valor: d.Valor ? d.Valor.trim() : ""
+                        }));
+                        renderizarDashboard(dados);
+                    }
                 }
             });
         }
-        // [Insira aqui o resto da função renderizarDashboard que já funciona]
+
+        function renderizarDashboard(dados) {
+            // Cards
+            const cards = dados.filter(d => d.Tipo === "Card");
+            document.getElementById('container-cards').innerHTML = cards.map(c => `
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-border-blue">
+                    <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">${c.Rotulo}</p>
+                    <h3 class="text-2xl font-bold text-slate-800">${c.Valor}</h3>
+                </div>`).join('');
+
+            // Gráficos
+            criarGrafico('chartSetor', 'bar', dados.filter(d => d.Tipo === "Setor"), true);
+            criarGrafico('chartLinha', 'line', dados.filter(d => d.Tipo === "Linha"), false);
+            criarGrafico('chartFunil', 'bar', dados.filter(d => d.Tipo === "Funil"), true);
+
+            // Alertas
+            const alertas = dados.filter(d => d.Tipo === "Alerta");
+            document.getElementById('cont-alertas').innerText = `${alertas.length} ATIVOS`;
+            document.getElementById('lista-alertas').innerHTML = alertas.map(a => `
+                <div class="p-4 bg-orange-50 rounded-2xl flex gap-4 items-start border border-orange-100">
+                    <div class="bg-white p-2 rounded-lg text-orange-500 shadow-sm"><i class="fas fa-exclamation-circle"></i></div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-800">${a.Rotulo}</p>
+                        <p class="text-[10px] text-slate-500 font-semibold uppercase">${a.Valor}</p>
+                    </div>
+                </div>`).join('');
+        }
+
+        function criarGrafico(id, tipo, dFiltrado, isHorizontal) {
+            if (charts[id]) charts[id].destroy();
+            const ctx = document.getElementById(id).getContext('2d');
+            charts[id] = new Chart(ctx, {
+                type: tipo,
+                data: {
+                    labels: dFiltrado.map(d => d.Rotulo),
+                    datasets: [{
+                        data: dFiltrado.map(d => d.Valor),
+                        backgroundColor: '#6366f1',
+                        borderRadius: 5,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    indexAxis: isHorizontal ? 'y' : 'x',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
         carregarDados();
     </script>
 </body>

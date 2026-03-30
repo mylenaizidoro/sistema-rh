@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR Core - Dashboard Automático</title>
+    <title>HR Core - Command Center Completo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -13,14 +13,13 @@
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         .sidebar-item:hover { background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; }
         .active-menu { background-color: #2563eb; color: white; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4); }
-        .card-border-green { border-bottom: 4px solid #10b981; }
-        .card-border-red { border-bottom: 4px solid #ef4444; }
+        .card-border-blue { border-bottom: 4px solid #3b82f6; }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
 
     <aside class="w-64 bg-[#0a1629] text-white flex flex-col shadow-2xl z-10">
-        <div class="p-6 text-2xl font-bold flex items-center gap-3 border-b border-slate-700">
+        <div class="p-6 text-2xl font-bold border-b border-slate-700 flex items-center gap-3">
             <div class="bg-blue-600 p-2 rounded-lg text-xs italic">R</div> HR Core
         </div>
         <nav class="flex-1 overflow-y-auto p-4 space-y-2 mt-4 text-sm">
@@ -35,59 +34,59 @@
                 <span><i class="fas fa-user-plus mr-3"></i> Admissões</span>
                 <i class="fas fa-chevron-down text-xs"></i>
             </div>
-            <div class="text-slate-400 p-3 flex justify-between items-center cursor-pointer sidebar-item rounded-xl">
-                <span><i class="fas fa-chart-pie mr-3"></i> Analytics</span>
-            </div>
         </nav>
-        <div class="p-4 border-t border-slate-700 text-slate-400 text-sm sidebar-item cursor-pointer m-2 rounded-xl">
+        <div class="p-4 border-t border-slate-700 text-slate-400 text-sm m-2 rounded-xl cursor-pointer sidebar-item">
             <i class="fas fa-sign-out-alt mr-3"></i> Sair
         </div>
     </aside>
 
     <main class="flex-1 flex flex-col overflow-hidden">
-        
         <header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm">
-            <div class="relative w-96">
-                <i class="fas fa-search absolute left-4 top-3.5 text-slate-400"></i>
-                <input type="text" placeholder="Pesquisar..." class="w-full pl-12 pr-4 py-2.5 bg-slate-100 rounded-full text-sm border-none focus:ring-2 focus:ring-blue-500">
-            </div>
-            <div class="flex items-center gap-6">
-                <div class="flex items-center gap-3 border-l pl-6 border-slate-200">
-                    <div class="text-right">
-                        <p class="text-sm font-bold text-slate-800">Mylena Izidoro</p>
-                        <p class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Diretora de RH</p>
-                    </div>
-                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">MI</div>
+            <h1 class="text-xl font-bold text-slate-800">RH Command Center</h1>
+            <div class="flex items-center gap-3 border-l pl-6 border-slate-200">
+                <div class="text-right">
+                    <p class="text-sm font-bold text-slate-800">Mylena Izidoro</p>
+                    <p class="text-[10px] text-slate-400 uppercase font-bold">Diretora de RH</p>
                 </div>
+                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">MI</div>
             </div>
         </header>
 
         <div class="flex-1 overflow-y-auto p-8">
-            <div class="mb-8">
-                <h1 class="text-3xl font-bold text-slate-800">RH Command Center</h1>
-                <p class="text-slate-400 text-sm mt-1">Indicadores integrados e atualizados via Google Sheets.</p>
-            </div>
+            <div id="container-cards" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-10"></div>
 
-            <div id="container-cards" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-10">
-                </div>
-
-            <div class="grid grid-cols-12 gap-8">
+            <div class="grid grid-cols-12 gap-8 mb-10">
                 <div class="col-span-12 lg:col-span-7 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                     <h2 class="font-bold text-slate-800 mb-6">Vagas Abertas por Setor</h2>
-                    <div class="h-[350px]"><canvas id="chartSetor"></canvas></div>
+                    <div class="h-[300px]"><canvas id="chartSetor"></canvas></div>
                 </div>
-                
                 <div class="col-span-12 lg:col-span-5 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <h2 class="font-bold text-slate-800 mb-6">Evolução de Indicadores</h2>
-                    <div class="h-[350px]"><canvas id="chartLinha"></canvas></div>
+                    <h2 class="font-bold text-slate-800 mb-6">Evolução Mensal</h2>
+                    <div class="h-[300px]"><canvas id="chartLinha"></canvas></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-12 gap-8">
+                <div class="col-span-12 lg:col-span-8 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="font-bold text-slate-800 mb-6">Funil de Recrutamento</h2>
+                    <div class="h-[350px]"><canvas id="chartFunil"></canvas></div>
+                </div>
+                <div class="col-span-12 lg:col-span-4 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="font-bold text-slate-800">Painel de Alertas</h2>
+                        <span id="cont-alertas" class="bg-blue-100 text-blue-600 text-[10px] px-2 py-1 rounded-full font-bold uppercase">0 Ativos</span>
+                    </div>
+                    <div id="lista-alertas" class="space-y-4">
+                        </div>
                 </div>
             </div>
         </div>
     </main>
 
     <script>
-        // Link da sua planilha publicado como CSV
         const urlPlanilha = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
+
+        let chartSetor, chartLinha, chartFunil;
 
         function carregarDados() {
             Papa.parse(urlPlanilha, {
@@ -102,63 +101,69 @@
         }
 
         function renderizarInterface(dados) {
-            // Renderizar Cards
+            // 1. Renderizar Cards
             const cards = dados.filter(d => d.Tipo === "Card");
-            document.getElementById('container-cards').innerHTML = cards.map((c, index) => {
-                const corBorda = index % 2 === 0 ? 'card-border-green' : 'card-border-red';
-                return `
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 ${corBorda}">
-                    <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">${c.Rotulo}</p>
-                    <div class="flex items-end justify-between">
-                        <h3 class="text-3xl font-bold text-slate-800">${c.Valor}</h3>
-                        <div class="text-green-500 text-xs font-bold"><i class="fas fa-arrow-trend-up"></i> 12%</div>
-                    </div>
-                </div>`;
-            }).join('');
+            document.getElementById('container-cards').innerHTML = cards.map(c => `
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-border-blue">
+                    <p class="text-slate-400 text-xs font-semibold uppercase mb-2">${c.Rotulo}</p>
+                    <h3 class="text-3xl font-bold text-slate-800">${c.Valor}</h3>
+                </div>`).join('');
 
-            // Gráfico de Barras (Setores)
-            const dadosSetor = dados.filter(d => d.Tipo === "Setor");
-            new Chart(document.getElementById('chartSetor'), {
+            // 2. Gráfico de Setores
+            if (chartSetor) chartSetor.destroy();
+            const dSetor = dados.filter(d => d.Tipo === "Setor");
+            chartSetor = new Chart(document.getElementById('chartSetor'), {
                 type: 'bar',
                 data: {
-                    labels: dadosSetor.map(d => d.Rotulo),
-                    datasets: [{
-                        data: dadosSetor.map(d => d.Valor),
-                        backgroundColor: '#8b5cf6',
-                        borderRadius: 8
-                    }]
+                    labels: dSetor.map(d => d.Rotulo),
+                    datasets: [{ data: dSetor.map(d => d.Valor), backgroundColor: '#8b5cf6', borderRadius: 8 }]
                 },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } }
-                }
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
 
-            // Gráfico de Linha (Evolução)
-            const dadosLinha = dados.filter(d => d.Tipo === "Linha");
-            new Chart(document.getElementById('chartLinha'), {
+            // 3. Gráfico de Linha
+            if (chartLinha) chartLinha.destroy();
+            const dLinha = dados.filter(d => d.Tipo === "Linha");
+            chartLinha = new Chart(document.getElementById('chartLinha'), {
                 type: 'line',
                 data: {
-                    labels: dadosLinha.map(d => d.Rotulo),
+                    labels: dLinha.map(d => d.Rotulo),
+                    datasets: [{ data: dLinha.map(d => d.Valor), borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.1)', fill: true, tension: 0.4 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            // 4. Gráfico de Funil (Barras Horizontais Coloridas)
+            if (chartFunil) chartFunil.destroy();
+            const dFunil = dados.filter(d => d.Tipo === "Funil");
+            chartFunil = new Chart(document.getElementById('chartFunil'), {
+                type: 'bar',
+                data: {
+                    labels: dFunil.map(d => d.Rotulo),
                     datasets: [{
-                        data: dadosLinha.map(d => d.Valor),
-                        borderColor: '#8b5cf6',
-                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                        fill: true,
-                        tension: 0.4
+                        data: dFunil.map(d => d.Valor),
+                        backgroundColor: ['#4c1d95', '#7c3aed', '#a78bfa', '#c4b5fd', '#ddd6fe'],
+                        borderRadius: 10,
+                        barThickness: 35
                     }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } }
-                }
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
+
+            // 5. Painel de Alertas
+            const alertas = dados.filter(d => d.Tipo === "Alerta");
+            document.getElementById('cont-alertas').innerText = `${alertas.length} ATIVOS`;
+            document.getElementById('lista-alertas').innerHTML = alertas.map(a => `
+                <div class="p-4 bg-orange-50 rounded-2xl flex gap-4 items-start border border-orange-100 shadow-sm">
+                    <div class="bg-white p-2 rounded-lg text-orange-500 shadow-sm"><i class="fas fa-exclamation-circle"></i></div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-800">${a.Rotulo}</p>
+                        <p class="text-[10px] text-slate-500 font-semibold uppercase">${a.Valor}</p>
+                    </div>
+                </div>`).join('');
         }
 
-        // Inicia a carga dos dados
+        // Inicia o carregamento
         carregarDados();
     </script>
 </body>

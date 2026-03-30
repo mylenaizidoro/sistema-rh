@@ -1,1 +1,74 @@
-﻿
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>RH Dashboard - Dados Reais</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+</head>
+<body class="bg-slate-100 p-10">
+
+    <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-md">
+        <h1 class="text-2xl font-bold text-slate-800 mb-6 text-center">Vagas Abertas por Setor</h1>
+        <div class="relative h-[400px]">
+            <canvas id="chartSetor"></canvas>
+        </div>
+        <p class="text-sm text-slate-400 mt-4 text-center italic">Lendo dados de: dados.csv</p>
+    </div>
+
+    <script>
+        let meuGrafico;
+
+        function carregarDados() {
+            Papa.parse("dados.csv", {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                // DETECTA AUTOMATICAMENTE SE É VÍRGULA OU PONTO E VÍRGULA
+                complete: function(results) {
+                    console.log("Dados carregados:", results.data);
+                    
+                    const labels = results.data.map(item => item.Setor || item.setor);
+                    const valores = results.data.map(item => parseFloat(item.Vagas || item.vagas));
+
+                    if (labels.length > 0 && !isNaN(valores[0])) {
+                        gerarGrafico(labels, valores);
+                    } else {
+                        alert("Erro: Verifique se o cabeçalho do seu Excel é 'Setor' e 'Vagas'");
+                    }
+                }
+            });
+        }
+
+        function gerarGrafico(labels, valores) {
+            const ctx = document.getElementById('chartSetor').getContext('2d');
+            
+            if (meuGrafico) { meuGrafico.destroy(); }
+
+            meuGrafico = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Vagas',
+                        data: valores,
+                        backgroundColor: 'rgba(139, 92, 246, 0.8)',
+                        borderColor: '#8b5cf6',
+                        borderWidth: 1,
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        carregarDados();
+    </script>
+</body>
+</html>﻿

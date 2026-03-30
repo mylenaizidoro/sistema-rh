@@ -83,10 +83,10 @@
     </main>
 
     <script>
-        // Link CSV direto da aba "dados"
+        // Link CSV direto e forçado para a aba correta
         const urlPlanilha = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?gid=0&single=true&output=csv";
 
-        let chartSetor, chartLinha, chartFunil;
+        let charts = {};
 
         function carregarDados() {
             Papa.parse(urlPlanilha, {
@@ -94,78 +94,72 @@
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    if (results.data && results.data.length > 0) {
-                        console.log("Dados carregados:", results.data);
-                        renderizarInterface(results.data);
+                    if (results.data) {
+                        const dadosLimpos = results.data.map(item => ({
+                            Tipo: item.Tipo ? item.Tipo.trim() : "",
+                            Rotulo: item.Rotulo ? item.Rotulo.trim() : "",
+                            Valor: item.Valor ? item.Valor.trim() : ""
+                        }));
+                        renderizarDashboard(dadosLimpos);
                     }
-                },
-                error: function(err) {
-                    console.error("Erro ao carregar CSV:", err);
                 }
             });
         }
 
-        function renderizarInterface(dados) {
-            // 1. CARDS
+        function renderizarDashboard(dados) {
+            // 1. Cards
             const cards = dados.filter(d => d.Tipo === "Card");
             document.getElementById('container-cards').innerHTML = cards.map(c => `
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-border-blue">
-                    <p class="text-slate-400 text-xs font-semibold uppercase mb-2">${c.Rotulo}</p>
-                    <h3 class="text-3xl font-bold text-slate-800">${c.Valor}</h3>
+                    <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">${c.Rotulo}</p>
+                    <h3 class="text-2xl font-bold text-slate-800">${c.Valor}</h3>
                 </div>`).join('');
 
-            // 2. VAGAS POR SETOR (Barras Horizontais)
-            if (chartSetor) chartSetor.destroy();
-            const dSetor = dados.filter(d => d.Tipo === "Setor");
-            chartSetor = new Chart(document.getElementById('chartSetor'), {
-                type: 'bar',
-                data: {
-                    labels: dSetor.map(d => d.Rotulo),
-                    datasets: [{ data: dSetor.map(d => d.Valor), backgroundColor: '#8b5cf6', borderRadius: 8 }]
-                },
-                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
+            // 2. Gráfico Setor
+            criarGrafico('chartSetor', 'bar', dados.filter(d => d.Tipo === "Setor"), true);
+            
+            // 3. Gráfico Linha
+            criarGrafico('chartLinha', 'line', dados.filter(d => d.Tipo === "Linha"), false);
+            
+            // 4. Gráfico Funil
+            criarGrafico('chartFunil', 'bar', dados.filter(d => d.Tipo === "Funil"), true, ['#4c1d95', '#7c3aed', '#a78bfa', '#c4b5fd', '#ddd6fe']);
 
-            // 3. EVOLUÇÃO MENSAL (Linha)
-            if (chartLinha) chartLinha.destroy();
-            const dLinha = dados.filter(d => d.Tipo === "Linha");
-            chartLinha = new Chart(document.getElementById('chartLinha'), {
-                type: 'line',
-                data: {
-                    labels: dLinha.map(d => d.Rotulo),
-                    datasets: [{ data: dLinha.map(d => d.Valor), borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.1)', fill: true, tension: 0.4 }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
-
-            // 4. FUNIL DE RECRUTAMENTO
-            if (chartFunil) chartFunil.destroy();
-            const dFunil = dados.filter(d => d.Tipo === "Funil");
-            chartFunil = new Chart(document.getElementById('chartFunil'), {
-                type: 'bar',
-                data: {
-                    labels: dFunil.map(d => d.Rotulo),
-                    datasets: [{
-                        data: dFunil.map(d => d.Valor),
-                        backgroundColor: ['#4c1d95', '#7c3aed', '#a78bfa', '#c4b5fd', '#ddd6fe'],
-                        borderRadius: 10,
-                        barThickness: 30
-                    }]
-                },
-                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
-
-            // 5. ALERTAS
+            // 5. Alertas
             const alertas = dados.filter(d => d.Tipo === "Alerta");
             document.getElementById('cont-alertas').innerText = `${alertas.length} ATIVOS`;
             document.getElementById('lista-alertas').innerHTML = alertas.map(a => `
-                <div class="p-4 bg-orange-50 rounded-2xl flex gap-4 items-start border border-orange-100 shadow-sm">
+                <div class="p-4 bg-orange-50 rounded-2xl flex gap-4 items-start border border-orange-100">
                     <div class="bg-white p-2 rounded-lg text-orange-500 shadow-sm"><i class="fas fa-exclamation-circle"></i></div>
                     <div>
                         <p class="text-xs font-bold text-slate-800">${a.Rotulo}</p>
                         <p class="text-[10px] text-slate-500 font-semibold uppercase">${a.Valor}</p>
                     </div>
                 </div>`).join('');
+        }
+
+        function criarGrafico(id, tipo, dadosFiltrados, isHorizontal, cores) {
+            if (charts[id]) charts[id].destroy();
+            const ctx = document.getElementById(id).getContext('2d');
+            charts[id] = new Chart(ctx, {
+                type: tipo,
+                data: {
+                    labels: dadosFiltrados.map(d => d.Rotulo),
+                    datasets: [{
+                        data: dadosFiltrados.map(d => d.Valor),
+                        backgroundColor: cores || '#6366f1',
+                        borderColor: '#6366f1',
+                        borderRadius: 8,
+                        fill: tipo === 'line',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    indexAxis: isHorizontal ? 'y' : 'x',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
         }
 
         carregarDados();

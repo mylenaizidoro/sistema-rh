@@ -2,100 +2,58 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RH Command Center - Dashboard</title>
+    <title>RH Dashboard - Dados Reais</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 </head>
-<body class="bg-slate-100 flex h-screen overflow-hidden">
+<body class="bg-slate-100 p-10">
 
-    <aside class="w-64 bg-[#1a2b4b] text-white flex flex-col p-6">
-        <div class="text-2xl font-bold mb-10 flex items-center gap-2">
-            <span class="bg-blue-500 p-1 rounded text-sm">R</span> HR Core
-        </div>
-        <nav class="space-y-4 flex-1">
-            <a href="#" class="block bg-blue-600 p-2 rounded-md">Command Center</a>
-            <a href="#" class="block text-slate-400 hover:text-white transition">Recrutamento</a>
-            <a href="#" class="block text-slate-400 hover:text-white transition">Admissões</a>
-            <a href="#" class="block text-slate-400 hover:text-white transition">Operações RH</a>
-            <a href="#" class="block text-slate-400 hover:text-white transition">Treinamentos</a>
-            <a href="#" class="block text-slate-400 hover:text-white transition">Analytics</a>
-        </nav>
-        <button class="text-left text-slate-400 hover:text-white mt-auto">Sair</button>
-    </aside>
-
-    <main class="flex-1 p-10 overflow-y-auto">
-        <header class="mb-8">
-            <h1 class="text-3xl font-bold text-slate-800">RH Command Center</h1>
-            <p class="text-slate-500">Painel estratégico de recrutamento e indicadores de headcount.</p>
-        </header>
-
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-10">
-            <div class="bg-white p-5 rounded-xl shadow-sm border-b-4 border-emerald-400">
-                <p class="text-slate-400 text-sm font-medium">Headcount Atual</p>
-                <p class="text-2xl font-bold text-slate-700">842 <span class="text-sm text-emerald-500 ml-2">↑ 12%</span></p>
-            </div>
-            <div class="bg-white p-5 rounded-xl shadow-sm border-b-4 border-rose-400">
-                <p class="text-slate-400 text-sm font-medium">Vagas Abertas</p>
-                <p class="text-2xl font-bold text-slate-700">23 <span class="text-sm text-rose-500 ml-2">↘ 2%</span></p>
-            </div>
-            <div class="bg-white p-5 rounded-xl shadow-sm border-b-4 border-rose-400">
-                <p class="text-slate-400 text-sm font-medium">Turnover Mensal</p>
-                <p class="text-2xl font-bold text-slate-700">3.2% <span class="text-sm text-rose-500 ml-2">↘ 0.5%</span></p>
-            </div>
-            <div class="bg-white p-5 rounded-xl shadow-sm border-b-4 border-blue-400">
-                <p class="text-slate-400 text-sm font-medium">SLA de Contratação</p>
-                <p class="text-2xl font-bold text-slate-700">18 dias <span class="text-sm text-emerald-500 ml-2">↗ 2%</span></p>
-            </div>
-            <div class="bg-white p-5 rounded-xl shadow-sm border-b-4 border-emerald-400">
-                <p class="text-slate-400 text-sm font-medium">Taxa de Desistência</p>
-                <p class="text-2xl font-bold text-slate-700">12% <span class="text-sm text-emerald-500 ml-2">↗ 1.5%</span></p>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="bg-white p-6 rounded-xl shadow-sm">
-                <h3 class="text-lg font-bold text-slate-700 mb-6">Vagas Abertas por Setor</h3>
-                <canvas id="chartSetor"></canvas>
-            </div>
-            <div class="bg-white p-6 rounded-xl shadow-sm">
-                <h3 class="text-lg font-bold text-slate-700 mb-6">Contratações ao Longo do Tempo</h3>
-                <canvas id="chartEvolucao"></canvas>
-            </div>
-        </div>
-    </main>
+    <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-md">
+        <h1 class="text-2xl font-bold text-slate-800 mb-6">Vagas Abertas por Setor</h1>
+        <canvas id="chartSetor"></canvas>
+        <p class="text-sm text-slate-400 mt-4 text-center italic">Os dados acima estão sendo lidos do arquivo dados.csv</p>
+    </div>
 
     <script>
-        // Gráfico de Barras (Setores)
-        new Chart(document.getElementById('chartSetor'), {
-            type: 'bar',
-            data: {
-                labels: ['Produção', 'Logística', 'Administrativo', 'TI', 'Comercial'],
-                datasets: [{
-                    label: 'Vagas',
-                    data: [25, 12, 8, 4, 2],
-                    backgroundColor: '#8b5cf6',
-                    borderRadius: 5
-                }]
-            },
-            options: { indexAxis: 'y', plugins: { legend: { display: false } } }
-        });
+        function carregarDadosDoExcel() {
+            // O código busca o arquivo dados.csv no seu GitHub
+            Papa.parse("dados.csv", {
+                download: true,
+                header: true,
+                complete: function(results) {
+                    const dadosExcel = results.data;
+                    
+                    // Separa os nomes dos setores e os números
+                    const nomesSetores = dadosExcel.map(item => item.Setor);
+                    const quantidades = dadosExcel.map(item => item.Vagas);
 
-        // Gráfico de Linha (Evolução)
-        new Chart(document.getElementById('chartEvolucao'), {
-            type: 'line',
-            data: {
-                labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
-                datasets: [{
-                    label: 'Contratações',
-                    data: [5, 9, 8, 11, 13, 10],
-                    borderColor: '#8b5cf6',
-                    tension: 0.4,
-                    fill: false
-                }]
-            },
-            options: { plugins: { legend: { display: false } } }
-        });
+                    gerarGrafico(nomesSetores, quantidades);
+                }
+            });
+        }
+
+        function gerarGrafico(labels, valores) {
+            new Chart(document.getElementById('chartSetor'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Quantidade de Vagas',
+                        data: valores,
+                        backgroundColor: '#8b5cf6',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // Inicia a leitura ao abrir o site
+        carregarDadosDoExcel();
     </script>
 </body>
 </html>

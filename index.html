@@ -51,18 +51,18 @@
             
             <div class="grid grid-cols-12 gap-8 mb-10">
                 <div class="col-span-12 lg:col-span-7 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <h2 class="font-bold text-slate-800 mb-6 text-sm uppercase tracking-wide">Vagas por Setor</h2>
+                    <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase tracking-wide">Vagas por Setor</h2>
                     <div class="h-[300px]"><canvas id="chartSetor"></canvas></div>
                 </div>
                 <div class="col-span-12 lg:col-span-5 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <h2 class="font-bold text-slate-800 mb-6 text-sm uppercase tracking-wide">Evolução Mensal</h2>
+                    <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase tracking-wide">Evolução Mensal</h2>
                     <div class="h-[300px]"><canvas id="chartLinha"></canvas></div>
                 </div>
             </div>
 
             <div class="grid grid-cols-12 gap-8">
                 <div class="col-span-12 lg:col-span-8 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <h2 class="font-bold text-slate-800 mb-6 text-sm uppercase tracking-wide">Funil de Recrutamento</h2>
+                    <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase tracking-wide">Funil de Recrutamento</h2>
                     <div class="h-[350px]"><canvas id="chartFunil"></canvas></div>
                 </div>
                 <div class="col-span-12 lg:col-span-4 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
@@ -127,24 +127,32 @@
 
         function carregarDados() {
             Papa.parse(urlPlanilha, {
-                download: true, header: true, skipEmptyLines: true,
+                download: true, 
+                header: true, 
+                skipEmptyLines: true,
                 complete: function(results) {
                     if (results.data) {
-                        const dados = results.data.map(d => ({
+                        const dadosNormalizados = results.data.map(d => ({
                             Tipo: d.Tipo ? d.Tipo.trim() : "",
                             Rotulo: d.Rotulo ? d.Rotulo.trim() : "",
                             Valor: d.Valor ? d.Valor.trim() : ""
                         }));
-                        renderizarDashboard(dados);
-                        renderizarTriagem(dados.filter(d => d.Tipo === "Triagem"));
+                        
+                        renderizarDashboard(dadosNormalizados);
+                        
+                        // Filtro insensível a maiúsculas/minúsculas para pegar todos os "Triagem"
+                        const listaCandidatos = dadosNormalizados.filter(d => 
+                            d.Tipo.toLowerCase().includes("triagem")
+                        );
+                        renderizarTriagem(listaCandidatos);
                     }
                 }
             });
         }
 
         function renderizarDashboard(dados) {
-            // Cards
-            const cards = dados.filter(d => d.Tipo === "Card");
+            // Cards Superiores
+            const cards = dados.filter(d => d.Tipo.toLowerCase() === "card");
             document.getElementById('container-cards').innerHTML = cards.map(c => `
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-border-blue">
                     <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">${c.Rotulo}</p>
@@ -152,12 +160,12 @@
                 </div>`).join('');
 
             // Gráficos
-            criarGrafico('chartSetor', 'bar', dados.filter(d => d.Tipo === "Setor"), true);
-            criarGrafico('chartLinha', 'line', dados.filter(d => d.Tipo === "Linha"), false);
-            criarGrafico('chartFunil', 'bar', dados.filter(d => d.Tipo === "Funil"), true);
+            criarGrafico('chartSetor', 'bar', dados.filter(d => d.Tipo.toLowerCase() === "setor"), true);
+            criarGrafico('chartLinha', 'line', dados.filter(d => d.Tipo.toLowerCase() === "linha"), false);
+            criarGrafico('chartFunil', 'bar', dados.filter(d => d.Tipo.toLowerCase() === "funil"), true);
 
-            // Alertas
-            const alertas = dados.filter(d => d.Tipo === "Alerta");
+            // Lista de Alertas
+            const alertas = dados.filter(d => d.Tipo.toLowerCase() === "alerta");
             document.getElementById('cont-alertas').innerText = `${alertas.length} ATIVOS`;
             document.getElementById('lista-alertas').innerHTML = alertas.map(a => `
                 <div class="p-4 bg-orange-50 rounded-2xl flex gap-4 items-start border border-orange-100">
@@ -171,21 +179,25 @@
 
         function renderizarTriagem(candidatos) {
             const tbody = document.getElementById('lista-triagem');
+            if (!tbody) return;
+
             tbody.innerHTML = candidatos.map(c => {
-                // Separação de dados do Valor: "Score | Skills | Status"
-                const partes = c.Valor.split('|').map(p => p.trim());
-                const score = partes[0] || "0%";
+                // Tratamento da string: "Score | Habilidades | Status"
+                const partes = c.Valor.includes('|') ? c.Valor.split('|').map(p => p.trim()) : [c.Valor, "", "Triagem"];
+                
+                const scoreRaw = partes[0] || "0%";
                 const skills = partes[1] ? partes[1].split(',') : [];
                 const status = partes[2] || "Triagem";
                 
-                // Geração de iniciais dinâmicas
-                const iniciais = c.Rotulo.split(' ').map(n => n[0]).join('').toUpperCase().substring(0,2);
+                // Cálculo de iniciais dinâmicas (Ana Silva -> AS)
+                const iniciais = c.Rotulo ? c.Rotulo.split(' ').filter(x => x).map(n => n[0]).join('').toUpperCase().substring(0,2) : "??";
 
-                // Classes de cores para o Status
-                let statusColor = "bg-slate-100 text-slate-600";
-                if(status.toLowerCase().includes("prioridade")) statusColor = "bg-emerald-100 text-emerald-600";
-                if(status.toLowerCase().includes("entrevista")) statusColor = "bg-blue-100 text-blue-600";
-                if(status.toLowerCase().includes("reprovado")) statusColor = "bg-red-100 text-red-600";
+                // Lógica de cores para o badge de Status
+                let statusColorClass = "bg-slate-100 text-slate-600";
+                const sLow = status.toLowerCase();
+                if(sLow.includes("prioridade")) statusColorClass = "bg-emerald-100 text-emerald-600";
+                else if(sLow.includes("entrevista")) statusColorClass = "bg-blue-100 text-blue-600";
+                else if(sLow.includes("reprovado")) statusColorClass = "bg-red-100 text-red-600";
 
                 return `
                     <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
@@ -196,18 +208,20 @@
                         <td>
                             <div class="flex items-center gap-3">
                                 <div class="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                    <div class="bg-blue-600 h-full" style="width: ${score}"></div>
+                                    <div class="bg-blue-600 h-full" style="width: ${scoreRaw.includes('%') ? scoreRaw : scoreRaw + '%'}"></div>
                                 </div>
-                                <span class="font-bold text-slate-700 text-xs">${score}</span>
+                                <span class="font-bold text-slate-700 text-xs">${scoreRaw}</span>
                             </div>
                         </td>
                         <td>
                             <div class="flex flex-wrap gap-2">
-                                ${skills.map(skill => `<span class="bg-slate-800 text-white text-[9px] px-2 py-0.5 rounded font-medium uppercase tracking-tight">${skill.trim()}</span>`).join('')}
+                                ${skills.length > 0 && skills[0] !== "" ? skills.map(skill => `
+                                    <span class="bg-slate-800 text-white text-[9px] px-2 py-0.5 rounded font-medium uppercase tracking-tight">${skill.trim()}</span>
+                                `).join('') : '<span class="text-slate-300 text-[10px]">Sem Skills</span>'}
                             </div>
                         </td>
                         <td>
-                            <span class="${statusColor} px-3 py-1 rounded-full font-bold text-[9px] uppercase tracking-wide">${status}</span>
+                            <span class="${statusColorClass} px-3 py-1 rounded-full font-bold text-[9px] uppercase tracking-wide">${status}</span>
                         </td>
                         <td class="text-right text-slate-400">
                             <div class="flex justify-end gap-3">
@@ -221,14 +235,17 @@
         }
 
         function criarGrafico(id, tipo, dFiltrado, isHorizontal) {
+            const canvas = document.getElementById(id);
+            if (!canvas) return;
             if (charts[id]) charts[id].destroy();
-            const ctx = document.getElementById(id).getContext('2d');
+            
+            const ctx = canvas.getContext('2d');
             charts[id] = new Chart(ctx, {
                 type: tipo,
                 data: {
                     labels: dFiltrado.map(d => d.Rotulo),
                     datasets: [{
-                        data: dFiltrado.map(d => d.Valor.replace('%', '')),
+                        data: dFiltrado.map(d => d.Valor.replace('%', '').replace(',', '.')),
                         backgroundColor: '#4f46e5',
                         borderRadius: 6,
                         barThickness: 20
@@ -247,6 +264,7 @@
             });
         }
 
+        // Inicia a carga dos dados
         carregarDados();
     </script>
 </body>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR Core - Dashboard</title>
+    <title>HR Core - Dashboard Automático</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -36,8 +36,7 @@
                 <i class="fas fa-chevron-down text-xs"></i>
             </div>
             <div class="text-slate-400 p-3 flex justify-between items-center cursor-pointer sidebar-item rounded-xl">
-                <span><i class="fas fa-briefcase mr-3"></i> Operações RH</span>
-                <i class="fas fa-chevron-down text-xs"></i>
+                <span><i class="fas fa-chart-pie mr-3"></i> Analytics</span>
             </div>
         </nav>
         <div class="p-4 border-t border-slate-700 text-slate-400 text-sm sidebar-item cursor-pointer m-2 rounded-xl">
@@ -53,9 +52,6 @@
                 <input type="text" placeholder="Pesquisar..." class="w-full pl-12 pr-4 py-2.5 bg-slate-100 rounded-full text-sm border-none focus:ring-2 focus:ring-blue-500">
             </div>
             <div class="flex items-center gap-6">
-                <i class="far fa-question-circle text-slate-400 cursor-pointer"></i>
-                <i class="far fa-bell text-slate-400 cursor-pointer"></i>
-                <div class="bg-slate-100 px-4 py-1.5 rounded-full text-xs font-semibold text-slate-600">Segunda-Feira, 30 de Março</div>
                 <div class="flex items-center gap-3 border-l pl-6 border-slate-200">
                     <div class="text-right">
                         <p class="text-sm font-bold text-slate-800">Mylena Izidoro</p>
@@ -69,20 +65,20 @@
         <div class="flex-1 overflow-y-auto p-8">
             <div class="mb-8">
                 <h1 class="text-3xl font-bold text-slate-800">RH Command Center</h1>
-                <p class="text-slate-400 text-sm mt-1">Painel estratégico de recrutamento e indicadores de headcount.</p>
+                <p class="text-slate-400 text-sm mt-1">Indicadores integrados e atualizados via Google Sheets.</p>
             </div>
 
-            <div id="container-cards" class="grid grid-cols-5 gap-6 mb-10">
+            <div id="container-cards" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-10">
                 </div>
 
             <div class="grid grid-cols-12 gap-8">
-                <div class="col-span-7 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <h2 class="font-bold text-slate-800 mb-6 flex items-center gap-2">Vagas Abertas por Setor</h2>
+                <div class="col-span-12 lg:col-span-7 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="font-bold text-slate-800 mb-6">Vagas Abertas por Setor</h2>
                     <div class="h-[350px]"><canvas id="chartSetor"></canvas></div>
                 </div>
                 
-                <div class="col-span-5 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <h2 class="font-bold text-slate-800 mb-6">Contratações ao Longo do Tempo</h2>
+                <div class="col-span-12 lg:col-span-5 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="font-bold text-slate-800 mb-6">Evolução de Indicadores</h2>
                     <div class="h-[350px]"><canvas id="chartLinha"></canvas></div>
                 </div>
             </div>
@@ -90,67 +86,79 @@
     </main>
 
     <script>
+        // Link da sua planilha publicado como CSV
+        const urlPlanilha = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
+
         function carregarDados() {
-            Papa.parse("dados.csv?v=" + new Date().getTime(), {
-                download: true, header: true, skipEmptyLines: true, delimiter: ";",
+            Papa.parse(urlPlanilha, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
                 complete: function(results) {
                     const dados = results.data;
-                    
-                    // Lógica para Cards com cores do modelo
-                    const cards = dados.filter(d => d.Tipo === "Card");
-                    document.getElementById('container-cards').innerHTML = cards.map((c, index) => {
-                        const borderColor = index % 2 === 0 ? 'card-border-green' : 'card-border-red';
-                        const arrowColor = index % 2 === 0 ? 'text-green-500' : 'text-red-500';
-                        const arrowIcon = index % 2 === 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
-                        
-                        return `
-                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 ${borderColor}">
-                            <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">${c.Rotulo}</p>
-                            <div class="flex items-end justify-between">
-                                <h3 class="text-3xl font-bold text-slate-800">${c.Valor}</h3>
-                                <div class="${arrowColor} text-xs flex items-center gap-1 font-bold">
-                                    <i class="fas ${arrowIcon}"></i> 12%
-                                </div>
-                            </div>
-                        </div>`;
-                    }).join('');
-
-                    const setores = dados.filter(d => d.Tipo === "Setor");
-                    gerarGrafico('chartSetor', 'bar', setores.map(s => s.Rotulo), setores.map(s => s.Valor), '#8b5cf6', true);
-
-                    const linha = dados.filter(d => d.Tipo === "Linha");
-                    gerarGrafico('chartLinha', 'line', linha.map(l => l.Rotulo), linha.map(l => l.Valor), '#8b5cf6', false);
+                    renderizarInterface(dados);
                 }
             });
         }
 
-        function gerarGrafico(id, tipo, labels, valores, cor, isHorizontal) {
-            new Chart(document.getElementById(id), {
-                type: tipo,
+        function renderizarInterface(dados) {
+            // Renderizar Cards
+            const cards = dados.filter(d => d.Tipo === "Card");
+            document.getElementById('container-cards').innerHTML = cards.map((c, index) => {
+                const corBorda = index % 2 === 0 ? 'card-border-green' : 'card-border-red';
+                return `
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 ${corBorda}">
+                    <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">${c.Rotulo}</p>
+                    <div class="flex items-end justify-between">
+                        <h3 class="text-3xl font-bold text-slate-800">${c.Valor}</h3>
+                        <div class="text-green-500 text-xs font-bold"><i class="fas fa-arrow-trend-up"></i> 12%</div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            // Gráfico de Barras (Setores)
+            const dadosSetor = dados.filter(d => d.Tipo === "Setor");
+            new Chart(document.getElementById('chartSetor'), {
+                type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: dadosSetor.map(d => d.Rotulo),
                     datasets: [{
-                        data: valores,
-                        backgroundColor: isHorizontal ? '#8b5cf6' : 'rgba(139, 92, 246, 0.1)',
+                        data: dadosSetor.map(d => d.Valor),
+                        backgroundColor: '#8b5cf6',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // Gráfico de Linha (Evolução)
+            const dadosLinha = dados.filter(d => d.Tipo === "Linha");
+            new Chart(document.getElementById('chartLinha'), {
+                type: 'line',
+                data: {
+                    labels: dadosLinha.map(d => d.Rotulo),
+                    datasets: [{
+                        data: dadosLinha.map(d => d.Valor),
                         borderColor: '#8b5cf6',
-                        borderWidth: 2,
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
                         fill: true,
-                        borderRadius: 10,
                         tension: 0.4
                     }]
                 },
                 options: {
-                    indexAxis: isHorizontal ? 'y' : 'x',
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
-                        y: { grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8' } }
-                    }
+                    plugins: { legend: { display: false } }
                 }
             });
         }
+
+        // Inicia a carga dos dados
         carregarDados();
     </script>
 </body>

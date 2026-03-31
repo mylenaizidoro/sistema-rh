@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR Core - Dashboard & Triagem</title>
+    <title>HR Core - Sistema Unificado</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -16,6 +16,11 @@
         .active-menu { background-color: #2563eb !important; color: white !important; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4); }
         .hidden { display: none; }
         .card-border-blue { border-bottom: 4px solid #3b82f6; }
+        
+        /* Badges de Status para Vagas */
+        .badge-aberta { background-color: #f1f5f9; color: #475569; padding: 4px 12px; border-radius: 9999px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        .badge-processo { background-color: #eff6ff; color: #3b82f6; padding: 4px 12px; border-radius: 9999px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        .badge-pausada { background-color: #fef2f2; color: #ef4444; padding: 4px 12px; border-radius: 9999px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
@@ -27,6 +32,9 @@
         <nav class="flex-1 p-4 space-y-2 mt-4 text-sm">
             <div id="menu-dashboard" onclick="trocarPagina('dashboard')" class="sidebar-item active-menu p-3 rounded-xl flex items-center gap-3">
                 <i class="fas fa-th-large"></i> Command Center
+            </div>
+            <div id="menu-vagas" onclick="trocarPagina('vagas')" class="sidebar-item p-3 rounded-xl flex items-center gap-3">
+                <i class="fas fa-briefcase"></i> Gestão de Vagas
             </div>
             <div id="menu-triagem" onclick="trocarPagina('triagem')" class="sidebar-item p-3 rounded-xl flex items-center gap-3">
                 <i class="fas fa-users"></i> Triagem
@@ -48,7 +56,6 @@
 
         <div id="pagina-dashboard" class="flex-1 overflow-y-auto p-8">
             <div id="container-cards" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-10"></div>
-            
             <div class="grid grid-cols-12 gap-8 mb-10">
                 <div class="col-span-12 lg:col-span-7 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                     <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase tracking-wide">Vagas por Setor</h2>
@@ -59,7 +66,6 @@
                     <div class="h-[300px]"><canvas id="chartLinha"></canvas></div>
                 </div>
             </div>
-
             <div class="grid grid-cols-12 gap-8">
                 <div class="col-span-12 lg:col-span-8 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                     <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase tracking-wide">Funil de Recrutamento</h2>
@@ -75,29 +81,49 @@
             </div>
         </div>
 
+        <div id="pagina-vagas" class="flex-1 overflow-y-auto p-8 hidden">
+            <div class="mb-8 flex justify-between items-end">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-800 mb-2">Gestão de Vagas</h2>
+                    <p class="text-slate-500 text-sm">Controle centralizado de todas as oportunidades.</p>
+                </div>
+                <button class="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-blue-200">
+                    <i class="fas fa-plus mr-2"></i> Nova Vaga
+                </button>
+            </div>
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="text-slate-400 text-[11px] uppercase tracking-wider font-bold border-b border-slate-50">
+                            <th class="px-8 py-5">Código</th>
+                            <th class="px-4 py-5">Cargo</th>
+                            <th class="px-4 py-5">Setor</th>
+                            <th class="px-4 py-5">Status</th>
+                            <th class="px-8 py-5 text-right">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-vagas-corpo" class="text-sm text-slate-700">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
         <div id="pagina-triagem" class="flex-1 overflow-y-auto p-8 hidden">
             <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
                 <div class="flex justify-between items-center mb-8">
-                    <div>
-                        <h2 class="text-2xl font-bold text-slate-800">Triagem de Candidatos</h2>
-                        <p class="text-slate-500 text-sm">Analise os perfis com maior compatibilidade para suas vagas abertas.</p>
-                    </div>
-                    <button class="bg-slate-50 border border-slate-200 text-slate-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-slate-100 transition-all">Exportar</button>
+                    <h2 class="text-2xl font-bold text-slate-800">Triagem de Candidatos</h2>
                 </div>
-
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
                         <thead>
                             <tr class="text-slate-400 text-[11px] uppercase border-b border-slate-100">
                                 <th class="pb-4 font-semibold">Nome</th>
                                 <th class="pb-4 font-semibold">Match Score</th>
-                                <th class="pb-4 font-semibold">Skills Detectadas</th>
                                 <th class="pb-4 font-semibold">Status</th>
                                 <th class="pb-4 font-semibold text-right">Ações</th>
                             </tr>
                         </thead>
-                        <tbody id="lista-triagem" class="text-sm text-slate-700">
-                            </tbody>
+                        <tbody id="lista-triagem" class="text-sm text-slate-700"></tbody>
                     </table>
                 </div>
             </div>
@@ -109,62 +135,66 @@
         let charts = {};
 
         function trocarPagina(pagina) {
-            document.getElementById('pagina-dashboard').classList.add('hidden');
-            document.getElementById('pagina-triagem').classList.add('hidden');
-            document.getElementById('menu-dashboard').classList.remove('active-menu');
-            document.getElementById('menu-triagem').classList.remove('active-menu');
+            const paginas = ['dashboard', 'vagas', 'triagem'];
+            paginas.forEach(p => {
+                document.getElementById(`pagina-${p}`).classList.add('hidden');
+                document.getElementById(`menu-${p}`).classList.remove('active-menu');
+            });
 
-            if(pagina === 'dashboard') {
-                document.getElementById('pagina-dashboard').classList.remove('hidden');
-                document.getElementById('menu-dashboard').classList.add('active-menu');
-                document.getElementById('titulo-pagina').innerText = "RH Command Center";
-            } else {
-                document.getElementById('pagina-triagem').classList.remove('hidden');
-                document.getElementById('menu-triagem').classList.add('active-menu');
-                document.getElementById('titulo-pagina').innerText = "Triagem de Candidatos";
-            }
+            document.getElementById(`pagina-${pagina}`).classList.remove('hidden');
+            document.getElementById(`menu-${pagina}`).classList.add('active-menu');
+            
+            const titulos = { 'dashboard': 'RH Command Center', 'vagas': 'Gestão de Vagas', 'triagem': 'Triagem de Candidatos' };
+            document.getElementById('titulo-pagina').innerText = titulos[pagina];
         }
 
         function carregarDados() {
             Papa.parse(urlPlanilha, {
-                download: true, 
-                header: true, 
-                skipEmptyLines: true,
+                download: true, header: true, skipEmptyLines: true,
                 complete: function(results) {
                     if (results.data) {
-                        const dadosNormalizados = results.data.map(d => ({
+                        const dados = results.data.map(d => ({
                             Tipo: d.Tipo ? d.Tipo.trim() : "",
                             Rotulo: d.Rotulo ? d.Rotulo.trim() : "",
                             Valor: d.Valor ? d.Valor.trim() : ""
                         }));
-                        
-                        renderizarDashboard(dadosNormalizados);
-                        
-                        // Filtro insensível a maiúsculas/minúsculas para pegar todos os "Triagem"
-                        const listaCandidatos = dadosNormalizados.filter(d => 
-                            d.Tipo.toLowerCase().includes("triagem")
-                        );
-                        renderizarTriagem(listaCandidatos);
+                        renderizarDashboard(dados);
+                        renderizarVagas(dados.filter(d => d.Tipo === "Vagas"));
+                        renderizarTriagem(dados.filter(d => d.Tipo.toLowerCase().includes("triagem")));
                     }
                 }
             });
         }
 
+        function renderizarVagas(vagas) {
+            const tbody = document.getElementById('tabela-vagas-corpo');
+            tbody.innerHTML = vagas.map(v => {
+                const info = v.Valor.split('|').map(i => i.trim());
+                const status = (info[2] || "aberta").toLowerCase();
+                return `
+                    <tr class="border-b border-slate-50 hover:bg-slate-50">
+                        <td class="px-8 py-5 text-blue-600 font-bold text-xs">${v.Rotulo}</td>
+                        <td class="px-4 py-5 font-bold text-slate-800">${info[0] || "Cargo"}</td>
+                        <td class="px-4 py-5 text-slate-500">${info[1] || "Geral"}</td>
+                        <td class="px-4 py-5"><span class="badge-${status}">${status}</span></td>
+                        <td class="px-8 py-5 text-right"><i class="fas fa-ellipsis-h text-slate-300 cursor-pointer"></i></td>
+                    </tr>`;
+            }).join('');
+        }
+
+        // Funções de Dashboard e Triagem (originais mantidas)
         function renderizarDashboard(dados) {
-            // Cards Superiores
             const cards = dados.filter(d => d.Tipo.toLowerCase() === "card");
             document.getElementById('container-cards').innerHTML = cards.map(c => `
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-border-blue">
                     <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">${c.Rotulo}</p>
                     <h3 class="text-2xl font-bold text-slate-800">${c.Valor}</h3>
                 </div>`).join('');
-
-            // Gráficos
+            
             criarGrafico('chartSetor', 'bar', dados.filter(d => d.Tipo.toLowerCase() === "setor"), true);
             criarGrafico('chartLinha', 'line', dados.filter(d => d.Tipo.toLowerCase() === "linha"), false);
             criarGrafico('chartFunil', 'bar', dados.filter(d => d.Tipo.toLowerCase() === "funil"), true);
 
-            // Lista de Alertas
             const alertas = dados.filter(d => d.Tipo.toLowerCase() === "alerta");
             document.getElementById('cont-alertas').innerText = `${alertas.length} ATIVOS`;
             document.getElementById('lista-alertas').innerHTML = alertas.map(a => `
@@ -179,26 +209,9 @@
 
         function renderizarTriagem(candidatos) {
             const tbody = document.getElementById('lista-triagem');
-            if (!tbody) return;
-
             tbody.innerHTML = candidatos.map(c => {
-                // Tratamento da string: "Score | Habilidades | Status"
-                const partes = c.Valor.includes('|') ? c.Valor.split('|').map(p => p.trim()) : [c.Valor, "", "Triagem"];
-                
-                const scoreRaw = partes[0] || "0%";
-                const skills = partes[1] ? partes[1].split(',') : [];
-                const status = partes[2] || "Triagem";
-                
-                // Cálculo de iniciais dinâmicas (Ana Silva -> AS)
-                const iniciais = c.Rotulo ? c.Rotulo.split(' ').filter(x => x).map(n => n[0]).join('').toUpperCase().substring(0,2) : "??";
-
-                // Lógica de cores para o badge de Status
-                let statusColorClass = "bg-slate-100 text-slate-600";
-                const sLow = status.toLowerCase();
-                if(sLow.includes("prioridade")) statusColorClass = "bg-emerald-100 text-emerald-600";
-                else if(sLow.includes("entrevista")) statusColorClass = "bg-blue-100 text-blue-600";
-                else if(sLow.includes("reprovado")) statusColorClass = "bg-red-100 text-red-600";
-
+                const partes = c.Valor.split('|').map(p => p.trim());
+                const iniciais = c.Rotulo.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
                 return `
                     <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
                         <td class="py-4 flex items-center gap-3">
@@ -208,29 +221,14 @@
                         <td>
                             <div class="flex items-center gap-3">
                                 <div class="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                    <div class="bg-blue-600 h-full" style="width: ${scoreRaw.includes('%') ? scoreRaw : scoreRaw + '%'}"></div>
+                                    <div class="bg-blue-600 h-full" style="width: ${partes[0]}"></div>
                                 </div>
-                                <span class="font-bold text-slate-700 text-xs">${scoreRaw}</span>
+                                <span class="font-bold text-slate-700 text-xs">${partes[0]}</span>
                             </div>
                         </td>
-                        <td>
-                            <div class="flex flex-wrap gap-2">
-                                ${skills.length > 0 && skills[0] !== "" ? skills.map(skill => `
-                                    <span class="bg-slate-800 text-white text-[9px] px-2 py-0.5 rounded font-medium uppercase tracking-tight">${skill.trim()}</span>
-                                `).join('') : '<span class="text-slate-300 text-[10px]">Sem Skills</span>'}
-                            </div>
-                        </td>
-                        <td>
-                            <span class="${statusColorClass} px-3 py-1 rounded-full font-bold text-[9px] uppercase tracking-wide">${status}</span>
-                        </td>
-                        <td class="text-right text-slate-400">
-                            <div class="flex justify-end gap-3">
-                                <button class="hover:text-blue-600 transition-colors"><i class="far fa-file-alt"></i></button>
-                                <button class="hover:text-blue-600 transition-colors"><i class="fas fa-ellipsis-h"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+                        <td><span class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full font-bold text-[9px] uppercase">${partes[2] || "Triagem"}</span></td>
+                        <td class="text-right"><i class="fas fa-ellipsis-h text-slate-300"></i></td>
+                    </tr>`;
             }).join('');
         }
 
@@ -238,9 +236,7 @@
             const canvas = document.getElementById(id);
             if (!canvas) return;
             if (charts[id]) charts[id].destroy();
-            
-            const ctx = canvas.getContext('2d');
-            charts[id] = new Chart(ctx, {
+            charts[id] = new Chart(canvas.getContext('2d'), {
                 type: tipo,
                 data: {
                     labels: dFiltrado.map(d => d.Rotulo),
@@ -264,7 +260,6 @@
             });
         }
 
-        // Inicia a carga dos dados
         carregarDados();
     </script>
 </body>

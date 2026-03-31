@@ -1,114 +1,82 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Indicadores - Coplac Curitiba</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
-        .card-top { border-top: 4px solid #ef4444; }
-    </style>
-</head>
-<body class="p-4 md:p-8">
+<script>
+    // 1. EIXO X: Todos os meses da sua planilha
+    const mesesLabels = [
+        '02/25', '03/25', '04/25', '05/25', '06/25', '07/25', 
+        '08/25', '09/25', '10/25', '11/25', '12/25', '01/26', '02/26'
+    ];
+    
+    // 2. DADOS TURNOVER: Valores da linha 3 da planilha
+    const dadosTurnover = [
+        3.04, 6.40, 4.34, 3.70, 2.27, 2.90, 
+        3.06, 3.91, 3.49, 3.31, 3.06, 3.82, 3.23
+    ];
+    
+    // 3. DADOS ABSENTEÍSMO: Valores da linha 7 da planilha
+    const dadosAbsenteismo = [
+        3.41, 4.35, 4.65, 4.61, 4.84, 3.96, 
+        4.88, 5.16, 5.01, 4.49, 5.97, 3.38, 3.33
+    ];
 
-    <div class="max-w-6xl mx-auto">
-        <header class="bg-white p-6 rounded-2xl shadow-sm mb-8 flex justify-between items-center">
-            <div>
-                <h1 class="text-2xl font-bold text-slate-800">Painel de Indicadores - DHO + RH</h1>
-                <p class="text-emerald-600 font-bold text-sm">Acesso Restrito: Dados Confidenciais de RH</p>
-            </div>
-            <div class="text-right">
-                <span class="text-xs font-bold text-slate-400 uppercase">Unidade</span>
-                <p class="font-bold text-slate-700">Curitiba</p>
-            </div>
-        </header>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-2xl shadow-sm card-top">
-                <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">Turnover PA-03 (Fev/26)</p>
-                <div class="flex items-center justify-between">
-                    <h3 class="text-3xl font-bold text-slate-800">3,23%</h3>
-                    <span class="bg-emerald-100 text-emerald-600 text-[10px] px-2 py-1 rounded-full font-bold">Meta ≤ 4%</span>
-                </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-2xl shadow-sm card-top" style="border-color: #3b82f6;">
-                <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">Absenteísmo (Fev/26)</p>
-                <div class="flex items-center justify-between">
-                    <h3 class="text-3xl font-bold text-slate-800">3,33%</h3>
-                    <span class="bg-emerald-100 text-emerald-600 text-[10px] px-2 py-1 rounded-full font-bold">Meta ≤ 4%</span>
-                </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-2xl shadow-sm card-top" style="border-color: #10b981;">
-                <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">Horas de Treinamento</p>
-                <div class="flex items-center justify-between">
-                    <h3 class="text-3xl font-bold text-slate-800">545h</h3>
-                    <span class="bg-blue-100 text-blue-600 text-[10px] px-2 py-1 rounded-full font-bold">Meta 430h</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white p-8 rounded-3xl shadow-sm mb-8">
-            <h4 class="text-slate-700 font-bold mb-6 italic">Evolução Mensal - Histórico 2025/2026</h4>
-            <div class="h-[400px]">
-                <canvas id="graficoEvolucao"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Lógica de Dados baseada na sua planilha
-        const mesesLabels = ['Out/25', 'Nov/25', 'Dez/25', 'Jan/26', 'Fev/26'];
-        
-        // Dados da Linha 3 (Turnover)
-        const dadosTurnover = [3.49, 3.31, 3.06, 3.82, 3.23];
-        
-        // Dados da Linha 7 (Absenteísmo)
-        const dadosAbsenteismo = [5.01, 4.49, 5.97, 3.38, 3.33];
-
-        const ctx = document.getElementById('graficoEvolucao').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: mesesLabels,
-                datasets: [
-                    {
-                        label: 'Turnover %',
-                        data: dadosTurnover,
-                        borderColor: '#ef4444',
-                        backgroundColor: '#ef444422',
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 5
-                    },
-                    {
-                        label: 'Absenteísmo %',
-                        data: dadosAbsenteismo,
-                        borderColor: '#3b82f6',
-                        borderDash: [5, 5], // Linha tracejada para diferenciar
-                        tension: 0.4,
-                        pointRadius: 5
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'bottom' }
+    const ctx = document.getElementById('graficoEvolucao').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: mesesLabels,
+            datasets: [
+                {
+                    label: 'Turnover %',
+                    data: dadosTurnover,
+                    borderColor: '#ef4444', // Vermelho
+                    backgroundColor: '#ef444411',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    borderWidth: 3
                 },
-                scales: {
-                    y: { 
-                        beginAtZero: false,
-                        title: { display: true, text: 'Percentual (%)' }
+                {
+                    label: 'Absenteísmo %',
+                    data: dadosAbsenteismo,
+                    borderColor: '#3b82f6', // Azul
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    borderWidth: 3,
+                    borderDash: [5, 5] // Linha tracejada para diferenciar
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { 
+                    position: 'bottom',
+                    labels: { boxWidth: 20, font: { size: 12, weight: 'bold' } }
+                },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    padding: 12,
+                    bodyFont: { size: 14 },
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.raw.toFixed(2) + '%';
+                        }
                     }
                 }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 10, weight: 'bold' } }
+                },
+                y: { 
+                    beginAtZero: true,
+                    suggestedMax: 7,
+                    title: { display: true, text: 'Percentual (%)', font: { weight: 'bold' } },
+                    ticks: { callback: value => value + '%' }
+                }
             }
-        });
-    </script>
-</body>
-</html>
+        }
+    });
+</script>

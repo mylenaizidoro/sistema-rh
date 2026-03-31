@@ -1,0 +1,31 @@
+name: Atualizacao Automatica Dashboard RH
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Roda a cada hora
+  workflow_dispatch:      # Botão para rodar manualmente
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do codigo
+        uses: actions/checkout@v3
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Instalar Bibliotecas
+        run: pip install pandas plotly requests
+
+      - name: Gerar Grafico
+        # IMPORTANTE: Se o seu arquivo de código se chamar outro nome, mude 'script.py' abaixo
+        run: python script.py 
+
+      - name: Publicar no GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./

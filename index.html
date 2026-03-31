@@ -1,266 +1,162 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR Core - Sistema Unificado</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        .sidebar-item { cursor: pointer; transition: 0.3s; color: #94a3b8; }
-        .sidebar-item:hover { background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-        .active-menu { background-color: #2563eb !important; color: white !important; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4); }
-        .hidden { display: none; }
-        .card-border-blue { border-bottom: 4px solid #3b82f6; }
+<script>
+    const urlPlanilha = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?gid=1728295734&single=true&output=csv";
+    let charts = {};
+
+    function trocarPagina(pagina) {
+        const paginas = ['dashboard', 'vagas', 'triagem'];
+        paginas.forEach(p => {
+            document.getElementById(`pagina-${p}`).classList.add('hidden');
+            document.getElementById(`menu-${p}`).classList.remove('active-menu');
+        });
+
+        document.getElementById(`pagina-${pagina}`).classList.remove('hidden');
+        document.getElementById(`menu-${pagina}`).classList.add('active-menu');
         
-        /* Badges de Status para Vagas */
-        .badge-aberta { background-color: #f1f5f9; color: #475569; padding: 4px 12px; border-radius: 9999px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-        .badge-processo { background-color: #eff6ff; color: #3b82f6; padding: 4px 12px; border-radius: 9999px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-        .badge-pausada { background-color: #fef2f2; color: #ef4444; padding: 4px 12px; border-radius: 9999px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-    </style>
-</head>
-<body class="flex h-screen overflow-hidden">
+        const titulos = { 'dashboard': 'RH Command Center', 'vagas': 'Gestão de Vagas', 'triagem': 'Triagem de Candidatos' };
+        document.getElementById('titulo-pagina').innerText = titulos[pagina];
+    }
 
-    <aside class="w-64 bg-[#0a1629] text-white flex flex-col shadow-2xl z-10">
-        <div class="p-6 text-2xl font-bold border-b border-slate-700 flex items-center gap-3">
-            <div class="bg-blue-600 p-2 rounded-lg text-xs italic text-white text-center w-8 h-8 flex items-center justify-center">R</div> HR Core
-        </div>
-        <nav class="flex-1 p-4 space-y-2 mt-4 text-sm">
-            <div id="menu-dashboard" onclick="trocarPagina('dashboard')" class="sidebar-item active-menu p-3 rounded-xl flex items-center gap-3">
-                <i class="fas fa-th-large"></i> Command Center
-            </div>
-            <div id="menu-vagas" onclick="trocarPagina('vagas')" class="sidebar-item p-3 rounded-xl flex items-center gap-3">
-                <i class="fas fa-briefcase"></i> Gestão de Vagas
-            </div>
-            <div id="menu-triagem" onclick="trocarPagina('triagem')" class="sidebar-item p-3 rounded-xl flex items-center gap-3">
-                <i class="fas fa-users"></i> Triagem
-            </div>
-        </nav>
-    </aside>
+    function carregarDados() {
+        Papa.parse(urlPlanilha, {
+            download: true, 
+            header: true, 
+            skipEmptyLines: true,
+            complete: function(results) {
+                if (results.data) {
+                    const dados = results.data.map(d => ({
+                        Tipo: d.Tipo ? d.Tipo.trim() : "",
+                        Rotulo: d.Rotulo ? d.Rotulo.trim() : "",
+                        Valor: d.Valor ? d.Valor.trim() : ""
+                    }));
 
-    <main class="flex-1 flex flex-col overflow-hidden">
-        <header class="h-20 bg-white border-b flex items-center justify-between px-8 shadow-sm">
-            <h1 id="titulo-pagina" class="text-xl font-bold text-slate-800">RH Command Center</h1>
-            <div class="flex items-center gap-3">
-                <div class="text-right">
-                    <p class="text-sm font-bold text-slate-800">Mylena Izidoro</p>
-                    <p class="text-[10px] text-slate-400 uppercase font-bold">Diretora de RH</p>
-                </div>
-                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">MI</div>
-            </div>
-        </header>
+                    // 1. Renderiza o Painel Principal
+                    renderizarDashboard(dados);
 
-        <div id="pagina-dashboard" class="flex-1 overflow-y-auto p-8">
-            <div id="container-cards" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-10"></div>
-            <div class="grid grid-cols-12 gap-8 mb-10">
-                <div class="col-span-12 lg:col-span-7 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase tracking-wide">Vagas por Setor</h2>
-                    <div class="h-[300px]"><canvas id="chartSetor"></canvas></div>
-                </div>
-                <div class="col-span-12 lg:col-span-5 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase tracking-wide">Evolução Mensal</h2>
-                    <div class="h-[300px]"><canvas id="chartLinha"></canvas></div>
-                </div>
-            </div>
-            <div class="grid grid-cols-12 gap-8">
-                <div class="col-span-12 lg:col-span-8 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase tracking-wide">Funil de Recrutamento</h2>
-                    <div class="h-[350px]"><canvas id="chartFunil"></canvas></div>
-                </div>
-                <div class="col-span-12 lg:col-span-4 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="font-bold text-slate-800 text-sm uppercase tracking-wide">Painel de Alertas</h2>
-                        <span id="cont-alertas" class="bg-blue-100 text-blue-600 text-[10px] px-2 py-1 rounded-full font-bold uppercase">0 Ativos</span>
-                    </div>
-                    <div id="lista-alertas" class="space-y-4"></div>
-                </div>
-            </div>
-        </div>
+                    // 2. Filtra e Renderiza as Vagas (Baseado na sua nova planilha)
+                    const listaVagas = dados.filter(d => d.Tipo === "Vagas");
+                    renderizarVagas(listaVagas);
 
-        <div id="pagina-vagas" class="flex-1 overflow-y-auto p-8 hidden">
-            <div class="mb-8 flex justify-between items-end">
+                    // 3. Renderiza a Triagem
+                    renderizarTriagem(dados.filter(d => d.Tipo === "Triagem"));
+                }
+            }
+        });
+    }
+
+    function renderizarVagas(vagas) {
+        const tbody = document.getElementById('tabela-vagas-corpo');
+        
+        // Mapeamento manual conforme sua planilha (VAG-001, VAG-002, VAG-003)
+        // Isso garante que cada vaga pegue seu respectivo Cargo, Setor e Status
+        const setoresMap = { "VAG-001": "Produção", "VAG-002": "Logística", "VAG-003": "Tecnologia" };
+        const statusMap = { "VAG-001": "aberta", "VAG-002": "processo", "VAG-003": "aberta" };
+
+        tbody.innerHTML = vagas.map(v => {
+            const codigo = v.Rotulo; // VAG-001, etc
+            const cargo = v.Valor;   // Analista de Produção, etc
+            const setor = setoresMap[codigo] || "Geral";
+            const status = statusMap[codigo] || "aberta";
+
+            return `
+                <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                    <td class="px-8 py-5 text-blue-600 font-bold text-xs">${codigo}</td>
+                    <td class="px-4 py-5 font-bold text-slate-800">${cargo}</td>
+                    <td class="px-4 py-5 text-slate-500">${setor}</td>
+                    <td class="px-4 py-5">
+                        <span class="badge-${status}">${status}</span>
+                    </td>
+                    <td class="px-8 py-5 text-right">
+                        <div class="flex justify-end gap-3 text-slate-300">
+                            <i class="fas fa-edit cursor-pointer hover:text-blue-500"></i>
+                            <i class="fas fa-ellipsis-h cursor-pointer"></i>
+                        </div>
+                    </td>
+                </tr>`;
+        }).join('');
+    }
+
+    function renderizarDashboard(dados) {
+        // Cards de topo
+        const cards = dados.filter(d => d.Tipo === "Card");
+        document.getElementById('container-cards').innerHTML = cards.map(c => `
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-border-blue">
+                <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">${c.Rotulo}</p>
+                <h3 class="text-2xl font-bold text-slate-800">${c.Valor}</h3>
+            </div>`).join('');
+        
+        // Gráficos
+        criarGrafico('chartSetor', 'bar', dados.filter(d => d.Tipo === "Setor"), true);
+        criarGrafico('chartLinha', 'line', dados.filter(d => d.Tipo === "Linha"), false);
+        criarGrafico('chartFunil', 'bar', dados.filter(d => d.Tipo === "Funil"), true);
+
+        // Alertas
+        const alertas = dados.filter(d => d.Tipo === "Alerta");
+        document.getElementById('cont-alertas').innerText = `${alertas.length} ATIVOS`;
+        document.getElementById('lista-alertas').innerHTML = alertas.map(a => `
+            <div class="p-4 bg-orange-50 rounded-2xl flex gap-4 items-start border border-orange-100">
+                <div class="bg-white p-2 rounded-lg text-orange-500 shadow-sm"><i class="fas fa-exclamation-circle text-xs"></i></div>
                 <div>
-                    <h2 class="text-3xl font-bold text-slate-800 mb-2">Gestão de Vagas</h2>
-                    <p class="text-slate-500 text-sm">Controle centralizado de todas as oportunidades.</p>
+                    <p class="text-[11px] font-bold text-slate-800">${a.Rotulo}</p>
+                    <p class="text-[10px] text-slate-500 font-semibold uppercase">${a.Valor}</p>
                 </div>
-                <button class="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-blue-200">
-                    <i class="fas fa-plus mr-2"></i> Nova Vaga
-                </button>
-            </div>
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-                <table class="w-full text-left">
-                    <thead>
-                        <tr class="text-slate-400 text-[11px] uppercase tracking-wider font-bold border-b border-slate-50">
-                            <th class="px-8 py-5">Código</th>
-                            <th class="px-4 py-5">Cargo</th>
-                            <th class="px-4 py-5">Setor</th>
-                            <th class="px-4 py-5">Status</th>
-                            <th class="px-8 py-5 text-right">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabela-vagas-corpo" class="text-sm text-slate-700">
-                        </tbody>
-                </table>
-            </div>
-        </div>
+            </div>`).join('');
+    }
 
-        <div id="pagina-triagem" class="flex-1 overflow-y-auto p-8 hidden">
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
-                <div class="flex justify-between items-center mb-8">
-                    <h2 class="text-2xl font-bold text-slate-800">Triagem de Candidatos</h2>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="text-slate-400 text-[11px] uppercase border-b border-slate-100">
-                                <th class="pb-4 font-semibold">Nome</th>
-                                <th class="pb-4 font-semibold">Match Score</th>
-                                <th class="pb-4 font-semibold">Status</th>
-                                <th class="pb-4 font-semibold text-right">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="lista-triagem" class="text-sm text-slate-700"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <script>
-        const urlPlanilha = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?gid=1728295734&single=true&output=csv";
-        let charts = {};
-
-        function trocarPagina(pagina) {
-            const paginas = ['dashboard', 'vagas', 'triagem'];
-            paginas.forEach(p => {
-                document.getElementById(`pagina-${p}`).classList.add('hidden');
-                document.getElementById(`menu-${p}`).classList.remove('active-menu');
-            });
-
-            document.getElementById(`pagina-${pagina}`).classList.remove('hidden');
-            document.getElementById(`menu-${pagina}`).classList.add('active-menu');
+    function renderizarTriagem(candidatos) {
+        const tbody = document.getElementById('lista-triagem');
+        tbody.innerHTML = candidatos.map(c => {
+            const partes = c.Valor.split('|').map(p => p.trim());
+            const score = partes[0] || "0%";
+            const status = partes[2] || "Triagem";
+            const iniciais = c.Rotulo.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
             
-            const titulos = { 'dashboard': 'RH Command Center', 'vagas': 'Gestão de Vagas', 'triagem': 'Triagem de Candidatos' };
-            document.getElementById('titulo-pagina').innerText = titulos[pagina];
-        }
-
-        function carregarDados() {
-            Papa.parse(urlPlanilha, {
-                download: true, header: true, skipEmptyLines: true,
-                complete: function(results) {
-                    if (results.data) {
-                        const dados = results.data.map(d => ({
-                            Tipo: d.Tipo ? d.Tipo.trim() : "",
-                            Rotulo: d.Rotulo ? d.Rotulo.trim() : "",
-                            Valor: d.Valor ? d.Valor.trim() : ""
-                        }));
-                        renderizarDashboard(dados);
-                        renderizarVagas(dados.filter(d => d.Tipo === "Vagas"));
-                        renderizarTriagem(dados.filter(d => d.Tipo.toLowerCase().includes("triagem")));
-                    }
-                }
-            });
-        }
-
-        function renderizarVagas(vagas) {
-            const tbody = document.getElementById('tabela-vagas-corpo');
-            tbody.innerHTML = vagas.map(v => {
-                const info = v.Valor.split('|').map(i => i.trim());
-                const status = (info[2] || "aberta").toLowerCase();
-                return `
-                    <tr class="border-b border-slate-50 hover:bg-slate-50">
-                        <td class="px-8 py-5 text-blue-600 font-bold text-xs">${v.Rotulo}</td>
-                        <td class="px-4 py-5 font-bold text-slate-800">${info[0] || "Cargo"}</td>
-                        <td class="px-4 py-5 text-slate-500">${info[1] || "Geral"}</td>
-                        <td class="px-4 py-5"><span class="badge-${status}">${status}</span></td>
-                        <td class="px-8 py-5 text-right"><i class="fas fa-ellipsis-h text-slate-300 cursor-pointer"></i></td>
-                    </tr>`;
-            }).join('');
-        }
-
-        // Funções de Dashboard e Triagem (originais mantidas)
-        function renderizarDashboard(dados) {
-            const cards = dados.filter(d => d.Tipo.toLowerCase() === "card");
-            document.getElementById('container-cards').innerHTML = cards.map(c => `
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-border-blue">
-                    <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">${c.Rotulo}</p>
-                    <h3 class="text-2xl font-bold text-slate-800">${c.Valor}</h3>
-                </div>`).join('');
-            
-            criarGrafico('chartSetor', 'bar', dados.filter(d => d.Tipo.toLowerCase() === "setor"), true);
-            criarGrafico('chartLinha', 'line', dados.filter(d => d.Tipo.toLowerCase() === "linha"), false);
-            criarGrafico('chartFunil', 'bar', dados.filter(d => d.Tipo.toLowerCase() === "funil"), true);
-
-            const alertas = dados.filter(d => d.Tipo.toLowerCase() === "alerta");
-            document.getElementById('cont-alertas').innerText = `${alertas.length} ATIVOS`;
-            document.getElementById('lista-alertas').innerHTML = alertas.map(a => `
-                <div class="p-4 bg-orange-50 rounded-2xl flex gap-4 items-start border border-orange-100">
-                    <div class="bg-white p-2 rounded-lg text-orange-500 shadow-sm"><i class="fas fa-exclamation-circle text-xs"></i></div>
-                    <div>
-                        <p class="text-[11px] font-bold text-slate-800">${a.Rotulo}</p>
-                        <p class="text-[10px] text-slate-500 font-semibold uppercase">${a.Valor}</p>
-                    </div>
-                </div>`).join('');
-        }
-
-        function renderizarTriagem(candidatos) {
-            const tbody = document.getElementById('lista-triagem');
-            tbody.innerHTML = candidatos.map(c => {
-                const partes = c.Valor.split('|').map(p => p.trim());
-                const iniciais = c.Rotulo.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
-                return `
-                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                        <td class="py-4 flex items-center gap-3">
-                            <div class="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 font-bold text-xs">${iniciais}</div>
-                            <span class="font-semibold text-slate-800 text-sm">${c.Rotulo}</span>
-                        </td>
-                        <td>
-                            <div class="flex items-center gap-3">
-                                <div class="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                    <div class="bg-blue-600 h-full" style="width: ${partes[0]}"></div>
-                                </div>
-                                <span class="font-bold text-slate-700 text-xs">${partes[0]}</span>
+            return `
+                <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                    <td class="py-4 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 font-bold text-xs">${iniciais}</div>
+                        <span class="font-semibold text-slate-800 text-sm">${c.Rotulo}</span>
+                    </td>
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <div class="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="bg-blue-600 h-full" style="width: ${score}"></div>
                             </div>
-                        </td>
-                        <td><span class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full font-bold text-[9px] uppercase">${partes[2] || "Triagem"}</span></td>
-                        <td class="text-right"><i class="fas fa-ellipsis-h text-slate-300"></i></td>
-                    </tr>`;
-            }).join('');
-        }
+                            <span class="font-bold text-slate-700 text-xs">${score}</span>
+                        </div>
+                    </td>
+                    <td><span class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full font-bold text-[9px] uppercase">${status}</span></td>
+                    <td class="text-right"><i class="fas fa-ellipsis-h text-slate-300"></i></td>
+                </tr>`;
+        }).join('');
+    }
 
-        function criarGrafico(id, tipo, dFiltrado, isHorizontal) {
-            const canvas = document.getElementById(id);
-            if (!canvas) return;
-            if (charts[id]) charts[id].destroy();
-            charts[id] = new Chart(canvas.getContext('2d'), {
-                type: tipo,
-                data: {
-                    labels: dFiltrado.map(d => d.Rotulo),
-                    datasets: [{
-                        data: dFiltrado.map(d => d.Valor.replace('%', '').replace(',', '.')),
-                        backgroundColor: '#4f46e5',
-                        borderRadius: 6,
-                        barThickness: 20
-                    }]
-                },
-                options: {
-                    indexAxis: isHorizontal ? 'y' : 'x',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-                        y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } }
-                    }
+    function criarGrafico(id, tipo, dFiltrado, isHorizontal) {
+        const canvas = document.getElementById(id);
+        if (!canvas) return;
+        if (charts[id]) charts[id].destroy();
+        charts[id] = new Chart(canvas.getContext('2d'), {
+            type: tipo,
+            data: {
+                labels: dFiltrado.map(d => d.Rotulo),
+                datasets: [{
+                    data: dFiltrado.map(d => d.Valor.replace('%', '').replace(',', '.')),
+                    backgroundColor: '#4f46e5',
+                    borderRadius: 6,
+                    barThickness: 20
+                }]
+            },
+            options: {
+                indexAxis: isHorizontal ? 'y' : 'x',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                    y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } }
                 }
-            });
-        }
+            }
+        });
+    }
 
-        carregarDados();
-    </script>
-</body>
-</html>
+    carregarDados();
+</script>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR Core - Gestão de Vagas</title>
+    <title>HR Core - Dashboard & Triagem</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -13,162 +13,258 @@
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         .sidebar-item { cursor: pointer; transition: 0.3s; color: #94a3b8; }
         .sidebar-item:hover { background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-        .active-menu { background-color: #2563eb !important; color: white !important; }
+        .active-menu { background-color: #2563eb !important; color: white !important; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4); }
         .hidden { display: none; }
-        
-        /* Estilos de Status conforme as imagens */
-        .badge-aberta { background-color: #f1f5f9; color: #475569; padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
-        .badge-processo { background-color: #eff6ff; color: #3b82f6; padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
-        .badge-pausada { background-color: #fef2f2; color: #ef4444; padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
-        
-        tr.vaga-row { border-bottom: 1px solid #f1f5f9; transition: all 0.2s; }
-        tr.vaga-row:hover { background-color: #f8fafc; }
+        .card-border-blue { border-bottom: 4px solid #3b82f6; }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
 
     <aside class="w-64 bg-[#0a1629] text-white flex flex-col shadow-2xl z-10">
         <div class="p-6 text-2xl font-bold border-b border-slate-700 flex items-center gap-3">
-            <div class="bg-blue-600 p-2 rounded-lg text-white w-8 h-8 flex items-center justify-center italic">R</div> HR Core
+            <div class="bg-blue-600 p-2 rounded-lg text-xs italic text-white text-center w-8 h-8 flex items-center justify-center">R</div> HR Core
         </div>
         <nav class="flex-1 p-4 space-y-2 mt-4 text-sm">
-            <div onclick="trocarPagina('dashboard')" id="menu-dashboard" class="sidebar-item p-3 rounded-xl flex items-center gap-3 active-menu">
-                <i class="fas fa-th-large w-5 text-center"></i> Command Center
+            <div id="menu-dashboard" onclick="trocarPagina('dashboard')" class="sidebar-item active-menu p-3 rounded-xl flex items-center gap-3">
+                <i class="fas fa-th-large"></i> Command Center
             </div>
-            <div class="pt-2">
-                <div class="p-3 text-slate-500 uppercase text-[10px] font-bold tracking-widest flex justify-between items-center">
-                    Recrutamento <i class="fas fa-chevron-down text-[8px]"></i>
-                </div>
-                <div onclick="trocarPagina('dashboard')" class="sidebar-item p-3 pl-11 rounded-xl">Dashboard</div>
-                <div onclick="trocarPagina('vagas')" id="menu-vagas" class="sidebar-item p-3 pl-11 rounded-xl">Vagas</div>
-                <div class="sidebar-item p-3 pl-11 rounded-xl">Pipeline</div>
-            </div>
-            <div onclick="trocarPagina('triagem')" id="menu-triagem" class="sidebar-item p-3 rounded-xl flex items-center gap-3">
-                <i class="fas fa-users w-5 text-center"></i> Triagem
+            <div id="menu-triagem" onclick="trocarPagina('triagem')" class="sidebar-item p-3 rounded-xl flex items-center gap-3">
+                <i class="fas fa-users"></i> Triagem
             </div>
         </nav>
     </aside>
 
     <main class="flex-1 flex flex-col overflow-hidden">
         <header class="h-20 bg-white border-b flex items-center justify-between px-8 shadow-sm">
-            <div class="flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-full border border-slate-100 w-96">
-                <i class="fas fa-search text-slate-400 text-sm"></i>
-                <input type="text" placeholder="Pesquisar..." class="bg-transparent border-none outline-none text-sm w-full">
-            </div>
-            <div class="flex items-center gap-4">
+            <h1 id="titulo-pagina" class="text-xl font-bold text-slate-800">RH Command Center</h1>
+            <div class="flex items-center gap-3">
                 <div class="text-right">
                     <p class="text-sm font-bold text-slate-800">Mylena Izidoro</p>
                     <p class="text-[10px] text-slate-400 uppercase font-bold">Diretora de RH</p>
                 </div>
-                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold border-2 border-white shadow-sm">MI</div>
+                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">MI</div>
             </div>
         </header>
 
-        <div id="pagina-vagas" class="flex-1 overflow-y-auto p-8 hidden">
-            <div class="mb-8 flex justify-between items-end">
-                <div>
-                    <h2 class="text-3xl font-bold text-slate-800 mb-2">Gestão de Vagas</h2>
-                    <p class="text-slate-500 text-sm">Controle centralizado de todas as oportunidades em aberto.</p>
+        <div id="pagina-dashboard" class="flex-1 overflow-y-auto p-8">
+            <div id="container-cards" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-10"></div>
+            
+            <div class="grid grid-cols-12 gap-8 mb-10">
+                <div class="col-span-12 lg:col-span-7 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase tracking-wide">Vagas por Setor</h2>
+                    <div class="h-[300px]"><canvas id="chartSetor"></canvas></div>
                 </div>
-                <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 transition-all flex items-center gap-2">
-                    <i class="fas fa-plus"></i> Nova Vaga
-                </button>
+                <div class="col-span-12 lg:col-span-5 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase tracking-wide">Evolução Mensal</h2>
+                    <div class="h-[300px]"><canvas id="chartLinha"></canvas></div>
+                </div>
             </div>
 
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-                <div class="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
-                    <div class="relative w-1/3">
-                        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                        <input type="text" placeholder="Pesquisar por cargo ou código..." class="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-400 text-sm">
-                    </div>
-                    <button class="flex items-center gap-2 text-slate-600 font-bold text-xs border border-slate-200 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50">
-                        <i class="fas fa-filter"></i> Filtros
-                    </button>
+            <div class="grid grid-cols-12 gap-8">
+                <div class="col-span-12 lg:col-span-8 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase tracking-wide">Funil de Recrutamento</h2>
+                    <div class="h-[350px]"><canvas id="chartFunil"></canvas></div>
                 </div>
-
-                <table class="w-full text-left">
-                    <thead>
-                        <tr class="text-slate-400 text-[11px] uppercase tracking-wider font-bold">
-                            <th class="px-8 py-5">Código</th>
-                            <th class="px-4 py-5">Cargo</th>
-                            <th class="px-4 py-5">Setor</th>
-                            <th class="px-4 py-5">Gestor</th>
-                            <th class="px-4 py-5">Contrato</th>
-                            <th class="px-4 py-5">Salário</th>
-                            <th class="px-4 py-5">Status</th>
-                            <th class="px-8 py-5 text-right">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabela-vagas-corpo" class="text-sm text-slate-700">
-                        </tbody>
-                </table>
+                <div class="col-span-12 lg:col-span-4 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="font-bold text-slate-800 text-sm uppercase tracking-wide">Painel de Alertas</h2>
+                        <span id="cont-alertas" class="bg-blue-100 text-blue-600 text-[10px] px-2 py-1 rounded-full font-bold uppercase">0 Ativos</span>
+                    </div>
+                    <div id="lista-alertas" class="space-y-4"></div>
+                </div>
             </div>
         </div>
 
-        <div id="pagina-dashboard" class="flex-1 overflow-y-auto p-8">
-             <h2 class="text-xl font-bold">Carregando Dashboard...</h2>
+        <div id="pagina-triagem" class="flex-1 overflow-y-auto p-8 hidden">
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Triagem de Candidatos</h2>
+                        <p class="text-slate-500 text-sm">Analise os perfis com maior compatibilidade para suas vagas abertas.</p>
+                    </div>
+                    <button class="bg-slate-50 border border-slate-200 text-slate-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-slate-100 transition-all">Exportar</button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-slate-400 text-[11px] uppercase border-b border-slate-100">
+                                <th class="pb-4 font-semibold">Nome</th>
+                                <th class="pb-4 font-semibold">Match Score</th>
+                                <th class="pb-4 font-semibold">Skills Detectadas</th>
+                                <th class="pb-4 font-semibold">Status</th>
+                                <th class="pb-4 font-semibold text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-triagem" class="text-sm text-slate-700">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </main>
 
     <script>
         const urlPlanilha = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?gid=1728295734&single=true&output=csv";
+        let charts = {};
 
         function trocarPagina(pagina) {
-            document.getElementById('pagina-vagas').classList.toggle('hidden', pagina !== 'vagas');
-            document.getElementById('pagina-dashboard').classList.toggle('hidden', pagina !== 'dashboard');
-            
-            // Toggle Active Menu
-            document.getElementById('menu-vagas').classList.toggle('active-menu', pagina === 'vagas');
-            document.getElementById('menu-dashboard').classList.toggle('active-menu', pagina === 'dashboard');
+            document.getElementById('pagina-dashboard').classList.add('hidden');
+            document.getElementById('pagina-triagem').classList.add('hidden');
+            document.getElementById('menu-dashboard').classList.remove('active-menu');
+            document.getElementById('menu-triagem').classList.remove('active-menu');
+
+            if(pagina === 'dashboard') {
+                document.getElementById('pagina-dashboard').classList.remove('hidden');
+                document.getElementById('menu-dashboard').classList.add('active-menu');
+                document.getElementById('titulo-pagina').innerText = "RH Command Center";
+            } else {
+                document.getElementById('pagina-triagem').classList.remove('hidden');
+                document.getElementById('menu-triagem').classList.add('active-menu');
+                document.getElementById('titulo-pagina').innerText = "Triagem de Candidatos";
+            }
         }
 
         function carregarDados() {
             Papa.parse(urlPlanilha, {
-                download: true,
-                header: true,
+                download: true, 
+                header: true, 
                 skipEmptyLines: true,
                 complete: function(results) {
-                    const dados = results.data;
-                    // Filtra apenas o que for do tipo "Vagas" na planilha
-                    const listaVagas = dados.filter(d => d.Tipo === "Vagas");
-                    renderizarTabelaVagas(listaVagas);
+                    if (results.data) {
+                        const dadosNormalizados = results.data.map(d => ({
+                            Tipo: d.Tipo ? d.Tipo.trim() : "",
+                            Rotulo: d.Rotulo ? d.Rotulo.trim() : "",
+                            Valor: d.Valor ? d.Valor.trim() : ""
+                        }));
+                        
+                        renderizarDashboard(dadosNormalizados);
+                        
+                        // Filtro insensível a maiúsculas/minúsculas para pegar todos os "Triagem"
+                        const listaCandidatos = dadosNormalizados.filter(d => 
+                            d.Tipo.toLowerCase().includes("triagem")
+                        );
+                        renderizarTriagem(listaCandidatos);
+                    }
                 }
             });
         }
 
-        function renderizarTabelaVagas(vagas) {
-            const tbody = document.getElementById('tabela-vagas-corpo');
+        function renderizarDashboard(dados) {
+            // Cards Superiores
+            const cards = dados.filter(d => d.Tipo.toLowerCase() === "card");
+            document.getElementById('container-cards').innerHTML = cards.map(c => `
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-border-blue">
+                    <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">${c.Rotulo}</p>
+                    <h3 class="text-2xl font-bold text-slate-800">${c.Valor}</h3>
+                </div>`).join('');
+
+            // Gráficos
+            criarGrafico('chartSetor', 'bar', dados.filter(d => d.Tipo.toLowerCase() === "setor"), true);
+            criarGrafico('chartLinha', 'line', dados.filter(d => d.Tipo.toLowerCase() === "linha"), false);
+            criarGrafico('chartFunil', 'bar', dados.filter(d => d.Tipo.toLowerCase() === "funil"), true);
+
+            // Lista de Alertas
+            const alertas = dados.filter(d => d.Tipo.toLowerCase() === "alerta");
+            document.getElementById('cont-alertas').innerText = `${alertas.length} ATIVOS`;
+            document.getElementById('lista-alertas').innerHTML = alertas.map(a => `
+                <div class="p-4 bg-orange-50 rounded-2xl flex gap-4 items-start border border-orange-100">
+                    <div class="bg-white p-2 rounded-lg text-orange-500 shadow-sm"><i class="fas fa-exclamation-circle text-xs"></i></div>
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-800">${a.Rotulo}</p>
+                        <p class="text-[10px] text-slate-500 font-semibold uppercase">${a.Valor}</p>
+                    </div>
+                </div>`).join('');
+        }
+
+        function renderizarTriagem(candidatos) {
+            const tbody = document.getElementById('lista-triagem');
             if (!tbody) return;
 
-            tbody.innerHTML = vagas.map(v => {
-                // Lógica para separar os dados caso estejam na mesma coluna 'Valor' separados por '|'
-                // Ou se você estiver usando colunas separadas, ajuste v.Setor, v.Gestor etc.
-                const info = v.Valor.split('|').map(item => item.trim());
+            tbody.innerHTML = candidatos.map(c => {
+                // Tratamento da string: "Score | Habilidades | Status"
+                const partes = c.Valor.includes('|') ? c.Valor.split('|').map(p => p.trim()) : [c.Valor, "", "Triagem"];
                 
-                const cargo = info[0] || "Cargo não definido";
-                const setor = info[1] || "Geral";
-                const gestor = info[2] || "-";
-                const contrato = info[3] || "CLT";
-                const salario = info[4] || "A combinar";
-                const status = (info[5] || "aberta").toLowerCase();
+                const scoreRaw = partes[0] || "0%";
+                const skills = partes[1] ? partes[1].split(',') : [];
+                const status = partes[2] || "Triagem";
+                
+                // Cálculo de iniciais dinâmicas (Ana Silva -> AS)
+                const iniciais = c.Rotulo ? c.Rotulo.split(' ').filter(x => x).map(n => n[0]).join('').toUpperCase().substring(0,2) : "??";
+
+                // Lógica de cores para o badge de Status
+                let statusColorClass = "bg-slate-100 text-slate-600";
+                const sLow = status.toLowerCase();
+                if(sLow.includes("prioridade")) statusColorClass = "bg-emerald-100 text-emerald-600";
+                else if(sLow.includes("entrevista")) statusColorClass = "bg-blue-100 text-blue-600";
+                else if(sLow.includes("reprovado")) statusColorClass = "bg-red-100 text-red-600";
 
                 return `
-                    <tr class="vaga-row">
-                        <td class="px-8 py-5 text-blue-600 font-bold text-xs uppercase tracking-tighter">${v.Rotulo}</td>
-                        <td class="px-4 py-5 font-bold text-slate-800">${cargo}</td>
-                        <td class="px-4 py-5 text-slate-500">${setor}</td>
-                        <td class="px-4 py-5 text-slate-500">${gestor}</td>
-                        <td class="px-4 py-5">${contrato}</td>
-                        <td class="px-4 py-5 font-semibold text-slate-700">${salario}</td>
-                        <td class="px-4 py-5"><span class="badge-${status}">${status}</span></td>
-                        <td class="px-8 py-5 text-right"><i class="fas fa-ellipsis-h text-slate-300 cursor-pointer hover:text-blue-500"></i></td>
+                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                        <td class="py-4 flex items-center gap-3">
+                            <div class="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 font-bold text-xs">${iniciais}</div>
+                            <span class="font-semibold text-slate-800 text-sm">${c.Rotulo}</span>
+                        </td>
+                        <td>
+                            <div class="flex items-center gap-3">
+                                <div class="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="bg-blue-600 h-full" style="width: ${scoreRaw.includes('%') ? scoreRaw : scoreRaw + '%'}"></div>
+                                </div>
+                                <span class="font-bold text-slate-700 text-xs">${scoreRaw}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="flex flex-wrap gap-2">
+                                ${skills.length > 0 && skills[0] !== "" ? skills.map(skill => `
+                                    <span class="bg-slate-800 text-white text-[9px] px-2 py-0.5 rounded font-medium uppercase tracking-tight">${skill.trim()}</span>
+                                `).join('') : '<span class="text-slate-300 text-[10px]">Sem Skills</span>'}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="${statusColorClass} px-3 py-1 rounded-full font-bold text-[9px] uppercase tracking-wide">${status}</span>
+                        </td>
+                        <td class="text-right text-slate-400">
+                            <div class="flex justify-end gap-3">
+                                <button class="hover:text-blue-600 transition-colors"><i class="far fa-file-alt"></i></button>
+                                <button class="hover:text-blue-600 transition-colors"><i class="fas fa-ellipsis-h"></i></button>
+                            </div>
+                        </td>
                     </tr>
                 `;
             }).join('');
         }
 
-        // Inicia carregando a página de vagas para você ver o resultado
-        trocarPagina('vagas');
+        function criarGrafico(id, tipo, dFiltrado, isHorizontal) {
+            const canvas = document.getElementById(id);
+            if (!canvas) return;
+            if (charts[id]) charts[id].destroy();
+            
+            const ctx = canvas.getContext('2d');
+            charts[id] = new Chart(ctx, {
+                type: tipo,
+                data: {
+                    labels: dFiltrado.map(d => d.Rotulo),
+                    datasets: [{
+                        data: dFiltrado.map(d => d.Valor.replace('%', '').replace(',', '.')),
+                        backgroundColor: '#4f46e5',
+                        borderRadius: 6,
+                        barThickness: 20
+                    }]
+                },
+                options: {
+                    indexAxis: isHorizontal ? 'y' : 'x',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                        y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        // Inicia a carga dos dados
         carregarDados();
     </script>
 </body>

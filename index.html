@@ -1,10 +1,24 @@
-async function fetchPlanilha() {
-    try {
-        // Adicionamos um redirecionamento para evitar erros de bloqueio
-        const response = await fetch(scriptURL, { redirect: "follow" }); 
-        const text = await response.text();
-        const data = JSON.parse(text);
-        
-        // O restante do processamento continua igual...
-        const labelsMeses = Object.keys(data[0]).filter(key => key.includes('/'));
-        // ... (resto do código)
+import pandas as pd
+import requests
+import plotly.express as px
+from io import StringIO
+
+# COLE O LINK DA IMAGEM AQUI (entre as aspas)
+URL_APPS_SCRIPT = "SEU_LINK_DO_GOOGLE_APPS_SCRIPT_AQUI"
+
+try:
+    # Faz a requisição ao Google Apps Script
+    response = requests.get(URL_APPS_SCRIPT)
+    
+    # Se o seu script retorna um CSV:
+    df = pd.read_csv(StringIO(response.text))
+    
+    # Exemplo: Gráfico de Candidatos por Etapa (ajuste os nomes conforme sua planilha)
+    fig = px.bar(df, x='Etapa', y='Quantidade', title='Fluxo de Recrutamento - Atualizado')
+    
+    # Salva para o GitHub Pages
+    fig.write_html("index.html")
+    print("Dados importados e gráfico gerado!")
+
+except Exception as e:
+    print(f"Erro ao conectar com o Google Drive: {e}")

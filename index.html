@@ -1,21 +1,36 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
 <script>
+    // 1. Configurações de Conexão
     const urlPlanilha = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?gid=1728295734&single=true&output=csv";
+    
+    // Substitua pelo seu link do "Implantar" do Google Apps Script
+    const urlAPI = "SUA_URL_DO_GOOGLE_SCRIPT_AQUI"; 
+    
     let charts = {};
 
+    // 2. Função de Navegação
     function trocarPagina(pagina) {
         const paginas = ['dashboard', 'vagas', 'triagem'];
         paginas.forEach(p => {
-            document.getElementById(`pagina-${p}`).classList.add('hidden');
-            document.getElementById(`menu-${p}`).classList.remove('active-menu');
+            const el = document.getElementById(`pagina-${p}`);
+            const menu = document.getElementById(`menu-${p}`);
+            if (el) el.classList.add('hidden');
+            if (menu) menu.classList.remove('active-menu');
         });
 
-        document.getElementById(`pagina-${pagina}`).classList.remove('hidden');
-        document.getElementById(`menu-${pagina}`).classList.add('active-menu');
+        const pgAtual = document.getElementById(`pagina-${pagina}`);
+        const menuAtual = document.getElementById(`menu-${pagina}`);
+        if (pgAtual) pgAtual.classList.remove('hidden');
+        if (menuAtual) menuAtual.classList.add('active-menu');
         
         const titulos = { 'dashboard': 'RH Command Center', 'vagas': 'Gestão de Vagas', 'triagem': 'Triagem de Candidatos' };
-        document.getElementById('titulo-pagina').innerText = titulos[pagina];
+        document.getElementById('titulo-pagina').innerText = titulos[pagina] || "Dashboard";
     }
 
+    // 3. Carregamento de Dados (CSV)
     function carregarDados() {
         Papa.parse(urlPlanilha, {
             download: true, 
@@ -29,31 +44,25 @@
                         Valor: d.Valor ? d.Valor.trim() : ""
                     }));
 
-                    // 1. Renderiza o Painel Principal
                     renderizarDashboard(dados);
-
-                    // 2. Filtra e Renderiza as Vagas (Baseado na sua nova planilha)
-                    const listaVagas = dados.filter(d => d.Tipo === "Vagas");
-                    renderizarVagas(listaVagas);
-
-                    // 3. Renderiza a Triagem
+                    renderizarVagas(dados.filter(d => d.Tipo === "Vagas"));
                     renderizarTriagem(dados.filter(d => d.Tipo === "Triagem"));
                 }
             }
         });
     }
 
+    // 4. Renderização das Vagas na Tabela
     function renderizarVagas(vagas) {
         const tbody = document.getElementById('tabela-vagas-corpo');
-        
-        // Mapeamento manual conforme sua planilha (VAG-001, VAG-002, VAG-003)
-        // Isso garante que cada vaga pegue seu respectivo Cargo, Setor e Status
+        if (!tbody) return;
+
         const setoresMap = { "VAG-001": "Produção", "VAG-002": "Logística", "VAG-003": "Tecnologia" };
         const statusMap = { "VAG-001": "aberta", "VAG-002": "processo", "VAG-003": "aberta" };
 
         tbody.innerHTML = vagas.map(v => {
-            const codigo = v.Rotulo; // VAG-001, etc
-            const cargo = v.Valor;   // Analista de Produção, etc
+            const codigo = v.Rotulo; 
+            const cargo = v.Valor;   
             const setor = setoresMap[codigo] || "Geral";
             const status = statusMap[codigo] || "aberta";
 
@@ -62,9 +71,7 @@
                     <td class="px-8 py-5 text-blue-600 font-bold text-xs">${codigo}</td>
                     <td class="px-4 py-5 font-bold text-slate-800">${cargo}</td>
                     <td class="px-4 py-5 text-slate-500">${setor}</td>
-                    <td class="px-4 py-5">
-                        <span class="badge-${status}">${status}</span>
-                    </td>
+                    <td class="px-4 py-5"><span class="badge-${status}">${status}</span></td>
                     <td class="px-8 py-5 text-right">
                         <div class="flex justify-end gap-3 text-slate-300">
                             <i class="fas fa-edit cursor-pointer hover:text-blue-500"></i>
@@ -75,35 +82,44 @@
         }).join('');
     }
 
+    // 5. Renderização do Painel de Gráficos e Cards
     function renderizarDashboard(dados) {
-        // Cards de topo
         const cards = dados.filter(d => d.Tipo === "Card");
-        document.getElementById('container-cards').innerHTML = cards.map(c => `
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-border-blue">
-                <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">${c.Rotulo}</p>
-                <h3 class="text-2xl font-bold text-slate-800">${c.Valor}</h3>
-            </div>`).join('');
+        const containerCards = document.getElementById('container-cards');
+        if (containerCards) {
+            containerCards.innerHTML = cards.map(c => `
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-border-blue">
+                    <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">${c.Rotulo}</p>
+                    <h3 class="text-2xl font-bold text-slate-800">${c.Valor}</h3>
+                </div>`).join('');
+        }
         
-        // Gráficos
         criarGrafico('chartSetor', 'bar', dados.filter(d => d.Tipo === "Setor"), true);
         criarGrafico('chartLinha', 'line', dados.filter(d => d.Tipo === "Linha"), false);
         criarGrafico('chartFunil', 'bar', dados.filter(d => d.Tipo === "Funil"), true);
 
-        // Alertas
         const alertas = dados.filter(d => d.Tipo === "Alerta");
-        document.getElementById('cont-alertas').innerText = `${alertas.length} ATIVOS`;
-        document.getElementById('lista-alertas').innerHTML = alertas.map(a => `
-            <div class="p-4 bg-orange-50 rounded-2xl flex gap-4 items-start border border-orange-100">
-                <div class="bg-white p-2 rounded-lg text-orange-500 shadow-sm"><i class="fas fa-exclamation-circle text-xs"></i></div>
-                <div>
-                    <p class="text-[11px] font-bold text-slate-800">${a.Rotulo}</p>
-                    <p class="text-[10px] text-slate-500 font-semibold uppercase">${a.Valor}</p>
-                </div>
-            </div>`).join('');
+        const contAlertas = document.getElementById('cont-alertas');
+        if (contAlertas) contAlertas.innerText = `${alertas.length} ATIVOS`;
+        
+        const listaAlertas = document.getElementById('lista-alertas');
+        if (listaAlertas) {
+            listaAlertas.innerHTML = alertas.map(a => `
+                <div class="p-4 bg-orange-50 rounded-2xl flex gap-4 items-start border border-orange-100">
+                    <div class="bg-white p-2 rounded-lg text-orange-500 shadow-sm"><i class="fas fa-exclamation-circle text-xs"></i></div>
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-800">${a.Rotulo}</p>
+                        <p class="text-[10px] text-slate-500 font-semibold uppercase">${a.Valor}</p>
+                    </div>
+                </div>`).join('');
+        }
     }
 
+    // 6. Renderização da Triagem
     function renderizarTriagem(candidatos) {
         const tbody = document.getElementById('lista-triagem');
+        if (!tbody) return;
+
         tbody.innerHTML = candidatos.map(c => {
             const partes = c.Valor.split('|').map(p => p.trim());
             const score = partes[0] || "0%";
@@ -130,6 +146,7 @@
         }).join('');
     }
 
+    // 7. Auxiliar para Gráficos
     function criarGrafico(id, tipo, dFiltrado, isHorizontal) {
         const canvas = document.getElementById(id);
         if (!canvas) return;
@@ -158,5 +175,6 @@
         });
     }
 
-    carregarDados();
+    // Execução Inicial
+    window.onload = carregarDados;
 </script>

@@ -2,105 +2,82 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR Core - Dashboard</title>
+    <title>Painel de Indicadores - Coplac Curitiba</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        .card { transition: transform 0.2s; border-bottom: 4px solid #3b82f6; }
-        .card:hover { transform: translateY(-5px); }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 50; align-items: center; justify-content: center; }
+        .card-meta { border-top: 4px solid #ef4444; transition: transform 0.2s; }
+        .card-meta:hover { transform: scale(1.02); }
     </style>
 </head>
-<body class="flex min-h-screen">
+<body class="bg-slate-100 p-4 md:p-8">
 
-    <aside class="w-64 bg-slate-900 text-white p-6 hidden md:block">
-        <h1 class="text-2xl font-bold text-blue-500 italic mb-10">HR Core</h1>
-        <nav class="space-y-4">
-            <div class="flex items-center gap-3 p-3 bg-blue-600 rounded-xl cursor-pointer">
-                <i class="fas fa-chart-line"></i> <span>Dashboard</span>
+    <div class="max-w-6xl mx-auto">
+        <header class="bg-white p-6 rounded-2xl shadow-sm mb-8">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-800">Painel de Indicadores - DHO + RH</h1>
+                    <p class="text-emerald-600 font-bold text-sm mt-1">Acesso Restrito: Dados Confidenciais de RH</p>
+                </div>
+                <button onclick="window.location.reload()" class="bg-slate-100 p-2 rounded-lg hover:bg-slate-200">
+                    <i class="fas fa-sync-alt text-slate-600"></i>
+                </button>
             </div>
-        </nav>
-    </aside>
-
-    <main class="flex-1 p-8">
-        <header class="flex justify-between items-center mb-10">
-            <div>
-                <h2 class="text-2xl font-bold text-slate-800">Bem-vindo ao Relatório de RH</h2>
-                <p class="text-emerald-600 font-semibold text-sm">Dados confidenciais - Acesso restrito</p>
-            </div>
-            <button onclick="abrirModal()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">
-                <i class="fas fa-plus mr-2"></i> NOVA VAGA
-            </button>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <div class="card bg-white p-6 rounded-2xl shadow-sm">
-                <p class="text-slate-400 text-xs font-bold uppercase mb-1">Vagas Abertas</p>
-                <div class="flex items-center justify-between">
-                    <h3 class="text-3xl font-bold text-slate-800">12</h3>
-                    <span class="bg-emerald-100 text-emerald-600 text-[10px] px-2 py-1 rounded-full font-bold">+2 este mês</span>
-                </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-2xl shadow-sm card-meta">
+                <p class="text-slate-400 text-[10px] font-bold uppercase">Turnover Acumulado</p>
+                <h3 class="text-3xl font-bold text-slate-800">3,23%</h3>
+                <p class="text-emerald-500 text-xs mt-2 font-bold"><i class="fas fa-caret-down"></i> Abaixo da Meta (4,0%)</p>
             </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm card-meta" style="border-color: #3b82f6;">
+                <p class="text-slate-400 text-[10px] font-bold uppercase">Absenteísmo Médio</p>
+                <h3 class="text-3xl font-bold text-slate-800">3,33%</h3>
+                <p class="text-emerald-500 text-xs mt-2 font-bold"><i class="fas fa-check"></i> Meta Atingida</p>
             </div>
-    </main>
+            <div class="bg-white p-6 rounded-2xl shadow-sm card-meta" style="border-color: #10b981;">
+                <p class="text-slate-400 text-[10px] font-bold uppercase">Horas de Treinamento</p>
+                <h3 class="text-3xl font-bold text-slate-800">545h</h3>
+                <p class="text-blue-500 text-xs mt-2 font-bold"><i class="fas fa-plus"></i> 115h acima da meta</p>
+            </div>
+        </div>
 
-    <div id="modalVaga" class="modal">
-        <div class="bg-white w-full max-w-md p-8 rounded-3xl shadow-2xl relative mx-4">
-            <button onclick="fecharModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-            <h3 class="text-xl font-bold text-slate-800 mb-6">Anunciar Nova Oportunidade</h3>
-            <form id="formVaga" class="space-y-4" onsubmit="event.preventDefault(); enviarDados();">
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Cargo</label>
-                    <input type="text" id="campo-cargo" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Setor</label>
-                    <select id="campo-setor" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none">
-                        <option>Produção</option>
-                        <option>Logística</option>
-                        <option>Tecnologia</option>
-                    </select>
-                </div>
-                <button type="submit" id="btn-enviar" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition-all">
-                    PUBLICAR VAGA
-                </button>
-            </form>
+        <div class="bg-white p-8 rounded-3xl shadow-sm">
+            <h4 class="text-slate-700 font-bold mb-6 italic">Evolução dos Indicadores - Últimos Meses</h4>
+            <div class="h-[400px]">
+                <canvas id="meuGrafico"></canvas>
+            </div>
         </div>
     </div>
 
     <script>
-        function abrirModal() { document.getElementById('modalVaga').style.display = 'flex'; }
-        function fecharModal() { document.getElementById('modalVaga').style.display = 'none'; }
-
-        async function enviarDados() {
-            const btn = document.getElementById('btn-enviar');
-            btn.innerText = "Processando...";
-            btn.disabled = true;
-
-            // URL DO SEU GOOGLE APPS SCRIPT (Web App)
-            const urlAPI = "SUA_URL_AQUI"; 
-
-            const payload = {
-                cargo: document.getElementById('campo-cargo').value,
-                setor: document.getElementById('campo-setor').value
-            };
-
-            try {
-                await fetch(urlAPI, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-                alert("Vaga cadastrada com sucesso!");
-                fecharModal();
-                document.getElementById('formVaga').reset();
-            } catch (error) {
-                alert("Erro ao conectar com o servidor.");
-            } finally {
-                btn.innerText = "PUBLICAR VAGA";
-                btn.disabled = false;
+        const ctx = document.getElementById('meuGrafico').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Out/25', 'Nov/25', 'Dez/25', 'Jan/26', 'Fev/26'],
+                datasets: [{
+                    label: 'Turnover %',
+                    data: [3.49, 3.31, 3.08, 3.82, 3.23],
+                    borderColor: '#ef4444',
+                    backgroundColor: '#ef444422',
+                    fill: true,
+                    tension: 0.4
+                }, {
+                    label: 'Absenteísmo %',
+                    data: [5.01, 4.49, 5.97, 3.38, 3.33],
+                    borderColor: '#3b82f6',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
             }
-        }
+        });
     </script>
 </body>
 </html>

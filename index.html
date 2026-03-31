@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR Core - Dashboard</title>
+    <title>HR Core - Dashboard & Triagem</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -13,17 +13,20 @@
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         .sidebar-item { cursor: pointer; transition: 0.3s; color: #94a3b8; }
         .sidebar-item:hover { background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-        .active-menu { background-color: #2563eb !important; color: white !important; }
+        .active-menu { background-color: #2563eb !important; color: white !important; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4); }
         .hidden { display: none; }
+        .card-border-blue { border-bottom: 4px solid #3b82f6; }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
 
     <aside class="w-64 bg-[#0a1629] text-white flex flex-col shadow-2xl z-10">
-        <div class="p-6 text-2xl font-bold border-b border-slate-700">HR Core</div>
+        <div class="p-6 text-2xl font-bold border-b border-slate-700 flex items-center gap-3">
+            <div class="bg-blue-600 p-2 rounded-lg text-xs italic text-white text-center w-8 h-8 flex items-center justify-center">R</div> HR Core
+        </div>
         <nav class="flex-1 p-4 space-y-2 mt-4 text-sm">
             <div id="menu-dashboard" onclick="trocarPagina('dashboard')" class="sidebar-item active-menu p-3 rounded-xl flex items-center gap-3">
-                <i class="fas fa-th-large"></i> Dashboard
+                <i class="fas fa-th-large"></i> Command Center
             </div>
             <div id="menu-triagem" onclick="trocarPagina('triagem')" class="sidebar-item p-3 rounded-xl flex items-center gap-3">
                 <i class="fas fa-users"></i> Triagem
@@ -33,156 +36,236 @@
 
     <main class="flex-1 flex flex-col overflow-hidden">
         <header class="h-20 bg-white border-b flex items-center justify-between px-8 shadow-sm">
-            <h1 id="titulo-pagina" class="text-xl font-bold text-slate-800">Command Center</h1>
-            <button onclick="abrirModal()" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all">
-                <i class="fas fa-plus mr-2"></i> Nova Vaga
-            </button>
+            <h1 id="titulo-pagina" class="text-xl font-bold text-slate-800">RH Command Center</h1>
+            <div class="flex items-center gap-3">
+                <div class="text-right">
+                    <p class="text-sm font-bold text-slate-800">Mylena Izidoro</p>
+                    <p class="text-[10px] text-slate-400 uppercase font-bold">Diretora de RH</p>
+                </div>
+                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">MI</div>
+            </div>
         </header>
 
         <div id="pagina-dashboard" class="flex-1 overflow-y-auto p-8">
-            <div id="container-cards" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"></div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100"><canvas id="chartSetor"></canvas></div>
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100"><canvas id="chartFunil"></canvas></div>
+            <div id="container-cards" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-10"></div>
+            
+            <div class="grid grid-cols-12 gap-8 mb-10">
+                <div class="col-span-12 lg:col-span-7 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase tracking-wide">Vagas por Setor</h2>
+                    <div class="h-[300px]"><canvas id="chartSetor"></canvas></div>
+                </div>
+                <div class="col-span-12 lg:col-span-5 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase tracking-wide">Evolução Mensal</h2>
+                    <div class="h-[300px]"><canvas id="chartLinha"></canvas></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-12 gap-8">
+                <div class="col-span-12 lg:col-span-8 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="font-bold text-slate-800 mb-6 text-xs uppercase tracking-wide">Funil de Recrutamento</h2>
+                    <div class="h-[350px]"><canvas id="chartFunil"></canvas></div>
+                </div>
+                <div class="col-span-12 lg:col-span-4 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="font-bold text-slate-800 text-sm uppercase tracking-wide">Painel de Alertas</h2>
+                        <span id="cont-alertas" class="bg-blue-100 text-blue-600 text-[10px] px-2 py-1 rounded-full font-bold uppercase">0 Ativos</span>
+                    </div>
+                    <div id="lista-alertas" class="space-y-4"></div>
+                </div>
             </div>
         </div>
 
         <div id="pagina-triagem" class="flex-1 overflow-y-auto p-8 hidden">
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-                <table class="w-full text-left">
-                    <thead class="bg-slate-50 border-b border-slate-100">
-                        <tr>
-                            <th class="p-4 text-[11px] uppercase font-bold text-slate-400">Nome</th>
-                            <th class="p-4 text-[11px] uppercase font-bold text-slate-400">Match</th>
-                            <th class="p-4 text-[11px] uppercase font-bold text-slate-400">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="lista-triagem" class="text-sm"></tbody>
-                </table>
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Triagem de Candidatos</h2>
+                        <p class="text-slate-500 text-sm">Analise os perfis com maior compatibilidade para suas vagas abertas.</p>
+                    </div>
+                    <button class="bg-slate-50 border border-slate-200 text-slate-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-slate-100 transition-all">Exportar</button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-slate-400 text-[11px] uppercase border-b border-slate-100">
+                                <th class="pb-4 font-semibold">Nome</th>
+                                <th class="pb-4 font-semibold">Match Score</th>
+                                <th class="pb-4 font-semibold">Skills Detectadas</th>
+                                <th class="pb-4 font-semibold">Status</th>
+                                <th class="pb-4 font-semibold text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-triagem" class="text-sm text-slate-700">
+                            </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </main>
 
-    <div id="modal-vaga" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
-            <div class="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
-                <h2 class="text-xl font-bold text-slate-800">Abertura de Nova Vaga</h2>
-                <button onclick="fecharModal()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-lg"></i></button>
-            </div>
-
-            <form id="form-vaga" class="p-8 space-y-5" onsubmit="event.preventDefault(); enviarVaga();">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="col-span-2">
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Cargo</label>
-                        <input type="text" id="vaga-cargo" required placeholder="Ex: Desenvolvedor React" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-blue-500 transition-all">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Setor</label>
-                        <input type="text" id="vaga-setor" required placeholder="Ex: Tecnologia" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Gestor</label>
-                        <input type="text" id="vaga-gestor" placeholder="Ex: João Silva" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Tipo de Contrato</label>
-                        <select id="vaga-contrato" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none">
-                            <option value="CLT">CLT</option>
-                            <option value="PJ">PJ</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Salário</label>
-                        <input type="text" id="vaga-salario" placeholder="R$ 0,00" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none">
-                    </div>
-                </div>
-
-                <div class="flex gap-3 pt-4">
-                    <button type="button" onclick="fecharModal()" class="flex-1 px-6 py-3 rounded-xl border border-slate-200 text-slate-500 font-bold text-sm hover:bg-slate-50 transition-all">Cancelar</button>
-                    <button type="submit" id="btn-salvar" class="flex-1 px-6 py-3 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all">Criar Vaga</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <script>
-        // CONFIGURAÇÕES - Substitua pelos seus links reais
-        const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?gid=1728295734&single=true&output=csv";
-        const urlAPI = "SUA_URL_DO_DEPLOY_AQUI"; // Pegue no Google Script
-
+        const urlPlanilha = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?gid=1728295734&single=true&output=csv";
         let charts = {};
 
         function trocarPagina(pagina) {
-            ['dashboard', 'triagem'].forEach(p => {
-                document.getElementById(`pagina-${p}`).classList.add('hidden');
-                document.getElementById(`menu-${p}`).classList.remove('active-menu');
-            });
-            document.getElementById(`pagina-${pagina}`).classList.remove('hidden');
-            document.getElementById(`menu-${pagina}`).classList.add('active-menu');
-        }
+            document.getElementById('pagina-dashboard').classList.add('hidden');
+            document.getElementById('pagina-triagem').classList.add('hidden');
+            document.getElementById('menu-dashboard').classList.remove('active-menu');
+            document.getElementById('menu-triagem').classList.remove('active-menu');
 
-        function abrirModal() { document.getElementById('modal-vaga').classList.remove('hidden'); }
-        function fecharModal() { document.getElementById('modal-vaga').classList.add('hidden'); }
-
-        async function enviarVaga() {
-            const btn = document.getElementById('btn-salvar');
-            const dados = {
-                cargo: document.getElementById('vaga-cargo').value,
-                setor: document.getElementById('vaga-setor').value,
-                gestor: document.getElementById('vaga-gestor').value,
-                contrato: document.getElementById('vaga-contrato').value,
-                salario: document.getElementById('vaga-salario').value,
-                turno: "Integral",
-                horario: "09:00 - 18:00"
-            };
-
-            btn.innerText = "Enviando...";
-            btn.disabled = true;
-
-            try {
-                await fetch(urlAPI, { method: 'POST', mode: 'no-cors', body: JSON.stringify(dados) });
-                alert("Vaga cadastrada com sucesso!");
-                fecharModal();
-                document.getElementById('form-vaga').reset();
-                setTimeout(carregarDados, 3000);
-            } catch (e) {
-                alert("Erro ao conectar com a planilha.");
-            } finally {
-                btn.innerText = "Criar Vaga";
-                btn.disabled = false;
+            if(pagina === 'dashboard') {
+                document.getElementById('pagina-dashboard').classList.remove('hidden');
+                document.getElementById('menu-dashboard').classList.add('active-menu');
+                document.getElementById('titulo-pagina').innerText = "RH Command Center";
+            } else {
+                document.getElementById('pagina-triagem').classList.remove('hidden');
+                document.getElementById('menu-triagem').classList.add('active-menu');
+                document.getElementById('titulo-pagina').innerText = "Triagem de Candidatos";
             }
         }
 
         function carregarDados() {
-            Papa.parse(urlCSV, {
-                download: true, header: true,
+            Papa.parse(urlPlanilha, {
+                download: true, 
+                header: true, 
+                skipEmptyLines: true,
                 complete: function(results) {
-                    const dados = results.data;
-                    renderDashboard(dados);
+                    if (results.data) {
+                        const dadosNormalizados = results.data.map(d => ({
+                            Tipo: d.Tipo ? d.Tipo.trim() : "",
+                            Rotulo: d.Rotulo ? d.Rotulo.trim() : "",
+                            Valor: d.Valor ? d.Valor.trim() : ""
+                        }));
+                        
+                        renderizarDashboard(dadosNormalizados);
+                        
+                        // Filtro insensível a maiúsculas/minúsculas para pegar todos os "Triagem"
+                        const listaCandidatos = dadosNormalizados.filter(d => 
+                            d.Tipo.toLowerCase().includes("triagem")
+                        );
+                        renderizarTriagem(listaCandidatos);
+                    }
                 }
             });
         }
 
-        function renderDashboard(dados) {
-            const cards = dados.filter(d => d.Tipo === "card");
+        function renderizarDashboard(dados) {
+            // Cards Superiores
+            const cards = dados.filter(d => d.Tipo.toLowerCase() === "card");
             document.getElementById('container-cards').innerHTML = cards.map(c => `
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-b-blue-500">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 card-border-blue">
                     <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">${c.Rotulo}</p>
                     <h3 class="text-2xl font-bold text-slate-800">${c.Valor}</h3>
-                </div>
-            `).join('');
+                </div>`).join('');
 
-            const triagem = dados.filter(d => d.Tipo === "triagem");
-            document.getElementById('lista-triagem').innerHTML = triagem.map(t => `
-                <tr class="border-b border-slate-50 hover:bg-slate-50 transition-all">
-                    <td class="p-4 font-semibold text-slate-700">${t.Rotulo}</td>
-                    <td class="p-4 text-blue-600 font-bold">${t.Valor}</td>
-                    <td class="p-4"><span class="bg-green-100 text-green-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Qualificado</span></td>
-                </tr>
-            `).join('');
+            // Gráficos
+            criarGrafico('chartSetor', 'bar', dados.filter(d => d.Tipo.toLowerCase() === "setor"), true);
+            criarGrafico('chartLinha', 'line', dados.filter(d => d.Tipo.toLowerCase() === "linha"), false);
+            criarGrafico('chartFunil', 'bar', dados.filter(d => d.Tipo.toLowerCase() === "funil"), true);
+
+            // Lista de Alertas
+            const alertas = dados.filter(d => d.Tipo.toLowerCase() === "alerta");
+            document.getElementById('cont-alertas').innerText = `${alertas.length} ATIVOS`;
+            document.getElementById('lista-alertas').innerHTML = alertas.map(a => `
+                <div class="p-4 bg-orange-50 rounded-2xl flex gap-4 items-start border border-orange-100">
+                    <div class="bg-white p-2 rounded-lg text-orange-500 shadow-sm"><i class="fas fa-exclamation-circle text-xs"></i></div>
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-800">${a.Rotulo}</p>
+                        <p class="text-[10px] text-slate-500 font-semibold uppercase">${a.Valor}</p>
+                    </div>
+                </div>`).join('');
         }
 
-        window.onload = carregarDados;
+        function renderizarTriagem(candidatos) {
+            const tbody = document.getElementById('lista-triagem');
+            if (!tbody) return;
+
+            tbody.innerHTML = candidatos.map(c => {
+                // Tratamento da string: "Score | Habilidades | Status"
+                const partes = c.Valor.includes('|') ? c.Valor.split('|').map(p => p.trim()) : [c.Valor, "", "Triagem"];
+                
+                const scoreRaw = partes[0] || "0%";
+                const skills = partes[1] ? partes[1].split(',') : [];
+                const status = partes[2] || "Triagem";
+                
+                // Cálculo de iniciais dinâmicas (Ana Silva -> AS)
+                const iniciais = c.Rotulo ? c.Rotulo.split(' ').filter(x => x).map(n => n[0]).join('').toUpperCase().substring(0,2) : "??";
+
+                // Lógica de cores para o badge de Status
+                let statusColorClass = "bg-slate-100 text-slate-600";
+                const sLow = status.toLowerCase();
+                if(sLow.includes("prioridade")) statusColorClass = "bg-emerald-100 text-emerald-600";
+                else if(sLow.includes("entrevista")) statusColorClass = "bg-blue-100 text-blue-600";
+                else if(sLow.includes("reprovado")) statusColorClass = "bg-red-100 text-red-600";
+
+                return `
+                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                        <td class="py-4 flex items-center gap-3">
+                            <div class="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 font-bold text-xs">${iniciais}</div>
+                            <span class="font-semibold text-slate-800 text-sm">${c.Rotulo}</span>
+                        </td>
+                        <td>
+                            <div class="flex items-center gap-3">
+                                <div class="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="bg-blue-600 h-full" style="width: ${scoreRaw.includes('%') ? scoreRaw : scoreRaw + '%'}"></div>
+                                </div>
+                                <span class="font-bold text-slate-700 text-xs">${scoreRaw}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="flex flex-wrap gap-2">
+                                ${skills.length > 0 && skills[0] !== "" ? skills.map(skill => `
+                                    <span class="bg-slate-800 text-white text-[9px] px-2 py-0.5 rounded font-medium uppercase tracking-tight">${skill.trim()}</span>
+                                `).join('') : '<span class="text-slate-300 text-[10px]">Sem Skills</span>'}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="${statusColorClass} px-3 py-1 rounded-full font-bold text-[9px] uppercase tracking-wide">${status}</span>
+                        </td>
+                        <td class="text-right text-slate-400">
+                            <div class="flex justify-end gap-3">
+                                <button class="hover:text-blue-600 transition-colors"><i class="far fa-file-alt"></i></button>
+                                <button class="hover:text-blue-600 transition-colors"><i class="fas fa-ellipsis-h"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function criarGrafico(id, tipo, dFiltrado, isHorizontal) {
+            const canvas = document.getElementById(id);
+            if (!canvas) return;
+            if (charts[id]) charts[id].destroy();
+            
+            const ctx = canvas.getContext('2d');
+            charts[id] = new Chart(ctx, {
+                type: tipo,
+                data: {
+                    labels: dFiltrado.map(d => d.Rotulo),
+                    datasets: [{
+                        data: dFiltrado.map(d => d.Valor.replace('%', '').replace(',', '.')),
+                        backgroundColor: '#4f46e5',
+                        borderRadius: 6,
+                        barThickness: 20
+                    }]
+                },
+                options: {
+                    indexAxis: isHorizontal ? 'y' : 'x',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                        y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        // Inicia a carga dos dados
+        carregarDados();
     </script>
 </body>
 </html>

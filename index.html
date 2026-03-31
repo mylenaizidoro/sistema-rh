@@ -1,82 +1,122 @@
-<script>
-    // 1. EIXO X: Todos os meses da sua planilha
-    const mesesLabels = [
-        '02/25', '03/25', '04/25', '05/25', '06/25', '07/25', 
-        '08/25', '09/25', '10/25', '11/25', '12/25', '01/26', '02/26'
-    ];
-    
-    // 2. DADOS TURNOVER: Valores da linha 3 da planilha
-    const dadosTurnover = [
-        3.04, 6.40, 4.34, 3.70, 2.27, 2.90, 
-        3.06, 3.91, 3.49, 3.31, 3.06, 3.82, 3.23
-    ];
-    
-    // 3. DADOS ABSENTEÍSMO: Valores da linha 7 da planilha
-    const dadosAbsenteismo = [
-        3.41, 4.35, 4.65, 4.61, 4.84, 3.96, 
-        4.88, 5.16, 5.01, 4.49, 5.97, 3.38, 3.33
-    ];
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Core - Dashboard Dinâmico</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .loader { border-top-color: #3b82f6; animation: spinner 1.5s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
 
-    const ctx = document.getElementById('graficoEvolucao').getContext('2d');
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: mesesLabels,
-            datasets: [
-                {
-                    label: 'Turnover %',
-                    data: dadosTurnover,
-                    borderColor: '#ef4444', // Vermelho
-                    backgroundColor: '#ef444411',
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 4,
-                    borderWidth: 3
-                },
-                {
-                    label: 'Absenteísmo %',
-                    data: dadosAbsenteismo,
-                    borderColor: '#3b82f6', // Azul
-                    backgroundColor: 'transparent',
-                    fill: false,
-                    tension: 0.4,
-                    pointRadius: 4,
-                    borderWidth: 3,
-                    borderDash: [5, 5] // Linha tracejada para diferenciar
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { 
-                    position: 'bottom',
-                    labels: { boxWidth: 20, font: { size: 12, weight: 'bold' } }
-                },
-                tooltip: {
-                    backgroundColor: '#1e293b',
-                    padding: 12,
-                    bodyFont: { size: 14 },
-                    callbacks: {
-                        label: function(context) {
-                            return context.dataset.label + ': ' + context.raw.toFixed(2) + '%';
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    grid: { display: false },
-                    ticks: { font: { size: 10, weight: 'bold' } }
-                },
-                y: { 
-                    beginAtZero: true,
-                    suggestedMax: 7,
-                    title: { display: true, text: 'Percentual (%)', font: { weight: 'bold' } },
-                    ticks: { callback: value => value + '%' }
-                }
+    <div id="loading" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center">
+        <div class="loader w-12 h-12 border-4 border-slate-200 rounded-full mb-4"></div>
+        <p class="text-slate-500 font-bold animate-pulse">Sincronizando com a Planilha...</p>
+    </div>
+
+    <div class="max-w-6xl mx-auto p-4 md:p-8">
+        <header class="bg-white p-6 rounded-2xl shadow-sm mb-8 border-l-8 border-red-600">
+            <h1 class="text-2xl font-bold text-slate-800 uppercase">Painel de Indicadores - Coplac</h1>
+            <p class="text-emerald-600 font-bold text-sm italic">Todas as informações são confidenciais e restritas</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border-t-4 border-red-500">
+                <p class="text-slate-400 text-[10px] font-bold uppercase">Último Turnover</p>
+                <h3 id="card-turnover" class="text-3xl font-bold text-slate-800">--%</h3>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border-t-4 border-blue-500">
+                <p class="text-slate-400 text-[10px] font-bold uppercase">Último Absenteísmo</p>
+                <h3 id="card-absenteismo" class="text-3xl font-bold text-slate-800">--%</h3>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border-t-4 border-emerald-500">
+                <p class="text-slate-400 text-[10px] font-bold uppercase">Horas de Treinamento</p>
+                <h3 id="card-treinamento" class="text-3xl font-bold text-slate-800">--h</h3>
+            </div>
+        </div>
+
+        <div class="bg-white p-8 rounded-3xl shadow-sm">
+            <h4 class="text-slate-700 font-bold mb-6 italic text-center">Evolução Histórica - Dados Integrados</h4>
+            <div class="h-[450px]">
+                <canvas id="graficoDinamico"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const scriptURL = "https://script.google.com/macros/s/AKfycbzygjFXIyuY6EmtPqFNS4V3GfcqrSrNcwVTWkQBB7bVT6o9SyrbZ08QRoyur8MdH00/exec";
+
+        async function fetchPlanilha() {
+            try {
+                const response = await fetch(scriptURL);
+                const data = await response.json();
+                
+                // Processamento da estrutura da sua planilha
+                // Filtra as chaves que são meses (ex: 02/2025)
+                const labelsMeses = Object.keys(data[0]).filter(key => key.includes('/'));
+                
+                // Puxa as linhas específicas
+                const linhaTurnover = data.find(r => r.processo.includes("TURNOVER PA-03"));
+                const linhaAbsenteismo = data.find(r => r.processo.includes("ABSENTEISMO PA-03"));
+                const linhaTreinamento = data.find(r => r.processo.includes("HORAS DE TREINAMENTOS"));
+
+                const valuesTurnover = labelsMeses.map(m => parseFloat(String(linhaTurnover[m]).replace(',', '.')) || 0);
+                const valuesAbsenteismo = labelsMeses.map(m => parseFloat(String(linhaAbsenteismo[m]).replace(',', '.')) || 0);
+                const valuesTreinamento = labelsMeses.map(m => parseFloat(String(linhaTreinamento[m]).replace(',', '.')) || 0);
+
+                // Atualiza Cards com o último mês disponível
+                document.getElementById('card-turnover').innerText = valuesTurnover.slice(-1)[0].toFixed(2) + "%";
+                document.getElementById('card-absenteismo').innerText = valuesAbsenteismo.slice(-1)[0].toFixed(2) + "%";
+                document.getElementById('card-treinamento').innerText = valuesTreinamento.slice(-1)[0].toFixed(0) + "h";
+
+                renderGrafico(labelsMeses, valuesTurnover, valuesAbsenteismo);
+                document.getElementById('loading').classList.add('hidden');
+            } catch (error) {
+                console.error("Erro na sincronização:", error);
+                alert("Erro ao carregar dados da planilha. Verifique a implantação.");
             }
         }
-    });
-</script>
+
+        function renderGrafico(meses, turnover, abs) {
+            const ctx = document.getElementById('graficoDinamico').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: meses,
+                    datasets: [
+                        {
+                            label: 'Turnover %',
+                            data: turnover,
+                            borderColor: '#ef4444',
+                            backgroundColor: '#ef444411',
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Absenteísmo %',
+                            data: abs,
+                            borderColor: '#3b82f6',
+                            borderDash: [5, 5],
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        fetchPlanilha();
+    </script>
+</body>
+</html>

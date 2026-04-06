@@ -1,51 +1,25 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Dashboard RH - Sistema</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-</head>
-<body>
-    <h1>Dashboard de Indicadores RH</h1>
-    <div style="width: 80%; margin: auto;">
-        <canvas id="meuGrafico"></canvas>
-    </div>
+Papa.parse(csvUrl, {
+    download: true,
+    header: true,
+    skipEmptyLines: true, // Pula linhas vazias que vimos na sua primeira imagem
+    complete: function(results) {
+        const dados = results.data;
+        
+        // Vamos imprimir no console para você testar (aperte F12 no navegador)
+        console.log("Dados carregados:", dados);
 
-    <script>
-        // Caminho para o seu arquivo no GitHub
-        const csvUrl = 'dados.csv';
-
-        Papa.parse(csvUrl, {
-            download: true,
-            header: true,
-            complete: function(results) {
-                const dados = results.data;
-                
-                // Filtrar apenas o processo que você quer, ex: "TOTAL DE DESLIGAMENTO"
-                const filtrados = dados.filter(item => item.Processo === 'TOTAL DE DESLIGAMENTO');
-                
-                const meses = filtrados.map(item => item.Mês);
-                const valoresReais = filtrados.map(item => item['Valor Real']);
-                const objetivos = filtrados.map(item => item.Objetivo);
-
-                const ctx = document.getElementById('meuGrafico').getContext('2d');
-                new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: meses,
-                        datasets: [{
-                            label: 'Valor Real',
-                            data: valoresReais,
-                            backgroundColor: 'blue'
-                        }, {
-                            label: 'Objetivo',
-                            data: objetivos,
-                            backgroundColor: 'red'
-                        }]
-                    }
-                });
-            }
+        // Tente pegar TODOS os dados primeiro para ver se o gráfico aparece
+        const meses = dados.map(item => item.Mês || item.mês); // Aceita Mês ou mês
+        const valoresReais = dados.map(item => {
+            // Converte "645,00%" ou "3,41" para número puro
+            let val = item['Valor Real'] || "0";
+            return parseFloat(val.replace(',', '.').replace('%', ''));
         });
-    </script>
-</body>
-</html>
+        const objetivos = dados.map(item => {
+            let obj = item.Objetivo || "0";
+            return parseFloat(obj.replace(',', '.').replace('%', ''));
+        });
+
+        // ... resto do código do Chart.js
+    }
+});

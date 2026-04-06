@@ -20,87 +20,101 @@
         <h1 style="font-size: 1.8rem; margin-bottom: 10px;">Gestão de Indicadores PA-03</h1>
     </div>
 
-    <div class="card">
-        <h2>Horas de Treinamento</h2>
-        <p class="sub">Desenvolvimento de Pessoas | Grupo Coplac</p>
-        <div class="chart-container"><canvas id="graficoTreinamento"></canvas></div>
-    </div>
-
-    <div class="card">
-        <h2>Taxa de Turnover (%)</h2>
-        <p class="sub">Retenção e Rotatividade | Grupo Coplac</p>
-        <div class="chart-container"><canvas id="graficoTurnover"></canvas></div>
-    </div>
-
-    <div class="card">
-        <h2>Absenteísmo PA - 03</h2>
-        <p class="sub">Frequência e Presença | Grupo Coplac</p>
-        <div class="chart-container"><canvas id="graficoAbsenteismo"></canvas></div>
-    </div>
-
-    <div class="card">
-        <h2>Retenção Plano de Valorização</h2>
-        <p class="sub">Valorização Interna | Grupo Coplac</p>
-        <div class="chart-container"><canvas id="graficoRetencao"></canvas></div>
-    </div>
+    <div id="container-graficos"></div>
 
 <script>
     const planilhaDrive = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
 
-    function limparNumero(valor) {
-        if (!valor || valor.toString().trim() === "") return null;
-        let n = valor.toString().replace(/\s/g, '').replace(',', '.');
-        return parseFloat(n);
+    function limparNumero(v) {
+        if (!v || v.toString().trim() === "") return 0;
+        let n = v.toString().replace(/\s/g, '').replace(',', '.');
+        return parseFloat(n) || 0;
     }
 
     function normalizar(txt) {
-        if (!txt) return "";
-        return txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+        return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
     }
 
-    function criarGrafico(id, labels, real, meta, labelDataset, corBarra) {
-        const ctx = document.getElementById(id);
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [
-                    { label: labelDataset, data: real, backgroundColor: corBarra, borderRadius: 5 },
-                    { label: 'Meta', data: meta, type: 'line', borderColor: '#ef4444', borderWidth: 3, fill: false, tension: 0.1, pointRadius: 5 }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
-                    x: { ticks: { color: '#94a3b8' } }
+    function criarGrafico(grupo, dadosFiltrados) {
+        const container = document.getElementById('container-graficos');
+        container.innerHTML += `
+            <div class="card">
+                <h2>${grupo}</h2>
+                <p class="sub">Análise de Performance | Grupo Coplac</p>
+                <div class="chart-container"><canvas id="chart-${grupo}"></canvas></div>
+            </div>`;
+
+        setTimeout(() => {
+            const ctx = document.getElementById(`chart-${grupo}`);
+            const labels = dadosFiltrados.map(ln => ln.Mês);
+            const valoresReais = dadosFiltrados.map(ln => limparNumero(ln['Valor Real']));
+            const metas = dadosFiltrados.map(ln => limparNumero(ln.Objetivo));
+
+            const coresBarras = valoresReais.map((valor, index) => {
+                const meta = metas[index];
+                const nomeGrupo = normalizar(grupo);
+
+                // LÓGICA INVERTIDA PARA TURNOVER E ABSENTEISMO
+                if (nomeGrupo.includes("TURNOVER") || nomeGrupo.includes("ABSENTEISMO")) {
+                    return valor <= meta ? '#10b981' : '#ef4444'; // Abaixo da meta = Verde
+                } else {
+                    return valor >= meta ? '#10b981' : '#ef4444'; // Acima da meta = Verde (Treinamento/Retenção)
+                }
+            });
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { 
+                            label: 'Realizado', 
+                            data: valoresReais, 
+                            backgroundColor: coresBarras, 
+                            borderRadius: 5 
+                        },
+                        { 
+                            label: 'Meta', 
+                            data: metas, 
+                            type: 'line', 
+                            borderColor: '#ffffff', 
+                            borderWidth: 2, 
+                            fill: false,
+                            pointBackgroundColor: '#ffffff'
+                        }
+                    ]
                 },
-                plugins: { legend: { labels: { color: '#f1f5f9' } } }
-            }
-        });
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                        x: { ticks: { color: '#94a3b8' } }
+                    },
+                    plugins: { 
+                        legend: { labels: { color: '#f1f5f9' } }
+                    }
+                }
+            });
+        }, 100);
     }
 
-    Papa.parse(planilhaDrive + "&cachebuster=" + new Date().getTime(), {
+    Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
         download: true,
         header: true,
         skipEmptyLines: true,
         complete: function(results) {
             const dados = results.data;
+            document.getElementById('container-graficos').innerHTML = "";
             
-            // FILTROS EXATOS PARA NÃO MISTURAR OS DADOS
-            const dTreino = dados.filter(ln => normalizar(ln.Processo).includes("HORAS DE TREINAMENTO"));
-            const dTurnover = dados.filter(ln => normalizar(ln.Processo).includes("TURNOVER"));
-            const dAbsent = dados.filter(ln => normalizar(ln.Processo).includes("ABSENTEISMO"));
-            const dRetencao = dados.filter(ln => normalizar(ln.Processo).includes("RETENCAO"));
+            const grupos = ["TREINAMENTO", "TURNOVER", "ABSENTEISMO", "RETENCAO"];
 
-            if(dTreino.length) criarGrafico('graficoTreinamento', dTreino.map(ln => ln.Mês), dTreino.map(ln => limparNumero(ln['Valor Real'])), dTreino.map(ln => limparNumero(ln.Objetivo)), 'Horas', '#38bdf8');
-            
-            if(dTurnover.length) criarGrafico('graficoTurnover', dTurnover.map(ln => ln.Mês), dTurnover.map(ln => limparNumero(ln['Valor Real'])), dTurnover.map(ln => limparNumero(ln.Objetivo)), 'Taxa %', '#a855f7');
-            
-            if(dAbsent.length) criarGrafico('graficoAbsenteismo', dAbsent.map(ln => ln.Mês), dAbsent.map(ln => limparNumero(ln['Valor Real'])), dAbsent.map(ln => limparNumero(ln.Objetivo)), 'Taxa %', '#ec4899');
-            
-            if(dRetencao.length) criarGrafico('graficoRetencao', dRetencao.map(ln => ln.Mês), dRetencao.map(ln => limparNumero(ln['Valor Real'])), dRetencao.map(ln => limparNumero(ln.Objetivo)), 'Taxa %', '#10b981');
+            grupos.forEach(grupo => {
+                const filtrados = dados.filter(ln => normalizar(ln.Processo).includes(grupo));
+                if (filtrados.length > 0) {
+                    criarGrafico(grupo, filtrados);
+                }
+            });
         }
     });
 </script>

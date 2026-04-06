@@ -8,7 +8,7 @@
     <style>
         body { background-color: #0f172a; color: #f1f5f9; font-family: sans-serif; padding: 20px; }
         .card { background: #1e293b; border-radius: 15px; padding: 25px; max-width: 900px; margin: 20px auto; border: 1px solid #334155; }
-        h2 { color: #38bdf8; margin: 0; font-size: 1.5rem; }
+        h2 { color: #38bdf8; margin: 0; font-size: 1.5rem; text-transform: uppercase; }
         .sub { color: #94a3b8; font-size: 0.9rem; margin-bottom: 20px; }
         .chart-container { position: relative; height: 350px; width: 100%; }
         .back-btn { color: #94a3b8; text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
@@ -17,6 +17,7 @@
 <body>
     <div style="max-width: 900px; margin: auto;">
         <a href="index.html" class="back-btn">← Voltar para perfis</a>
+        <h1 style="font-size: 1.8rem; margin-bottom: 10px;">Gestão de Indicadores PA-03</h1>
     </div>
 
     <div class="card">
@@ -37,22 +38,38 @@
         <div class="chart-container"><canvas id="graficoAbsenteismo"></canvas></div>
     </div>
 
+    <div class="card">
+        <h2>Retenção Plano de Valorização</h2>
+        <p class="sub">Valorização Interna | Grupo Coplac</p>
+        <div class="chart-container"><canvas id="graficoRetencao"></canvas></div>
+    </div>
+
 <script>
     const planilhaDrive = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
 
     function limparNumero(valor) {
         if (!valor || valor.toString().trim() === "") return null;
-        return parseFloat(valor.toString().replace(',', '.')) || 0;
+        // Remove espaços e troca vírgula por ponto para o gráfico entender
+        let n = valor.toString().replace(/\s/g, '').replace(',', '.');
+        return parseFloat(n) || 0;
+    }
+
+    function normalizarTexto(txt) {
+        if (!txt) return "";
+        return txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
     }
 
     function criarGrafico(id, labels, real, meta, labelDataset, corBarra) {
-        new Chart(document.getElementById(id), {
+        const ctx = document.getElementById(id);
+        if (!ctx) return;
+        
+        new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labels,
                 datasets: [
                     { label: labelDataset, data: real, backgroundColor: corBarra, borderRadius: 5 },
-                    { label: 'Meta', data: meta, type: 'line', borderColor: '#ef4444', borderWidth: 3, fill: false }
+                    { label: 'Meta', data: meta, type: 'line', borderColor: '#ef4444', borderWidth: 3, fill: false, tension: 0.1 }
                 ]
             },
             options: {
@@ -74,17 +91,34 @@
         complete: function(results) {
             const dados = results.data;
             
-            // Filtro Treinamento
-            const dTreino = dados.filter(ln => ln.Processo && ln.Processo.toUpperCase().includes("TREINAMENTO"));
-            criarGrafico('graficoTreinamento', dTreino.map(ln => ln.Mês), dTreino.map(ln => limparNumero(ln['Valor Real'])), dTreino.map(ln => limparNumero(ln.Objetivo)), 'Horas Realizadas', '#38bdf8');
+            // Filtro reforçado para ignorar acentos, espaços e maiúsculas/minúsculas
+            const filtrar = (termo) => dados.filter(ln => 
+                ln.Processo && normalizarTexto(ln.Processo).includes(normalizarTexto(termo))
+            );
 
-            // Filtro Turnover
-            const dTurnover = dados.filter(ln => ln.Processo && ln.Processo.toUpperCase().includes("TURNOVER"));
-            criarGrafico('graficoTurnover', dTurnover.map(ln => ln.Mês), dTurnover.map(ln => limparNumero(ln['Valor Real'])), dTurnover.map(ln => limparNumero(ln.Objetivo)), 'Taxa %', '#a855f7');
+            // 1. Treinamento
+            const dTreino = filtrar("TREINAMENTO");
+            if(dTreino.length > 0) {
+                criarGrafico('graficoTreinamento', dTreino.map(ln => ln.Mês), dTreino.map(ln => limparNumero(ln['Valor Real'])), dTreino.map(ln => limparNumero(ln.Objetivo)), 'Horas Realizadas', '#38bdf8');
+            }
 
-            // Filtro Absenteísmo
-            const dAbsent = dados.filter(ln => ln.Processo && ln.Processo.toUpperCase().includes("ABSENTEISMO"));
-            criarGrafico('graficoAbsenteismo', dAbsent.map(ln => ln.Mês), dAbsent.map(ln => limparNumero(ln['Valor Real'])), dAbsent.map(ln => limparNumero(ln.Objetivo)), 'Taxa %', '#ec4899');
+            // 2. Turnover
+            const dTurnover = filtrar("TURNOVER");
+            if(dTurnover.length > 0) {
+                criarGrafico('graficoTurnover', dTurnover.map(ln => ln.Mês), dTurnover.map(ln => limparNumero(ln['Valor Real'])), dTurnover.map(ln => limparNumero(ln.Objetivo)), 'Taxa %', '#a855f7');
+            }
+
+            // 3. Absenteísmo (Busca por "ABSENTEISMO" independente de acento ou espaço)
+            const dAbsent = filtrar("ABSENTEISMO");
+            if(dAbsent.length > 0) {
+                criarGrafico('graficoAbsenteismo', dAbsent.map(ln => ln.Mês), dAbsent.map(ln => limparNumero(ln['Valor Real'])), dAbsent.map(ln => limparNumero(ln.Objetivo)), 'Taxa %', '#ec4899');
+            }
+
+            // 4. Retenção
+            const dRetencao = filtrar("RETENCAO");
+            if(dRetencao.length > 0) {
+                criarGrafico('graficoRetencao', dRetencao.map(ln => ln.Mês), dRetencao.map(ln => limparNumero(ln['Valor Real'])), dRetencao.map(ln => limparNumero(ln.Objetivo)), 'Taxa %', '#10b981');
+            }
         }
     });
 </script>

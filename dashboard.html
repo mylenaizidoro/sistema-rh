@@ -49,27 +49,24 @@
 
     function limparNumero(valor) {
         if (!valor || valor.toString().trim() === "") return null;
-        // Remove espaços e troca vírgula por ponto para o gráfico entender
         let n = valor.toString().replace(/\s/g, '').replace(',', '.');
-        return parseFloat(n) || 0;
+        return parseFloat(n);
     }
 
-    function normalizarTexto(txt) {
+    function normalizar(txt) {
         if (!txt) return "";
         return txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
     }
 
     function criarGrafico(id, labels, real, meta, labelDataset, corBarra) {
         const ctx = document.getElementById(id);
-        if (!ctx) return;
-        
         new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labels,
                 datasets: [
                     { label: labelDataset, data: real, backgroundColor: corBarra, borderRadius: 5 },
-                    { label: 'Meta', data: meta, type: 'line', borderColor: '#ef4444', borderWidth: 3, fill: false, tension: 0.1 }
+                    { label: 'Meta', data: meta, type: 'line', borderColor: '#ef4444', borderWidth: 3, fill: false, tension: 0.1, pointRadius: 5 }
                 ]
             },
             options: {
@@ -91,34 +88,19 @@
         complete: function(results) {
             const dados = results.data;
             
-            // Filtro reforçado para ignorar acentos, espaços e maiúsculas/minúsculas
-            const filtrar = (termo) => dados.filter(ln => 
-                ln.Processo && normalizarTexto(ln.Processo).includes(normalizarTexto(termo))
-            );
+            // FILTROS EXATOS PARA NÃO MISTURAR OS DADOS
+            const dTreino = dados.filter(ln => normalizar(ln.Processo).includes("HORAS DE TREINAMENTO"));
+            const dTurnover = dados.filter(ln => normalizar(ln.Processo).includes("TURNOVER"));
+            const dAbsent = dados.filter(ln => normalizar(ln.Processo).includes("ABSENTEISMO"));
+            const dRetencao = dados.filter(ln => normalizar(ln.Processo).includes("RETENCAO"));
 
-            // 1. Treinamento
-            const dTreino = filtrar("TREINAMENTO");
-            if(dTreino.length > 0) {
-                criarGrafico('graficoTreinamento', dTreino.map(ln => ln.Mês), dTreino.map(ln => limparNumero(ln['Valor Real'])), dTreino.map(ln => limparNumero(ln.Objetivo)), 'Horas Realizadas', '#38bdf8');
-            }
-
-            // 2. Turnover
-            const dTurnover = filtrar("TURNOVER");
-            if(dTurnover.length > 0) {
-                criarGrafico('graficoTurnover', dTurnover.map(ln => ln.Mês), dTurnover.map(ln => limparNumero(ln['Valor Real'])), dTurnover.map(ln => limparNumero(ln.Objetivo)), 'Taxa %', '#a855f7');
-            }
-
-            // 3. Absenteísmo (Busca por "ABSENTEISMO" independente de acento ou espaço)
-            const dAbsent = filtrar("ABSENTEISMO");
-            if(dAbsent.length > 0) {
-                criarGrafico('graficoAbsenteismo', dAbsent.map(ln => ln.Mês), dAbsent.map(ln => limparNumero(ln['Valor Real'])), dAbsent.map(ln => limparNumero(ln.Objetivo)), 'Taxa %', '#ec4899');
-            }
-
-            // 4. Retenção
-            const dRetencao = filtrar("RETENCAO");
-            if(dRetencao.length > 0) {
-                criarGrafico('graficoRetencao', dRetencao.map(ln => ln.Mês), dRetencao.map(ln => limparNumero(ln['Valor Real'])), dRetencao.map(ln => limparNumero(ln.Objetivo)), 'Taxa %', '#10b981');
-            }
+            if(dTreino.length) criarGrafico('graficoTreinamento', dTreino.map(ln => ln.Mês), dTreino.map(ln => limparNumero(ln['Valor Real'])), dTreino.map(ln => limparNumero(ln.Objetivo)), 'Horas', '#38bdf8');
+            
+            if(dTurnover.length) criarGrafico('graficoTurnover', dTurnover.map(ln => ln.Mês), dTurnover.map(ln => limparNumero(ln['Valor Real'])), dTurnover.map(ln => limparNumero(ln.Objetivo)), 'Taxa %', '#a855f7');
+            
+            if(dAbsent.length) criarGrafico('graficoAbsenteismo', dAbsent.map(ln => ln.Mês), dAbsent.map(ln => limparNumero(ln['Valor Real'])), dAbsent.map(ln => limparNumero(ln.Objetivo)), 'Taxa %', '#ec4899');
+            
+            if(dRetencao.length) criarGrafico('graficoRetencao', dRetencao.map(ln => ln.Mês), dRetencao.map(ln => limparNumero(ln['Valor Real'])), dRetencao.map(ln => limparNumero(ln.Objetivo)), 'Taxa %', '#10b981');
         }
     });
 </script>

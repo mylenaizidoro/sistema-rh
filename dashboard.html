@@ -35,28 +35,26 @@
         return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
     }
 
-    function criarGrafico(tituloOriginal, dadosFiltrados) {
+    function criarGraficoComum(grupo, dadosFiltrados) {
         const container = document.getElementById('container-graficos');
-        const idGrafico = btoa(tituloOriginal).replace(/[^a-z0-9]/gi, ''); // Gera um ID único e limpo
-
+        const titulo = grupo === "APROVADOS EM TREINAMENTO" ? "APROVADOS EM TREINAMENTO" : grupo;
+        
         container.innerHTML += `
             <div class="card">
-                <h2>${tituloOriginal}</h2>
-                <p class="sub">Grupo Coplac | PA-03</p>
-                <div class="chart-container"><canvas id="chart-${idGrafico}"></canvas></div>
+                <h2>${titulo}</h2>
+                <p class="sub">Análise de Performance | Grupo Coplac</p>
+                <div class="chart-container"><canvas id="chart-${normalizar(grupo)}"></canvas></div>
             </div>`;
 
         setTimeout(() => {
-            const ctx = document.getElementById(`chart-${idGrafico}`);
-            const labels = dadosFiltrados.map(ln => ln.Mês);
+            const ctx = document.getElementById(`chart-${normalizar(grupo)}`);
+            const labels = [...new Set(dadosFiltrados.map(ln => ln.Mês))];
             const valoresReais = dadosFiltrados.map(ln => limparNumero(ln['Valor Real']));
             const metas = dadosFiltrados.map(ln => limparNumero(ln.Objetivo));
 
             const coresBarras = valoresReais.map((valor, index) => {
                 const meta = metas[index];
-                const t = normalizar(tituloOriginal);
-                // Se for Absenteísmo ou Turnover, VERDE é para baixo. Senão, VERDE é para cima.
-                if (t.includes("ABSENTEISMO") || t.includes("TURNOVER")) {
+                if (normalizar(grupo).includes("ABSENTEISMO")) {
                     return valor <= meta ? '#10b981' : '#ef4444';
                 }
                 return valor >= meta ? '#10b981' : '#ef4444';
@@ -67,31 +65,54 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { 
-                            label: 'Realizado', 
-                            data: valoresReais, 
-                            backgroundColor: coresBarras, 
-                            borderRadius: 5 
-                        },
-                        { 
-                            label: 'Meta', 
-                            data: metas, 
-                            type: 'line', 
-                            borderColor: '#ffffff', 
-                            borderWidth: 2, 
-                            fill: false,
-                            pointBackgroundColor: '#ffffff'
-                        }
+                        { label: 'Realizado', data: valoresReais, backgroundColor: coresBarras, borderRadius: 5 },
+                        { label: 'Meta', data: metas, type: 'line', borderColor: '#ffffff', borderWidth: 2, fill: false }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }, 100);
+    }
+
+    function criarGraficoTurnoverEmpilhado(dados) {
+        const container = document.getElementById('container-graficos');
+        container.innerHTML += `
+            <div class="card">
+                <h2>TURNOVER (COMPOSIÇÃO)</h2>
+                <p class="sub">Iniciativa Empresa vs Solicitação | Grupo Coplac</p>
+                <div class="chart-container"><canvas id="chart-turnover-stack"></canvas></div>
+            </div>`;
+
+        setTimeout(() => {
+            const ctx = document.getElementById('chart-turnover-stack');
+            const meses = [...new Set(dados.map(ln => ln.Mês))];
+            
+            const dadosEmpresa = meses.map(mes => {
+                const ln = dados.find(d => d.Mês === mes && normalizar(d.Processo).includes("INICIATIVA"));
+                return ln ? limparNumero(ln['Valor Real']) : 0;
+            });
+
+            const dadosPedido = meses.map(mes => {
+                const ln = dados.find(d => d.Mês === mes && normalizar(d.Processo).includes("SOLICITACOES"));
+                return ln ? limparNumero(ln['Valor Real']) : 0;
+            });
+
+            const totalTendencia = dadosEmpresa.map((v, i) => v + dadosPedido[i]);
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: meses,
+                    datasets: [
+                        { label: 'Iniciativa Empresa', data: dadosEmpresa, backgroundColor: '#ef4444', stack: 'stack1' },
+                        { label: 'Pedido de Demissão', data: dadosPedido, backgroundColor: '#6366f1', stack: 'stack1' },
+                        { label: 'Total (Tendência)', data: totalTendencia, type: 'line', borderColor: '#38bdf8', borderWidth: 3, fill: false, tension: 0.3 }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
-                        x: { ticks: { color: '#94a3b8' } }
-                    },
-                    plugins: { legend: { labels: { color: '#f1f5f9' } } }
+                    scales: { x: { stacked: true }, y: { stacked: true } }
                 }
             });
         }, 100);
@@ -105,20 +126,15 @@
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
             
-            // Lista de processos que você quer que apareçam como gráficos individuais
-            // Basta colocar o nome EXATO ou parte do nome que está na sua planilha
-            const processosDesejados = [
-                "APROVADOS EM TREINAMENTO", 
-                "TURNOVER", 
-                "ABSENTEISMO", 
-                "RETENCAO"
-            ];
+            // Gráfico Empilhado de Turnover
+            const dadosTurnover = dados.filter(ln => normalizar(ln.Processo).includes("TURNOVER"));
+            if (dadosTurnover.length) criarGraficoTurnoverEmpilhado(dadosTurnover);
 
-            processosDesejados.forEach(proc => {
-                const filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(proc)));
-                if (filtrados.length > 0) {
-                    criarGrafico(proc, filtrados);
-                }
+            // Outros Gráficos
+            const outros = ["ABSENTEISMO", "APROVADOS EM TREINAMENTOS", "RETENCAO"];
+            outros.forEach(grupo => {
+                const filtrados = dados.filter(ln => normalizar(ln.Processo).includes(grupo));
+                if (filtrados.length) criarGraficoComum(grupo, filtrados);
             });
         }
     });

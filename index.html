@@ -2,94 +2,114 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema Integrado - Grupo Coplac</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>Dashboard RH - Grupo Coplac</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
-        :root {
-            --bg-body: #0f172a;
-            --card-bg: #1e293b;
-            --accent: #38bdf8;
-            --text-main: #f1f5f9;
-            --text-dim: #94a3b8;
-        }
-        body {
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            font-family: 'Inter', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-        }
-        .header { text-align: center; margin-bottom: 30px; }
-        .header span { color: var(--accent); font-weight: 600; letter-spacing: 2px; font-size: 0.8rem; }
-        .header h1 { font-size: 2.2rem; margin: 10px 0; font-weight: 600; }
-        .container { width: 90%; max-width: 450px; }
-        .profile-card {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-            color: inherit;
-            border: 1px solid rgba(255,255,255,0.05);
-            transition: all 0.3s ease;
-        }
-        .profile-card:hover {
-            background: #2d3a4f;
-            transform: translateY(-3px);
-            border-color: var(--accent);
-        }
-        .avatar {
-            width: 50px;
-            height: 50px;
-            background: rgba(16, 185, 129, 0.1);
-            color: #10b981;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            margin-right: 15px;
-            font-size: 1.2rem;
-        }
-        .info h3 { margin: 0; font-size: 1.1rem; }
-        .info p { margin: 0; font-size: 0.85rem; color: var(--text-dim); }
-        .arrow { margin-left: auto; color: var(--text-dim); font-size: 1.2rem; }
+        body { background-color: #0f172a; color: #f1f5f9; font-family: sans-serif; padding: 20px; }
+        .card { background: #1e293b; border-radius: 15px; padding: 25px; max-width: 900px; margin: 20px auto; border: 1px solid #334155; }
+        h2 { color: #38bdf8; margin: 0; font-size: 1.5rem; text-transform: uppercase; }
+        .sub { color: #94a3b8; font-size: 0.9rem; margin-bottom: 20px; }
+        .chart-container { position: relative; height: 350px; width: 100%; }
+        .back-btn { color: #94a3b8; text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
     </style>
 </head>
 <body>
-
-    <div class="header">
-        <span>GRUPO COPLAC</span>
-        <h1>Sistema Integrado</h1>
-        <p style="color: var(--text-dim)">RH e DHO — selecione seu perfil para continuar</p>
+    <div style="max-width: 900px; margin: auto;">
+        <a href="index.html" class="back-btn">← Voltar para perfis</a>
+        <h1 style="font-size: 1.8rem; margin-bottom: 10px;">Gestão de Indicadores PA-03</h1>
     </div>
 
-    <div class="container">
-        <a href="dashboard.html" class="profile-card">
-            <div class="avatar">A</div>
-            <div class="info">
-                <h3>Ada</h3>
-                <p>DHO - Treinamento e Desenvolvimento</p>
-            </div>
-            <div class="arrow">➔</div>
-        </a>
-
-        <a href="#" class="profile-card" style="opacity: 0.7; cursor: not-allowed;">
-            <div class="avatar" style="color: #6366f1; background: rgba(99, 102, 241, 0.1);">G</div>
-            <div class="info">
-                <h3>Gestor</h3>
-                <p>Operações / Industrial</p>
-            </div>
-            <div class="arrow">➔</div>
-        </a>
+    <div class="card">
+        <h2>Horas de Treinamento</h2>
+        <p class="sub">Desenvolvimento de Pessoas | Grupo Coplac</p>
+        <div class="chart-container"><canvas id="graficoTreinamento"></canvas></div>
     </div>
 
+    <div class="card">
+        <h2>Taxa de Turnover (%)</h2>
+        <p class="sub">Retenção e Rotatividade | Grupo Coplac</p>
+        <div class="chart-container"><canvas id="graficoTurnover"></canvas></div>
+    </div>
+
+    <div class="card">
+        <h2>Absenteísmo PA - 03</h2>
+        <p class="sub">Frequência e Presença | Grupo Coplac</p>
+        <div class="chart-container"><canvas id="graficoAbsenteismo"></canvas></div>
+    </div>
+
+    <div class="card">
+        <h2>Retenção Plano de Valorização</h2>
+        <p class="sub">Valorização Interna | Grupo Coplac</p>
+        <div class="chart-container"><canvas id="graficoRetencao"></canvas></div>
+    </div>
+
+<script>
+    const planilhaDrive = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
+
+    function limparNumero(valor) {
+        if (!valor || valor.toString().trim() === "") return null;
+        return parseFloat(valor.toString().replace(',', '.')) || 0;
+    }
+
+    // Função para remover acentos e comparar textos (ex: Absenteísmo vs Absenteismo)
+    function normalizarTexto(txt) {
+        return txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+    }
+
+    function criarGrafico(id, labels, real, meta, labelDataset, corBarra) {
+        const ctx = document.getElementById(id);
+        if (!ctx) return;
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: labelDataset, data: real, backgroundColor: corBarra, borderRadius: 5 },
+                    { label: 'Meta', data: meta, type: 'line', borderColor: '#ef4444', borderWidth: 3, fill: false, tension: 0.1 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                    x: { ticks: { color: '#94a3b8' } }
+                },
+                plugins: { legend: { labels: { color: '#f1f5f9' } } }
+            }
+        });
+    }
+
+    Papa.parse(planilhaDrive + "&cachebuster=" + new Date().getTime(), {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+            const dados = results.data;
+            
+            const filtrar = (termo) => dados.filter(ln => 
+                ln.Processo && normalizarTexto(ln.Processo).includes(normalizarTexto(termo))
+            );
+
+            // 1. Treinamento
+            const dTreino = filtrar("TREINAMENTO");
+            criarGrafico('graficoTreinamento', dTreino.map(ln => ln.Mês), dTreino.map(ln => limparNumero(ln['Valor Real'])), dTreino.map(ln => limparNumero(ln.Objetivo)), 'Horas Realizadas', '#38bdf8');
+
+            // 2. Turnover
+            const dTurnover = filtrar("TURNOVER");
+            criarGrafico('graficoTurnover', dTurnover.map(ln => ln.Mês), dTurnover.map(ln => limparNumero(ln['Valor Real'])), dTurnover.map(ln => limparNumero(ln.Objetivo)), 'Taxa %', '#a855f7');
+
+            // 3. Absenteísmo
+            const dAbsent = filtrar("ABSENTEISMO");
+            criarGrafico('graficoAbsenteismo', dAbsent.map(ln => ln.Mês), dAbsent.map(ln => limparNumero(ln['Valor Real'])), dAbsent.map(ln => limparNumero(ln.Objetivo)), 'Taxa %', '#ec4899');
+
+            // 4. Retenção
+            const dRetencao = filtrar("RETENCAO");
+            criarGrafico('graficoRetencao', dRetencao.map(ln => ln.Mês), dRetencao.map(ln => limparNumero(ln['Valor Real'])), dRetencao.map(ln => limparNumero(ln.Objetivo)), 'Taxa %', '#10b981');
+        }
+    });
+</script>
 </body>
 </html>

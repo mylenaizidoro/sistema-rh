@@ -2,84 +2,94 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard DHO - Grupo Coplac</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Integrado - Grupo Coplac</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #0f172a; color: #f1f5f9; font-family: 'Inter', sans-serif; padding: 20px; }
-        .card { background: #1e293b; border-radius: 15px; padding: 25px; max-width: 900px; margin: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
-        h2 { color: #38bdf8; margin-bottom: 5px; }
-        p.sub { color: #94a3b8; margin-bottom: 25px; }
-        .chart-container { position: relative; height: 400px; }
-        .back-btn { color: #94a3b8; text-decoration: none; font-size: 0.9rem; display: inline-block; margin-bottom: 20px; }
+        :root {
+            --bg-body: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #38bdf8;
+            --text-main: #f1f5f9;
+            --text-dim: #94a3b8;
+        }
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header span { color: var(--accent); font-weight: 600; letter-spacing: 2px; font-size: 0.8rem; }
+        .header h1 { font-size: 2.2rem; margin: 10px 0; font-weight: 600; }
+        .container { width: 90%; max-width: 450px; }
+        .profile-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: inherit;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.3s ease;
+        }
+        .profile-card:hover {
+            background: #2d3a4f;
+            transform: translateY(-3px);
+            border-color: var(--accent);
+        }
+        .avatar {
+            width: 50px;
+            height: 50px;
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            font-size: 1.2rem;
+        }
+        .info h3 { margin: 0; font-size: 1.1rem; }
+        .info p { margin: 0; font-size: 0.85rem; color: var(--text-dim); }
+        .arrow { margin-left: auto; color: var(--text-dim); font-size: 1.2rem; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <a href="index.html" class="back-btn">← Voltar para perfis</a>
-    <h2>Indicadores de DHO</h2>
-    <p class="sub">Gestão de Treinamento e Desenvolvimento - Grupo Coplac</p>
-    
-    <div class="chart-container">
-        <canvas id="graficoTreinamento"></canvas>
+    <div class="header">
+        <span>GRUPO COPLAC</span>
+        <h1>Sistema Integrado</h1>
+        <p style="color: var(--text-dim)">RH e DHO — selecione seu perfil para continuar</p>
     </div>
-</div>
 
-<script>
-    const csvUrl = 'dados.csv';
+    <div class="container">
+        <a href="dashboard.html" class="profile-card">
+            <div class="avatar">A</div>
+            <div class="info">
+                <h3>Ada</h3>
+                <p>DHO - Treinamento e Desenvolvimento</p>
+            </div>
+            <div class="arrow">➔</div>
+        </a>
 
-    Papa.parse(csvUrl, {
-        download: true,
-        header: true,
-        skipEmptyLines: true,
-        complete: function(results) {
-            const dados = results.data;
-            
-            // FILTRO: Pega apenas as linhas de HORAS DE TREINAMENTO
-            const treinoData = dados.filter(item => 
-                item.Processo && item.Processo.includes("HORAS DE TREINAMENTO")
-            );
+        <a href="#" class="profile-card" style="opacity: 0.7; cursor: not-allowed;">
+            <div class="avatar" style="color: #6366f1; background: rgba(99, 102, 241, 0.1);">G</div>
+            <div class="info">
+                <h3>Gestor</h3>
+                <p>Operações / Industrial</p>
+            </div>
+            <div class="arrow">➔</div>
+        </a>
+    </div>
 
-            const meses = treinoData.map(item => item.Mês);
-            const reais = treinoData.map(item => parseFloat(item['Valor Real'].replace(',', '.')));
-            const metas = treinoData.map(item => parseFloat(item.Objetivo.replace(',', '.')));
-
-            new Chart(document.getElementById('graficoTreinamento'), {
-                type: 'bar',
-                data: {
-                    labels: meses,
-                    datasets: [
-                        {
-                            label: 'Horas Realizadas',
-                            data: reais,
-                            backgroundColor: '#38bdf8', // Azul Coplac
-                            borderRadius: 5
-                        },
-                        {
-                            label: 'Meta de Horas',
-                            data: metas,
-                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                            borderColor: '#94a3b8',
-                            borderWidth: 1,
-                            type: 'line' // Mostra a meta como uma linha para facilitar a leitura
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-                    },
-                    plugins: {
-                        legend: { labels: { color: '#f1f5f9' } }
-                    }
-                }
-            });
-        }
-    });
-</script>
 </body>
 </html>

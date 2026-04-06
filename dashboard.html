@@ -2,70 +2,93 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard DHO - Grupo Coplac</title>
+    <title>Dashboard RH - Grupo Coplac</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
-        body { background-color: #0f172a; color: #f1f5f9; font-family: 'Inter', sans-serif; padding: 20px; }
-        .card { background: #1e293b; border-radius: 15px; padding: 25px; max-width: 900px; margin: auto; border: 1px solid #334155; }
-        h2 { color: #38bdf8; margin: 0; }
-        .chart-container { position: relative; height: 400px; width: 100%; margin-top: 20px; }
+        body { background-color: #0f172a; color: #f1f5f9; font-family: sans-serif; padding: 20px; }
+        .card { background: #1e293b; border-radius: 15px; padding: 25px; max-width: 900px; margin: 20px auto; border: 1px solid #334155; }
+        h2 { color: #38bdf8; margin: 0; font-size: 1.5rem; }
+        .sub { color: #94a3b8; font-size: 0.9rem; margin-bottom: 20px; }
+        .chart-container { position: relative; height: 350px; width: 100%; }
         .back-btn { color: #94a3b8; text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
     </style>
 </head>
 <body>
-    <div class="card">
+    <div style="max-width: 900px; margin: auto;">
         <a href="index.html" class="back-btn">← Voltar para perfis</a>
-        <h2>Indicadores de DHO</h2>
-        <p style="color: #94a3b8;">Dados em tempo real via Google Drive | Grupo Coplac</p>
-        <div class="chart-container"><canvas id="graficoDHO"></canvas></div>
+    </div>
+
+    <div class="card">
+        <h2>Horas de Treinamento</h2>
+        <p class="sub">Desenvolvimento de Pessoas | Grupo Coplac</p>
+        <div class="chart-container"><canvas id="graficoTreinamento"></canvas></div>
+    </div>
+
+    <div class="card">
+        <h2>Taxa de Turnover (%)</h2>
+        <p class="sub">Retenção e Rotatividade | Grupo Coplac</p>
+        <div class="chart-container"><canvas id="graficoTurnover"></canvas></div>
     </div>
 
 <script>
-    // SEU LINK DO DRIVE CONFIGURADO PARA CSV:
     const planilhaDrive = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
 
     function limparNumero(valor) {
-        if (!valor) return 0;
-        let n = valor.toString().replace(/[^\d,.-]/g, '').replace(',', '.');
-        return parseFloat(n) || 0;
+        if (!valor || valor.toString().trim() === "") return null;
+        return parseFloat(valor.toString().replace(',', '.')) || 0;
     }
 
-    Papa.parse(planilhaDrive, {
+    function criarGrafico(id, labels, real, meta, labelDataset, corBarra) {
+        new Chart(document.getElementById(id), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: labelDataset, data: real, backgroundColor: corBarra, borderRadius: 5 },
+                    { label: 'Meta', data: meta, type: 'line', borderColor: '#ef4444', borderWidth: 3, fill: false }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                    x: { ticks: { color: '#94a3b8' } }
+                },
+                plugins: { legend: { labels: { color: '#f1f5f9' } } }
+            }
+        });
+    }
+
+    Papa.parse(planilhaDrive + "&cachebuster=" + new Date().getTime(), {
         download: true,
         header: true,
         skipEmptyLines: true,
         complete: function(results) {
             const dados = results.data;
             
-            // Filtra por TREINAMENTO
-            const treinoData = dados.filter(ln => 
-                ln.Processo && ln.Processo.toUpperCase().includes("TREINAMENTO")
+            // 1. Dados de Treinamento
+            const dTreino = dados.filter(ln => ln.Processo && ln.Processo.toUpperCase().includes("TREINAMENTO"));
+            criarGrafico(
+                'graficoTreinamento', 
+                dTreino.map(ln => ln.Mês), 
+                dTreino.map(ln => limparNumero(ln['Valor Real'])), 
+                dTreino.map(ln => limparNumero(ln.Objetivo)),
+                'Horas Realizadas',
+                '#38bdf8'
             );
 
-            const meses = treinoData.map(ln => ln.Mês || ln.Mes); 
-            const reais = treinoData.map(ln => limparNumero(ln['Valor Real'])); 
-            const metas = treinoData.map(ln => limparNumero(ln.Objetivo)); 
-
-            new Chart(document.getElementById('graficoDHO'), {
-                type: 'bar',
-                data: {
-                    labels: meses,
-                    datasets: [
-                        { label: 'Horas Realizadas', data: reais, backgroundColor: '#38bdf8', borderRadius: 5 },
-                        { label: 'Meta', data: metas, type: 'line', borderColor: '#ef4444', borderWidth: 3, fill: false }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
-                        x: { ticks: { color: '#94a3b8' } }
-                    },
-                    plugins: { legend: { labels: { color: '#f1f5f9' } } }
-                }
-            });
+            // 2. Dados de Turnover
+            const dTurnover = dados.filter(ln => ln.Processo && ln.Processo.toUpperCase().includes("TURNOVER"));
+            criarGrafico(
+                'graficoTurnover', 
+                dTurnover.map(ln => ln.Mês), 
+                dTurnover.map(ln => limparNumero(ln['Valor Real'])), 
+                dTurnover.map(ln => limparNumero(ln.Objetivo)),
+                'Taxa %',
+                '#a855f7' // Uma cor roxa para diferenciar do azul
+            );
         }
     });
 </script>

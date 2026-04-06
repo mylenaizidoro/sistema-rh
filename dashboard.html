@@ -12,7 +12,7 @@
         .sub { color: #94a3b8; margin-bottom: 25px; }
         .chart-container { position: relative; height: 400px; width: 100%; }
         .back-btn { color: #94a3b8; text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
-        #status { color: #fbbf24; background: rgba(251, 191, 36, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #fbbf24; line-height: 1.5; }
+        #debug { color: #fbbf24; background: rgba(251, 191, 36, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #fbbf24; display: none; font-family: monospace; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -22,7 +22,7 @@
     <h2>Indicadores de DHO</h2>
     <p class="sub">Ada — Treinamento e Desenvolvimento | Grupo Coplac</p>
     
-    <div id="status" style="display:none;"></div>
+    <div id="debug"></div>
 
     <div class="chart-container">
         <canvas id="graficoDHO"></canvas>
@@ -30,40 +30,38 @@
 </div>
 
 <script>
-    const csvUrl = 'dados.csv';
-    const statusDiv = document.getElementById('status');
+    const debugDiv = document.getElementById('debug');
 
-    function limparNumero(valor) {
-        if (!valor) return 0;
-        let num = valor.toString().replace(/[^\d,.-]/g, '').replace(',', '.');
-        return parseFloat(num) || 0;
+    function limparValor(v) {
+        if (!v) return 0;
+        let n = v.toString().replace(/[^\d,.-]/g, '').replace(',', '.');
+        return parseFloat(n) || 0;
     }
 
-    Papa.parse(csvUrl, {
+    Papa.parse("dados.csv", {
         download: true,
         header: true,
         skipEmptyLines: true,
-        // O segredo está aqui: detectar automaticamente se o Excel usou , ou ;
         complete: function(results) {
             const dados = results.data;
             
-            // Filtro flexível para encontrar "TREINAMENTO"
-            const treinoData = dados.filter(item => {
-                // Tenta ler qualquer coluna que contenha o nome "Processo"
-                const linhaInteira = JSON.stringify(item).toUpperCase();
-                return linhaInteira.includes("TREINAMENTO");
+            // Filtro ultra-flexível: procura "TREINAMENTO" em qualquer coluna
+            const treinoData = dados.filter(linha => {
+                return Object.values(linha).some(val => 
+                    val && val.toString().toUpperCase().includes("TREINAMENTO")
+                );
             });
 
             if (treinoData.length === 0) {
-                statusDiv.style.display = "block";
-                statusDiv.innerHTML = "<strong>Ainda não encontrei os dados:</strong><br>1. Verifique se o arquivo no GitHub chama-se <b>dados.csv</b><br>2. No seu Excel, a palavra <b>HORAS DE TREINAMENTO</b> deve estar na coluna <b>Processo</b>.";
+                debugDiv.style.display = "block";
+                debugDiv.innerHTML = "<b>ERRO DE LEITURA:</b> Não encontrei 'TREINAMENTO'.<br>Colunas lidas: " + Object.keys(dados[0] || {}).join(" | ");
                 return;
             }
 
-            // Mapeia os dados (tentando nomes de colunas comuns)
-            const meses = treinoData.map(item => item.Mês || item.MES || item['Mês'] || "S/D");
-            const reais = treinoData.map(item => limparNumero(item['Valor Real'] || item.VALOR_REAL || item.ValorReal));
-            const metas = treinoData.map(item => limparNumero(item.Objetivo || item.OBJETIVO));
+            // Mapeia colunas tentando variações de nomes (Mês/Mes, Valor Real/Valor, etc)
+            const meses = treinoData.map(d => d.Mês || d.Mes || d.MES || "S/D");
+            const reais = treinoData.map(d => limparValor(d['Valor Real'] || d.Valor || d.VALOR_REAL));
+            const metas = treinoData.map(d => limparValor(d.Objetivo || d.META || d.OBJETIVO));
 
             new Chart(document.getElementById('graficoDHO'), {
                 type: 'bar',
@@ -71,7 +69,7 @@
                     labels: meses,
                     datasets: [
                         { label: 'Horas Realizadas', data: reais, backgroundColor: '#38bdf8', borderRadius: 5 },
-                        { label: 'Meta', data: metas, type: 'line', borderColor: '#ef4444', borderWidth: 2, fill: false }
+                        { label: 'Meta', data: metas, type: 'line', borderColor: '#ef4444', borderWidth: 3, fill: false }
                     ]
                 },
                 options: {
@@ -86,8 +84,8 @@
             });
         },
         error: function() {
-            statusDiv.style.display = "block";
-            statusDiv.innerText = "Erro: Arquivo dados.csv não encontrado no repositório.";
+            debugDiv.style.display = "block";
+            debugDiv.innerText = "ERRO: O arquivo dados.csv não pôde ser carregado do GitHub.";
         }
     });
 </script>

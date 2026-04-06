@@ -7,12 +7,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         body { background-color: #0f172a; color: #f1f5f9; font-family: sans-serif; padding: 20px; margin: 0; }
-        .card { background: #1e293b; border-radius: 15px; padding: 25px; max-width: 900px; margin: 40px auto; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+        .card { background: #1e293b; border-radius: 15px; padding: 25px; max-width: 900px; margin: 40px auto; border: 1px solid #334155; }
         h2 { color: #38bdf8; margin: 0; }
-        .sub { color: #94a3b8; margin-bottom: 30px; }
-        .chart-container { position: relative; height: 450px; width: 100%; }
-        .back-btn { color: #94a3b8; text-decoration: none; font-size: 0.9rem; display: inline-block; margin-bottom: 20px; }
-        #status-msg { color: #ef4444; font-weight: bold; text-align: center; margin-top: 10px; }
+        .sub { color: #94a3b8; margin-bottom: 25px; }
+        .chart-container { position: relative; height: 400px; width: 100%; }
+        .back-btn { color: #94a3b8; text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
+        #status { color: #fbbf24; background: rgba(251, 191, 36, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #fbbf24; line-height: 1.5; }
     </style>
 </head>
 <body>
@@ -22,83 +22,74 @@
     <h2>Indicadores de DHO</h2>
     <p class="sub">Ada — Treinamento e Desenvolvimento | Grupo Coplac</p>
     
-    <div id="status-msg"></div> <div class="chart-container">
+    <div id="status" style="display:none;"></div>
+
+    <div class="chart-container">
         <canvas id="graficoDHO"></canvas>
     </div>
 </div>
 
 <script>
     const csvUrl = 'dados.csv';
-    const statusDiv = document.getElementById('status-msg');
+    const statusDiv = document.getElementById('status');
 
-    function formatarParaNumero(valor) {
+    function limparNumero(valor) {
         if (!valor) return 0;
-        let limpo = valor.toString().replace(/[^\d,.-]/g, '').replace(',', '.');
-        return parseFloat(limpo) || 0;
+        let num = valor.toString().replace(/[^\d,.-]/g, '').replace(',', '.');
+        return parseFloat(num) || 0;
     }
 
     Papa.parse(csvUrl, {
         download: true,
         header: true,
         skipEmptyLines: true,
+        // O segredo está aqui: detectar automaticamente se o Excel usou , ou ;
         complete: function(results) {
             const dados = results.data;
-            console.log("Dados brutos:", dados);
-
-            // Filtro ignorando espaços e maiúsculas
+            
+            // Filtro flexível para encontrar "TREINAMENTO"
             const treinoData = dados.filter(item => {
-                const p = (item.Processo || "").trim().toUpperCase();
-                return p.includes("TREINAMENTO");
+                // Tenta ler qualquer coluna que contenha o nome "Processo"
+                const linhaInteira = JSON.stringify(item).toUpperCase();
+                return linhaInteira.includes("TREINAMENTO");
             });
 
             if (treinoData.length === 0) {
-                statusDiv.innerText = "Erro: Não encontrei a palavra 'TREINAMENTO' na coluna 'Processo' do seu CSV.";
+                statusDiv.style.display = "block";
+                statusDiv.innerHTML = "<strong>Ainda não encontrei os dados:</strong><br>1. Verifique se o arquivo no GitHub chama-se <b>dados.csv</b><br>2. No seu Excel, a palavra <b>HORAS DE TREINAMENTO</b> deve estar na coluna <b>Processo</b>.";
                 return;
             }
 
-            const meses = treinoData.map(item => item.Mês || "Sem data");
-            const reais = treinoData.map(item => formatarParaNumero(item['Valor Real']));
-            const metas = treinoData.map(item => formatarParaNumero(item.Objetivo));
+            // Mapeia os dados (tentando nomes de colunas comuns)
+            const meses = treinoData.map(item => item.Mês || item.MES || item['Mês'] || "S/D");
+            const reais = treinoData.map(item => limparNumero(item['Valor Real'] || item.VALOR_REAL || item.ValorReal));
+            const metas = treinoData.map(item => limparNumero(item.Objetivo || item.OBJETIVO));
 
-            const ctx = document.getElementById('graficoDHO').getContext('2d');
-            new Chart(ctx, {
+            new Chart(document.getElementById('graficoDHO'), {
                 type: 'bar',
                 data: {
                     labels: meses,
                     datasets: [
-                        {
-                            label: 'Horas Realizadas',
-                            data: reais,
-                            backgroundColor: '#38bdf8',
-                            borderRadius: 6
-                        },
-                        {
-                            label: 'Meta (Objetivo)',
-                            data: metas,
-                            type: 'line',
-                            borderColor: '#ef4444',
-                            borderWidth: 3,
-                            fill: false
-                        }
+                        { label: 'Horas Realizadas', data: reais, backgroundColor: '#38bdf8', borderRadius: 5 },
+                        { label: 'Meta', data: metas, type: 'line', borderColor: '#ef4444', borderWidth: 2, fill: false }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                        y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
                         x: { ticks: { color: '#94a3b8' } }
                     },
                     plugins: { legend: { labels: { color: '#f1f5f9' } } }
                 }
             });
         },
-        error: function(err) {
-            statusDiv.innerText = "Erro: O arquivo 'dados.csv' não foi encontrado no GitHub.";
-            console.error(err);
+        error: function() {
+            statusDiv.style.display = "block";
+            statusDiv.innerText = "Erro: Arquivo dados.csv não encontrado no repositório.";
         }
     });
 </script>
-
 </body>
 </html>

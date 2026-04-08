@@ -135,11 +135,12 @@
                         datalabels: {
                             color: '#000', font: { weight: 'bold' },
                             formatter: (val, ctx) => {
+                                // Mostra o total da pilha no topo da barra de MOD (segundo dataset)
                                 if (ctx.datasetIndex === 1) { 
                                     const total = (vMOD[ctx.dataIndex] || 0) + (vMOI[ctx.dataIndex] || 0);
                                     return total > 0 ? total : '';
                                 }
-                                return val > 0 ? val : '';
+                                return '';
                             },
                             anchor: 'end', align: 'top'
                         }
@@ -162,25 +163,24 @@
                 { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO" },
                 { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03" },
                 { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL" },
-                { chave: "DESLIGAMENTO", titulo: "DESLIGAMENTOS (COMPOSIÇÃO TOTAL)", stacked: true },
                 { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03" }
             ];
 
             config.forEach(item => {
                 let filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(item.chave)));
-                if (filtrados.length > 0) criarGrafico(item.titulo, filtrados, null, item.stacked);
+                if (filtrados.length > 0) criarGrafico(item.titulo, filtrados);
             });
 
             // 2. CONSOLIDADO 15 DIAS
-            const d15MOD = dados.filter(ln => normalizar(ln.Processo).includes("SOLICITACAO DE DESLIGAMENTOS") && !ln.Processo.includes("16 a 30"));
+            const d15MOD = dados.filter(ln => normalizar(ln.Processo).includes("SOLICITACAO DE DESLIGAMENTOS") && !ln.Processo.includes("16"));
             const d15MOI = dados.filter(ln => normalizar(ln.Processo) === "TURNOVER_MOI");
             if (d15MOD.length > 0 || d15MOI.length > 0) {
                 criarGraficoConsolidado("TURNOVER - SOLICITAÇÃO 15 DIAS (CONSOLIDADO)", d15MOD, d15MOI, "Soma MOD + MOI em 15 dias.");
             }
 
-            // 3. CONSOLIDADO 16 A 30 DIAS
-            const d1630MOD = dados.filter(ln => normalizar(ln.Processo).includes("16 A 30") && normalizar(ln.Indicador) === "MOD");
-            const d1630MOI = dados.filter(ln => normalizar(ln.Processo).includes("MOI16A30") || (normalizar(ln.Processo).includes("16 A 30") && normalizar(ln.Indicador) === "MOI"));
+            // 3. CONSOLIDADO 16 A 30 DIAS (Filtro corrigido para capturar MOD e MOI)
+            const d1630MOD = dados.filter(ln => normalizar(ln.Processo).includes("16") && normalizar(ln.Processo).includes("30") && normalizar(ln.Indicador) === "MOD");
+            const d1630MOI = dados.filter(ln => normalizar(ln.Processo).includes("MOI16A30") || (normalizar(ln.Processo).includes("16") && normalizar(ln.Processo).includes("30") && normalizar(ln.Indicador) === "MOI"));
             
             if (d1630MOD.length > 0 || d1630MOI.length > 0) {
                 criarGraficoConsolidado("TURNOVER - SOLICITAÇÃO 16 A 30 DIAS (CONSOLIDADO)", d1630MOD, d1630MOI, "Soma MOD + MOI entre 16 e 30 dias.");

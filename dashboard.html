@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
+        /* Estilo Clean Design mantido */
         body { background-color: #f8fafc; color: #1e293b; font-family: 'Segoe UI', sans-serif; padding: 20px; }
         .card { background: #ffffff; border-radius: 16px; padding: 30px; max-width: 950px; margin: 25px auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         .grid-info { display: grid; grid-template-columns: 1fr 280px; gap: 25px; align-items: center; }
@@ -28,6 +29,146 @@
     <div id="container-graficos"></div>
 
 <script>
+    // Registrar plugin globalmente
     Chart.register(ChartDataLabels);
 
-    const planilhaDrive = "
+    const planilhaDrive = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
+
+    function limparNumero(v) {
+        if (!v || v.toString().trim() === "") return 0;
+        let n = v.toString().replace(/\s/g, '').replace(',', '.');
+        return parseFloat(n) || 0;
+    }
+
+    function normalizar(txt) {
+        return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
+    }
+
+    function criarGrafico(tituloExibicao, dadosFiltrados, infoAdicional = null, isStacked = false) {
+        const container = document.getElementById('container-graficos');
+        const idUnique = Math.random().toString(36).substr(2, 9);
+        container.innerHTML += `<div class="card"><h2>${tituloExibicao}</h2><p class="sub">Grupo Coplac | Performance</p><div class="${infoAdicional ? 'grid-info' : ''}"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>${infoAdicional ? `<div class="info-box">${infoAdicional}</div>` : ''}</div></div>`;
+        
+        setTimeout(() => {
+            const ctx = document.getElementById(`chart-${idUnique}`);
+            const labels = [...new Set(dadosFiltrados.map(ln => ln.mes))];
+            let datasets = [];
+
+            // NOVA LÓGICA: Se for stacked (empilhado), cria datasets por tipo (Pedido/Mandado)
+            if (isStacked) {
+                const tipos = [...new Set(dadosFiltrados.map(ln => ln.Indicador))];
+                // Cores do exemplo: Cinza/Azul para Pedido, Vermelho para Mandado
+                const cores = ['#94a3b8', '#ef4444']; 
+                datasets = tipos.map((tipo, i) => ({
+                    label: tipo,
+                    data: labels.map(mes => {
+                        const r = dadosFiltrados.find(ln => ln.mes === mes && ln.Indicador === tipo);
+                        return r ? limparNumero(r['Valor Real']) : 0;
+                    }),
+                    backgroundColor: cores[i % cores.length],
+                    borderRadius: 6
+                }));
+            } else {
+                // Lógica normal para barras simples e meta
+                const valoresReais = dadosFiltrados.map(ln => limparNumero(ln['Valor Real']));
+                const metas = dadosFiltrados.map(ln => limparNumero(ln.Objetivo));
+                const coresBarras = valoresReais.map((valor, index) => {
+                    const meta = metas[index];
+                    const t = normalizar(tituloExibicao);
+                    if (t.includes("ABSENTEISMO") || t.includes("TURNOVER") || t.includes("DESLIGAMENTO")) {
+                        return (valor <= meta || meta === 0) ? '#22c55e' : '#ef4444';
+                    }
+                    return valor >= meta ? '#22c55e' : '#ef4444';
+                });
+
+                datasets = [
+                    {
+                        label: 'Realizado',
+                        data: valoresReais,
+                        backgroundColor: coresBarras,
+                        borderRadius: 6,
+                        datalabels: { align: 'end', anchor: 'end' }
+                    },
+                    {
+                        label: 'Meta',
+                        data: metas,
+                        type: 'line',
+                        borderColor: '#475569',
+                        borderWidth: 3,
+                        fill: false,
+                        pointRadius: 4,
+                        datalabels: { display: false }
+                    }
+                ];
+            }
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: { labels: labels, datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { top: 35 } },
+                    plugins: {
+                        legend: { position: 'top' },
+                        datalabels: {
+                            color: '#475569',
+                            font: { weight: 'bold', size: 12 },
+                            formatter: (value) => {
+                                return value !== 0 ? value.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : '';
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            stacked: isStacked, // Ativa empilhamento no eixo X
+                            grid: { display: false } 
+                        },
+                        y: { 
+                            stacked: isStacked, // Ativa empilhamento no eixo Y
+                            beginAtZero: true,
+                            grace: '15%',
+                            ticks: { callback: (value) => value.toLocaleString('pt-BR') }
+                        }
+                    }
+                }
+            });
+        }, 150);
+    }
+
+    Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
+        download: true, header: true, skipEmptyLines: true,
+        complete: function(results) {
+            const dados = results.data;
+            document.getElementById('container-graficos').innerHTML = "";
+            const config = [
+                { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", info: "<b>Nota Técnica</b> Horas de treinamentos programados e realizados ao mês" },
+                { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", info: "<b>Cálculo</b> %Aprovados em Treinamento = (Qtde Colaboradores Aprovados / Qtde Colaboradores Avaliados) * 100" },
+                { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", info: "<b>Cálculo</b> %TurnOver = (Qtde Colaboradores Desligados > 180 Dias / Qtde Colaboradores no Último Dia do Mês) * 100" },
+                { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", info: "<b>Cálculo</b> (Admissões + Desligamentos) ÷ 2 ÷ Total de colaboradores x 100" },
+                { chave: "SOLICITACAO", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS", info: "<b>Nota</b> N° de solicitação de desligamento dentro do mês MOI" },
+                
+                // CONFIGURAÇÃO AJUSTADA: Ativando o formato empilhado (stacked)
+                { 
+                    chave: "DESLIGAMENTO", 
+                    titulo: "DESLIGAMENTOS (COMPOSIÇÃO TOTAL)", 
+                    stacked: true, // Define que este gráfico deve ser empilhado
+                    info: "<b>Detalhamento</b> Visão consolidada de Pedidos (Voluntários) vs Mandados (Iniciativa Empresa)." 
+                },
+                
+                { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", info: "<b>Cálculo</b> % Absenteísmo: Total de Horas Ausentes / Total de Horas Programadas para Trabalhar" },
+                { chave: "RETENCAO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", filtroExtra: "Meritocracia" }
+            ];
+            config.forEach(item => {
+                let filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(item.chave)));
+                if (item.filtroExtra) { filtrados = filtrados.filter(ln => normalizar(ln.Indicador).includes(normalizar(item.filtroExtra))); }
+                if (filtrados.length > 0) { 
+                    // Passa o parâmetro stacked para a função de criação
+                    criarGrafico(item.titulo, filtrados, item.info || null, item.stacked || false); 
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>

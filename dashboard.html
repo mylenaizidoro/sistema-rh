@@ -70,7 +70,7 @@
                 const coresBarras = valoresReais.map((valor, index) => {
                     const meta = metas[index];
                     const t = normalizar(tituloExibicao);
-                    if (t.includes("ABSENTEISMO") || t.includes("TURNOVER") || t.includes("DESLIGAMENTO") || t.includes("DIA") || t.includes("15 DIAS") || t.includes("16 A 30")) {
+                    if (t.includes("ABSENTEISMO") || t.includes("TURNOVER") || t.includes("DESLIGAMENTO") || t.includes("15 DIAS") || t.includes("16 A 30")) {
                         return (valor <= meta || meta === 0) ? '#22c55e' : '#ef4444';
                     }
                     return valor >= meta ? '#22c55e' : '#ef4444';
@@ -148,8 +148,8 @@
                 },
                 { 
                     chave: "TURNOVER_MOI", 
-                    titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO", 
-                    info: "<b>MOI</b> N° de solicitação de desligamento dentro do mês" 
+                    titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS", 
+                    info: "<b>MOI</b> N° de solicitação de desligamento dentro de 15 dias" 
                 },
                 { chave: "DESLIGAMENTO", titulo: "DESLIGAMENTOS (COMPOSIÇÃO TOTAL)", stacked: true, info: "<b>Detalhamento</b> Visão consolidada de Pedidos + Mandados" },
                 { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", info: "<b>Cálculo</b> % Absenteísmo: Total de Horas Ausentes / Total de Horas Programadas para Trabalhar" },

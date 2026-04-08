@@ -42,7 +42,6 @@
         return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
     }
 
-    // Função para os gráficos individuais
     function criarGrafico(tituloExibicao, dadosFiltrados, infoAdicional = null, isStacked = false) {
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
@@ -71,28 +70,31 @@
                 const coresBarras = valoresReais.map((valor, index) => {
                     const meta = metas[index];
                     const t = normalizar(tituloExibicao);
-                    if (t.includes("ABSENTEISMO") || t.includes("TURNOVER") || t.includes("DESLIGAMENTO") || t.includes("15 DIAS")) {
+                    if (t.includes("ABSENTEISMO") || t.includes("TURNOVER") || t.includes("DESLIGAMENTO") || t.includes("15 DIAS") || t.includes("16 A 30")) {
                         return (valor <= meta || meta === 0) ? '#22c55e' : '#ef4444';
                     }
                     return valor >= meta ? '#22c55e' : '#ef4444';
                 });
 
-                datasets = [{
-                    label: 'Realizado',
-                    data: valoresReais,
-                    backgroundColor: coresBarras,
-                    borderRadius: 6,
-                    datalabels: { align: 'end', anchor: 'end' }
-                }, {
-                    label: 'Meta',
-                    data: metas,
-                    type: 'line',
-                    borderColor: '#475569',
-                    borderWidth: 3,
-                    fill: false,
-                    pointRadius: 4,
-                    datalabels: { display: false }
-                }];
+                datasets = [
+                    {
+                        label: 'Realizado',
+                        data: valoresReais,
+                        backgroundColor: coresBarras,
+                        borderRadius: 6,
+                        datalabels: { align: 'end', anchor: 'end' }
+                    },
+                    {
+                        label: 'Meta',
+                        data: metas,
+                        type: 'line',
+                        borderColor: '#475569',
+                        borderWidth: 3,
+                        fill: false,
+                        pointRadius: 4,
+                        datalabels: { display: false }
+                    }
+                ];
             }
 
             new Chart(ctx, {
@@ -101,58 +103,24 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { 
-                        legend: { position: 'top' },
-                        datalabels: { color: '#475569', font: { weight: 'bold' }, formatter: (v) => v || '' }
-                    },
-                    scales: { y: { beginAtZero: true, grace: '15%' } }
-                }
-            });
-        }, 150);
-    }
-
-    // Função para o novo gráfico combinado (MOD + MOI)
-    function criarGraficoCombinado(titulo, dadosMOD, dadosMOI) {
-        const container = document.getElementById('container-graficos');
-        const idUnique = Math.random().toString(36).substr(2, 9);
-        container.innerHTML += `<div class="card"><h2>${titulo}</h2><p class="sub">Grupo Coplac | Consolidado</p><div class="grid-info"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div><div class="info-box"><b>DICA TÉCNICA</b> Este gráfico soma as solicitações de MOD e MOI em barras empilhadas.</div></div></div>`;
-        
-        setTimeout(() => {
-            const ctx = document.getElementById(`chart-${idUnique}`);
-            const labels = [...new Set([...dadosMOD.map(d => d.mes), ...dadosMOI.map(d => d.mes)])];
-            
-            const vMOD = labels.map(m => limparNumero(dadosMOD.find(ln => ln.mes === m)?.['Valor Real']));
-            const vMOI = labels.map(m => limparNumero(dadosMOI.find(ln => ln.mes === m)?.['Valor Real']));
-            const meta = labels.map(m => limparNumero(dadosMOD.find(ln => ln.mes === m)?.Objetivo) + limparNumero(dadosMOI.find(ln => ln.mes === m)?.Objetivo));
-
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: 'MOI', data: vMOI, backgroundColor: '#cbd5e1', stack: 's1' },
-                        { label: 'MOD', data: vMOD, backgroundColor: '#475569', stack: 's1' },
-                        { label: 'Meta', data: meta, type: 'line', borderColor: '#000', borderWidth: 2, pointStyle: 'circle', pointBackgroundColor: '#fff' }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    layout: { padding: { top: 35 } },
                     plugins: {
+                        legend: { position: 'top' },
                         datalabels: {
-                            color: '#000',
-                            font: { weight: 'bold' },
-                            formatter: (val, ctx) => {
-                                if (ctx.datasetIndex === 0) { // Soma total no topo
-                                    const total = vMOD[ctx.dataIndex] + vMOI[ctx.dataIndex];
-                                    return total || '';
-                                }
-                                return val || '';
-                            },
-                            anchor: 'end', align: 'top'
+                            color: '#475569',
+                            font: { weight: 'bold', size: 12 },
+                            formatter: (value) => value !== 0 ? value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : ''
                         }
                     },
-                    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
+                    scales: {
+                        x: { stacked: isStacked, grid: { display: false } },
+                        y: { 
+                            stacked: isStacked, 
+                            beginAtZero: true,
+                            grace: '15%',
+                            ticks: { callback: (value) => value.toLocaleString('pt-BR') }
+                        }
+                    }
                 }
             });
         }, 150);
@@ -162,30 +130,36 @@
         download: true, header: true, skipEmptyLines: true,
         complete: function(results) {
             const dados = results.data;
-            const container = document.getElementById('container-graficos');
-            container.innerHTML = "";
-
+            document.getElementById('container-graficos').innerHTML = "";
             const config = [
-                { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", info: "Horas de treinamentos realizados." },
-                { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", info: "% Aprovados." },
-                { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", info: "% TurnOver mensal." },
-                { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", info: "Fórmula universal." },
-                { chave: "SOLICITACAO", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS (MOD)", info: "Pedidos MOD." },
-                { chave: "TURNOVER_MOI", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS (MOI)", info: "Pedidos MOI." },
-                { chave: "DESLIGAMENTO", titulo: "DESLIGAMENTOS (COMPOSIÇÃO TOTAL)", stacked: true, info: "Pedidos + Mandados." },
-                { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", info: "% Absenteísmo." }
+                { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", info: "<b>Nota Técnica</b> Horas de treinamentos programados e realizados ao mês" },
+                { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", info: "<b>Cálculo</b> %Aprovados em Treinamento" },
+                { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", info: "<b>Cálculo</b> %TurnOver = (Qtde Colaboradores Desligados > 180 Dias / Qtde Colaboradores no Último Dia do Mês) * 100" },
+                { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", info: "<b>Cálculo</b> (Admissões + Desligamentos) ÷ 2 ÷ Total de colaboradores x 100" },
+                { 
+                    chave: "SOLICITACAO", 
+                    titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS 15 DIAS", 
+                    info: "<b>MOD</b> pedido de desligamento em 15 dias" 
+                },
+                { 
+                    chave: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS", 
+                    titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS", 
+                    info: "<b>MOD</b> N° Pedido de desligamento de 16 a 30 dias" 
+                },
+                { 
+                    chave: "TURNOVER_MOI", 
+                    titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS", 
+                    info: "<b>MOI</b> N° de solicitação de desligamento dentro de 15 dias" 
+                },
+                { chave: "DESLIGAMENTO", titulo: "DESLIGAMENTOS (COMPOSIÇÃO TOTAL)", stacked: true, info: "<b>Detalhamento</b> Visão consolidada de Pedidos + Mandados" },
+                { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", info: "<b>Cálculo</b> % Absenteísmo: Total de Horas Ausentes / Total de Horas Programadas para Trabalhar" },
+                { chave: "RETENCAO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", filtroExtra: "Meritocracia" }
             ];
-
-            // Gera os gráficos individuais
             config.forEach(item => {
                 let filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(item.chave)));
-                if (filtrados.length > 0) criarGrafico(item.titulo, filtrados, item.info, item.stacked);
+                if (item.filtroExtra) { filtrados = filtrados.filter(ln => normalizar(ln.Indicador).includes(normalizar(item.filtroExtra))); }
+                if (filtrados.length > 0) { criarGrafico(item.titulo, filtrados, item.info || null, item.stacked || false); }
             });
-
-            // Gera o gráfico consolidado (AJUNTADO) no final
-            const dMOD = dados.filter(ln => normalizar(ln.Processo).includes("SOLICITACAO"));
-            const dMOI = dados.filter(ln => normalizar(ln.Processo).includes("TURNOVER_MOI"));
-            criarGraficoCombinado("SOLICITAÇÕES 15 DIAS (MOD + MOI CONSOLIDADO)", dMOD, dMOI);
         }
     });
 </script>

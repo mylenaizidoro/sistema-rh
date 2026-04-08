@@ -9,13 +9,12 @@
         body { background-color: #0f172a; color: #f1f5f9; font-family: sans-serif; padding: 20px; }
         .card { background: #1e293b; border-radius: 15px; padding: 25px; max-width: 950px; margin: 20px auto; border: 1px solid #334155; }
         
-        /* Layout para o indicador com info lateral */
-        .grid-info { display: grid; grid-template-columns: 1fr 250px; gap: 20px; align-items: center; }
-        .info-box { background: #0f172a; padding: 15px; border-radius: 10px; border-left: 4px solid #38bdf8; font-size: 0.9rem; line-height: 1.6; }
-        .info-box b { color: #38bdf8; display: block; margin-bottom: 5px; }
+        .grid-info { display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: center; }
+        .info-box { background: #0f172a; padding: 15px; border-radius: 10px; border-left: 4px solid #38bdf8; font-size: 0.85rem; line-height: 1.5; }
+        .info-box b { color: #38bdf8; display: block; margin-bottom: 5px; text-transform: uppercase; font-size: 0.75rem; }
 
-        h2 { color: #38bdf8; margin: 0; font-size: 1.5rem; text-transform: uppercase; }
-        .sub { color: #94a3b8; font-size: 0.9rem; margin-bottom: 20px; }
+        h2 { color: #38bdf8; margin: 0; font-size: 1.4rem; text-transform: uppercase; }
+        .sub { color: #94a3b8; font-size: 0.85rem; margin-bottom: 20px; }
         .chart-container { position: relative; height: 320px; width: 100%; }
         .back-btn { color: #94a3b8; text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
         
@@ -45,14 +44,14 @@
 
     function criarGrafico(tituloExibicao, dadosFiltrados, infoAdicional = null) {
         const container = document.getElementById('container-graficos');
-        const idGrafico = btoa(tituloExibicao).replace(/[^a-z0-9]/gi, '');
+        const idUnique = Math.random().toString(36).substr(2, 9);
 
         let htmlCartao = `
             <div class="card">
                 <h2>${tituloExibicao}</h2>
                 <p class="sub">Grupo Coplac | Performance</p>
                 <div class="${infoAdicional ? 'grid-info' : ''}">
-                    <div class="chart-container"><canvas id="chart-${idGrafico}"></canvas></div>
+                    <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
                     ${infoAdicional ? `<div class="info-box">${infoAdicional}</div>` : ''}
                 </div>
             </div>`;
@@ -60,7 +59,7 @@
         container.innerHTML += htmlCartao;
 
         setTimeout(() => {
-            const ctx = document.getElementById(`chart-${idGrafico}`);
+            const ctx = document.getElementById(`chart-${idUnique}`);
             const labels = dadosFiltrados.map(ln => ln.mes); 
             const valoresReais = dadosFiltrados.map(ln => limparNumero(ln['Valor Real']));
             const metas = dadosFiltrados.map(ln => limparNumero(ln.Objetivo));
@@ -103,6 +102,7 @@
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
             
+            // CONFIGURAÇÃO DOS INDICADORES
             const config = [
                 { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO" },
                 { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO" },
@@ -110,16 +110,31 @@
                 { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL" },
                 { chave: "SOLICITACAO", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS" },
                 { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03" },
-                { chave: "RETENCAO", titulo: "RETENÇÃO" },
+                { chave: "RETENCAO", titulo: "RETENÇÃO", filtroExtra: "Meritocracia" },
+                // GRÁFICO 1: MOVIMENTAÇÕES
                 { 
                     chave: "VALORIZACAO INTERNA", 
-                    titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA",
-                    info: "<b>Informação Estratégica</b> N° Total da taxa de promoção Interna"
+                    titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA (MOVIMENTAÇÕES)",
+                    filtroExtra: "MOVIMENTACOES",
+                    info: "<b>Métrica de Movimentação</b> N° Movimentações Internas<br>Recrutamento Interno +<br>Recrutamento Direcionado"
+                },
+                // GRÁFICO 2: TAXA DE PROMOÇÃO
+                { 
+                    chave: "VALORIZACAO INTERNA", 
+                    titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA (TAXA)",
+                    filtroExtra: "TAXA DE PROMOÇÃO",
+                    info: "<b>Métrica de Promoção</b> N° Total da taxa de promoção Interna"
                 }
             ];
 
             config.forEach(item => {
-                const filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(item.chave)));
+                let filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(item.chave)));
+                
+                // Se houver filtro extra (para separar os dois de Valorização), aplica aqui
+                if (item.filtroExtra) {
+                    filtrados = filtrados.filter(ln => normalizar(ln.Indicador).includes(normalizar(item.filtroExtra)));
+                }
+
                 if (filtrados.length > 0) {
                     criarGrafico(item.titulo, filtrados, item.info || null);
                 }

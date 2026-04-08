@@ -7,15 +7,23 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         body { background-color: #0f172a; color: #f1f5f9; font-family: sans-serif; padding: 20px; }
-        .card { background: #1e293b; border-radius: 15px; padding: 25px; max-width: 900px; margin: 20px auto; border: 1px solid #334155; }
+        .card { background: #1e293b; border-radius: 15px; padding: 25px; max-width: 950px; margin: 20px auto; border: 1px solid #334155; }
+        
+        /* Layout para o indicador com info lateral */
+        .grid-info { display: grid; grid-template-columns: 1fr 250px; gap: 20px; align-items: center; }
+        .info-box { background: #0f172a; padding: 15px; border-radius: 10px; border-left: 4px solid #38bdf8; font-size: 0.9rem; line-height: 1.6; }
+        .info-box b { color: #38bdf8; display: block; margin-bottom: 5px; }
+
         h2 { color: #38bdf8; margin: 0; font-size: 1.5rem; text-transform: uppercase; }
         .sub { color: #94a3b8; font-size: 0.9rem; margin-bottom: 20px; }
-        .chart-container { position: relative; height: 350px; width: 100%; }
+        .chart-container { position: relative; height: 320px; width: 100%; }
         .back-btn { color: #94a3b8; text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
+        
+        @media (max-width: 768px) { .grid-info { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
-    <div style="max-width: 900px; margin: auto;">
+    <div style="max-width: 950px; margin: auto;">
         <a href="index.html" class="back-btn">← Voltar para perfis</a>
         <h1 style="font-size: 1.8rem; margin-bottom: 10px;">Gestão de Indicadores PA-03</h1>
     </div>
@@ -35,16 +43,21 @@
         return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
     }
 
-    function criarGrafico(tituloExibicao, dadosFiltrados) {
+    function criarGrafico(tituloExibicao, dadosFiltrados, infoAdicional = null) {
         const container = document.getElementById('container-graficos');
         const idGrafico = btoa(tituloExibicao).replace(/[^a-z0-9]/gi, '');
 
-        container.innerHTML += `
+        let htmlCartao = `
             <div class="card">
                 <h2>${tituloExibicao}</h2>
                 <p class="sub">Grupo Coplac | Performance</p>
-                <div class="chart-container"><canvas id="chart-${idGrafico}"></canvas></div>
+                <div class="${infoAdicional ? 'grid-info' : ''}">
+                    <div class="chart-container"><canvas id="chart-${idGrafico}"></canvas></div>
+                    ${infoAdicional ? `<div class="info-box">${infoAdicional}</div>` : ''}
+                </div>
             </div>`;
+
+        container.innerHTML += htmlCartao;
 
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${idGrafico}`);
@@ -55,12 +68,9 @@
             const coresBarras = valoresReais.map((valor, index) => {
                 const meta = metas[index];
                 const t = normalizar(tituloExibicao);
-                
-                // Turnover e Absenteísmo: Verde se for MENOR ou IGUAL à meta
                 if (t.includes("ABSENTEISMO") || t.includes("TURNOVER")) {
                     return (valor <= meta || meta === 0) ? '#10b981' : '#ef4444';
                 }
-                // Treinamentos e Retenção: Verde se for MAIOR ou IGUAL à meta
                 return valor >= meta ? '#10b981' : '#ef4444';
             });
 
@@ -93,7 +103,6 @@
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
             
-            // LISTA ATUALIZADA COM OS 8 INDICADORES
             const config = [
                 { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO" },
                 { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO" },
@@ -102,13 +111,17 @@
                 { chave: "SOLICITACAO", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS" },
                 { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03" },
                 { chave: "RETENCAO", titulo: "RETENÇÃO" },
-                { chave: "VALORIZACAO INTERNA", titulo: "PLANO DE VALORIZAÇÃO INTERNA" }
+                { 
+                    chave: "VALORIZACAO INTERNA", 
+                    titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA",
+                    info: "<b>N° Movimentações Internas</b> Recrutamento Interno +<br>Recrutamento Direcionado"
+                }
             ];
 
             config.forEach(item => {
                 const filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(item.chave)));
                 if (filtrados.length > 0) {
-                    criarGrafico(item.titulo, filtrados);
+                    criarGrafico(item.titulo, filtrados, item.info || null);
                 }
             });
         }

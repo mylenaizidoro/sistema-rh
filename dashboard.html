@@ -169,11 +169,16 @@
             const d31MOI = dados.filter(ln => normalizar(ln.Processo).includes("31 A 90") && normalizar(ln.Indicador) === "MOI");
             if (d31MOD.length || d31MOI.length) criarGraficoConsolidado("TURNOVER - SOLICITAÇÃO 31 A 90 DIAS (CONSOLIDADO)", d31MOD, d31MOI, "Soma MOD + MOI entre 31 e 90 dias.");
 
-            // 5. CONSOLIDADO ACIMA DE 90 DIAS (NOVO)
+            // 5. CONSOLIDADO ACIMA DE 90 DIAS
             const dAcima90MOD = dados.filter(ln => normalizar(ln.Processo).includes("ACIMA DE 90") && normalizar(ln.Indicador) === "MOD");
             const dAcima90MOI = dados.filter(ln => normalizar(ln.Processo).includes("ACIMA DE 90") && normalizar(ln.Indicador) === "MOI");
-            if (dAcima90MOD.length || dAcima90MOI.length) {
-                criarGraficoConsolidado("TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS (CONSOLIDADO)", dAcima90MOD, dAcima90MOI, "Soma MOD + MOI acima de 90 dias de casa.");
+            if (dAcima90MOD.length || dAcima90MOI.length) criarGraficoConsolidado("TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS (CONSOLIDADO)", dAcima90MOD, dAcima90MOI, "Soma MOD + MOI acima de 90 dias.");
+
+            // 6. CONSOLIDADO GERAL NO MÊS (NOVO)
+            const dGeralMOD = dados.filter(ln => normalizar(ln.Processo).includes("PEDIDOS DE DESLIGAMENTO MES") && normalizar(ln.Indicador) === "MOD");
+            const dGeralMOI = dados.filter(ln => normalizar(ln.Processo).includes("PEDIDOS DE DESLIGAMENTO MES") && normalizar(ln.Indicador) === "MOI");
+            if (dGeralMOD.length || dGeralMOI.length) {
+                criarGraficoConsolidado("QUANTIDADE GERAL DE PEDIDOS DE DESLIGAMENTO NO MÊS", dGeralMOD, dGeralMOI, "Soma total de todos os pedidos de desligamento do mês (MOD + MOI).");
             }
         }
     });

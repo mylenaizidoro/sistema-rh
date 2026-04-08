@@ -70,7 +70,8 @@
                 const coresBarras = valoresReais.map((valor, index) => {
                     const meta = metas[index];
                     const t = normalizar(tituloExibicao);
-                    if (t.includes("ABSENTEISMO") || t.includes("TURNOVER") || t.includes("DESLIGAMENTO") || t.includes("DIA")) {
+                    // Lógica para indicadores onde "menos é melhor" (Absenteísmo, Turnover e Solicitações)
+                    if (t.includes("ABSENTEISMO") || t.includes("TURNOVER") || t.includes("DESLIGAMENTO") || t.includes("DIA") || t.includes("16 A 30")) {
                         return (valor <= meta || meta === 0) ? '#22c55e' : '#ef4444';
                     }
                     return valor >= meta ? '#22c55e' : '#ef4444';
@@ -140,6 +141,11 @@
                     chave: "SOLICITACAO", 
                     titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS DIA", 
                     info: "<b>MOD</b> pedido de desligamento em 15 dias" 
+                },
+                { 
+                    chave: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS", 
+                    titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS", 
+                    info: "<b>MOD</b> N° Pedido de desligamento de 16 a 30 dias" 
                 },
                 { 
                     chave: "TURNOVER_MOI", 

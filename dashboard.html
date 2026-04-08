@@ -15,7 +15,7 @@
         h1 { color: #0f172a; font-weight: 700; text-align: center; margin-bottom: 30px; text-transform: uppercase; }
         h2 { color: #0284c7; margin: 0; font-size: 1.4rem; text-transform: uppercase; }
         .sub { color: #64748b; font-size: 0.85rem; margin-bottom: 25px; }
-        .chart-container { position: relative; height: 420px; width: 100%; }
+        .chart-container { position: relative; height: 380px; width: 100%; }
         .back-btn { color: #64748b; text-decoration: none; font-size: 0.9rem; display: inline-block; margin-bottom: 20px; }
         @media (max-width: 768px) { .grid-info { grid-template-columns: 1fr; } }
     </style>
@@ -42,102 +42,117 @@
         return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
     }
 
+    // Função para os gráficos individuais
+    function criarGrafico(tituloExibicao, dadosFiltrados, infoAdicional = null, isStacked = false) {
+        const container = document.getElementById('container-graficos');
+        const idUnique = Math.random().toString(36).substr(2, 9);
+        container.innerHTML += `<div class="card"><h2>${tituloExibicao}</h2><p class="sub">Grupo Coplac | Performance</p><div class="${infoAdicional ? 'grid-info' : ''}"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>${infoAdicional ? `<div class="info-box">${infoAdicional}</div>` : ''}</div></div>`;
+        
+        setTimeout(() => {
+            const ctx = document.getElementById(`chart-${idUnique}`);
+            const labels = [...new Set(dadosFiltrados.map(ln => ln.mes))];
+            let datasets = [];
+
+            if (isStacked) {
+                const tipos = [...new Set(dadosFiltrados.map(ln => ln.Indicador))];
+                const cores = ['#0ea5e9', '#f59e0b', '#ef4444'];
+                datasets = tipos.map((tipo, i) => ({
+                    label: tipo,
+                    data: labels.map(mes => {
+                        const r = dadosFiltrados.find(ln => ln.mes === mes && ln.Indicador === tipo);
+                        return r ? limparNumero(r['Valor Real']) : 0;
+                    }),
+                    backgroundColor: cores[i % cores.length],
+                    borderRadius: 6
+                }));
+            } else {
+                const valoresReais = dadosFiltrados.map(ln => limparNumero(ln['Valor Real']));
+                const metas = dadosFiltrados.map(ln => limparNumero(ln.Objetivo));
+                const coresBarras = valoresReais.map((valor, index) => {
+                    const meta = metas[index];
+                    const t = normalizar(tituloExibicao);
+                    if (t.includes("ABSENTEISMO") || t.includes("TURNOVER") || t.includes("DESLIGAMENTO") || t.includes("15 DIAS")) {
+                        return (valor <= meta || meta === 0) ? '#22c55e' : '#ef4444';
+                    }
+                    return valor >= meta ? '#22c55e' : '#ef4444';
+                });
+
+                datasets = [{
+                    label: 'Realizado',
+                    data: valoresReais,
+                    backgroundColor: coresBarras,
+                    borderRadius: 6,
+                    datalabels: { align: 'end', anchor: 'end' }
+                }, {
+                    label: 'Meta',
+                    data: metas,
+                    type: 'line',
+                    borderColor: '#475569',
+                    borderWidth: 3,
+                    fill: false,
+                    pointRadius: 4,
+                    datalabels: { display: false }
+                }];
+            }
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: { labels: labels, datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { position: 'top' },
+                        datalabels: { color: '#475569', font: { weight: 'bold' }, formatter: (v) => v || '' }
+                    },
+                    scales: { y: { beginAtZero: true, grace: '15%' } }
+                }
+            });
+        }, 150);
+    }
+
+    // Função para o novo gráfico combinado (MOD + MOI)
     function criarGraficoCombinado(titulo, dadosMOD, dadosMOI) {
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
-        
-        container.innerHTML += `
-            <div class="card">
-                <h2>${titulo}</h2>
-                <p class="sub">Grupo Coplac | Visão Consolidada MOD + MOI</p>
-                <div class="grid-info">
-                    <div class="chart-container">
-                        <canvas id="chart-${idUnique}"></canvas>
-                    </div>
-                    <div class="info-box">
-                        <b>MOD + MOI</b>
-                        Soma das solicitações de desligamento em 15 dias para Mão de Obra Direta (MOD) e Indireta (MOI).
-                    </div>
-                </div>
-            </div>`;
+        container.innerHTML += `<div class="card"><h2>${titulo}</h2><p class="sub">Grupo Coplac | Consolidado</p><div class="grid-info"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div><div class="info-box"><b>DICA TÉCNICA</b> Este gráfico soma as solicitações de MOD e MOI em barras empilhadas.</div></div></div>`;
         
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${idUnique}`);
             const labels = [...new Set([...dadosMOD.map(d => d.mes), ...dadosMOI.map(d => d.mes)])];
             
-            const valoresMOD = labels.map(mes => {
-                const r = dadosMOD.find(ln => ln.mes === mes);
-                return r ? limparNumero(r['Valor Real']) : 0;
-            });
-
-            const valoresMOI = labels.map(mes => {
-                const r = dadosMOI.find(ln => ln.mes === mes);
-                return r ? limparNumero(r['Valor Real']) : 0;
-            });
-
-            // Meta consolidada (Ex: 3 + 6 = 9)
-            const metaCombinada = labels.map(mes => {
-                const rMOD = dadosMOD.find(ln => ln.mes === mes);
-                const rMOI = dadosMOI.find(ln => ln.mes === mes);
-                return (rMOD ? limparNumero(rMOD.Objetivo) : 0) + (rMOI ? limparNumero(rMOI.Objetivo) : 0);
-            });
+            const vMOD = labels.map(m => limparNumero(dadosMOD.find(ln => ln.mes === m)?.['Valor Real']));
+            const vMOI = labels.map(m => limparNumero(dadosMOI.find(ln => ln.mes === m)?.['Valor Real']));
+            const meta = labels.map(m => limparNumero(dadosMOD.find(ln => ln.mes === m)?.Objetivo) + limparNumero(dadosMOI.find(ln => ln.mes === m)?.Objetivo));
 
             new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
                     datasets: [
-                        {
-                            label: 'MOI (Solicitação)',
-                            data: valoresMOI,
-                            backgroundColor: '#cbd5e1', // Cinza Claro
-                            stack: 'stack0',
-                            borderRadius: { topLeft: 6, topRight: 6 }
-                        },
-                        {
-                            label: 'MOD (Solicitação)',
-                            data: valoresMOD,
-                            backgroundColor: '#475569', // Cinza Escuro
-                            stack: 'stack0'
-                        },
-                        {
-                            label: 'Meta Total',
-                            data: metaCombinada,
-                            type: 'line',
-                            borderColor: '#0f172a',
-                            borderWidth: 2,
-                            pointStyle: 'circle',
-                            pointBackgroundColor: '#ffffff',
-                            pointRadius: 5,
-                            fill: false,
-                            datalabels: { display: false }
-                        }
+                        { label: 'MOI', data: vMOI, backgroundColor: '#cbd5e1', stack: 's1' },
+                        { label: 'MOD', data: vMOD, backgroundColor: '#475569', stack: 's1' },
+                        { label: 'Meta', data: meta, type: 'line', borderColor: '#000', borderWidth: 2, pointStyle: 'circle', pointBackgroundColor: '#fff' }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'top' },
                         datalabels: {
-                            color: '#1e293b',
+                            color: '#000',
                             font: { weight: 'bold' },
-                            formatter: (value, context) => {
-                                // Mostra o valor de cada parte e o total no topo
-                                if (context.datasetIndex === 0) { // No topo da pilha (MOI)
-                                    const total = valoresMOD[context.dataIndex] + valoresMOI[context.dataIndex];
-                                    return total > 0 ? total : '';
+                            formatter: (val, ctx) => {
+                                if (ctx.datasetIndex === 0) { // Soma total no topo
+                                    const total = vMOD[ctx.dataIndex] + vMOI[ctx.dataIndex];
+                                    return total || '';
                                 }
-                                return value > 0 ? value : '';
+                                return val || '';
                             },
-                            anchor: 'end',
-                            align: 'top'
+                            anchor: 'end', align: 'top'
                         }
                     },
-                    scales: {
-                        x: { stacked: true, grid: { display: false } },
-                        y: { stacked: true, beginAtZero: true, grace: '15%' }
-                    }
+                    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
                 }
             });
         }, 150);
@@ -147,17 +162,30 @@
         download: true, header: true, skipEmptyLines: true,
         complete: function(results) {
             const dados = results.data;
-            document.getElementById('container-graficos').innerHTML = "";
+            const container = document.getElementById('container-graficos');
+            container.innerHTML = "";
 
-            // Filtra os dois conjuntos de dados
-            const dadosMOD = dados.filter(ln => normalizar(ln.Processo).includes("SOLICITACAO") && normalizar(ln.Indicador).includes("PEDIDO"));
-            const dadosMOI = dados.filter(ln => normalizar(ln.Processo).includes("TURNOVER_MOI"));
+            const config = [
+                { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", info: "Horas de treinamentos realizados." },
+                { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", info: "% Aprovados." },
+                { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", info: "% TurnOver mensal." },
+                { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", info: "Fórmula universal." },
+                { chave: "SOLICITACAO", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS (MOD)", info: "Pedidos MOD." },
+                { chave: "TURNOVER_MOI", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS (MOI)", info: "Pedidos MOI." },
+                { chave: "DESLIGAMENTO", titulo: "DESLIGAMENTOS (COMPOSIÇÃO TOTAL)", stacked: true, info: "Pedidos + Mandados." },
+                { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", info: "% Absenteísmo." }
+            ];
 
-            if (dadosMOD.length > 0 || dadosMOI.length > 0) {
-                criarGraficoCombinado("TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS (CONSOLIDADO)", dadosMOD, dadosMOI);
-            }
-            
-            // Aqui você pode manter os outros gráficos individuais se desejar
+            // Gera os gráficos individuais
+            config.forEach(item => {
+                let filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(item.chave)));
+                if (filtrados.length > 0) criarGrafico(item.titulo, filtrados, item.info, item.stacked);
+            });
+
+            // Gera o gráfico consolidado (AJUNTADO) no final
+            const dMOD = dados.filter(ln => normalizar(ln.Processo).includes("SOLICITACAO"));
+            const dMOI = dados.filter(ln => normalizar(ln.Processo).includes("TURNOVER_MOI"));
+            criarGraficoCombinado("SOLICITAÇÕES 15 DIAS (MOD + MOI CONSOLIDADO)", dMOD, dMOI);
         }
     });
 </script>

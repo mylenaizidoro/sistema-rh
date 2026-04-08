@@ -46,6 +46,7 @@
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
         
+        // Layout com box lateral de detalhamento para a frase
         let layoutHtml = notaTecnica 
             ? `<div class="grid-info"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div><div class="info-box"><b>DETALHAMENTO</b> ${notaTecnica}</div></div>`
             : `<div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>`;
@@ -159,9 +160,13 @@
                 { 
                     chave: "TURNOVER PA", 
                     titulo: "TURNOVER PA - 03", 
-                    nota: "%TurnOver = (Qtde Colaboradores Desligados > 180 Dias / Qtde Colaboradores no Último Dia do Mês) * 100" //
+                    nota: "%TurnOver = (Qtde Colaboradores Desligados > 180 Dias / Qtde Colaboradores no Último Dia do Mês) * 100" 
                 },
-                { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", nota: "" },
+                { 
+                    chave: "UNIVERSAL", 
+                    titulo: "TURNOVER - CÁLCULO UNIVERSAL", 
+                    nota: "(Admissões + Desligamentos) ÷ 2 ÷ Total de colaboradores x 100" 
+                },
                 { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", nota: "" }
             ];
 

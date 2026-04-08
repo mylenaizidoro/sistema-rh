@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Dashboard RH - Grupo Coplac</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         body { background-color: #f8fafc; color: #1e293b; font-family: 'Segoe UI', sans-serif; padding: 20px; }
@@ -14,7 +15,7 @@
         h1 { color: #0f172a; font-weight: 700; text-align: center; }
         h2 { color: #0284c7; margin: 0; font-size: 1.4rem; text-transform: uppercase; }
         .sub { color: #64748b; font-size: 0.85rem; margin-bottom: 25px; }
-        .chart-container { position: relative; height: 350px; width: 100%; }
+        .chart-container { position: relative; height: 380px; width: 100%; }
         .back-btn { color: #64748b; text-decoration: none; font-size: 0.9rem; display: inline-block; margin-bottom: 20px; }
         @media (max-width: 768px) { .grid-info { grid-template-columns: 1fr; } }
     </style>
@@ -27,6 +28,9 @@
     <div id="container-graficos"></div>
 
 <script>
+    // Registrar o plugin de labels para todos os gráficos
+    Chart.register(ChartDataLabels);
+
     const planilhaDrive = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
 
     function limparNumero(v) {
@@ -43,26 +47,82 @@
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
         container.innerHTML += `<div class="card"><h2>${tituloExibicao}</h2><p class="sub">Grupo Coplac | Performance</p><div class="${infoAdicional ? 'grid-info' : ''}"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>${infoAdicional ? `<div class="info-box">${infoAdicional}</div>` : ''}</div></div>`;
+        
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${idUnique}`);
             const labels = [...new Set(dadosFiltrados.map(ln => ln.mes))];
             let datasets = [];
+
             if (isStacked) {
                 const tipos = [...new Set(dadosFiltrados.map(ln => ln.Indicador))];
                 const cores = ['#0ea5e9', '#f59e0b', '#ef4444'];
-                datasets = tipos.map((tipo, i) => ({ label: tipo, data: labels.map(mes => { const r = dadosFiltrados.find(ln => ln.mes === mes && ln.Indicador === tipo); return r ? limparNumero(r['Valor Real']) : 0; }), backgroundColor: cores[i % cores.length], borderRadius: 6 }));
+                datasets = tipos.map((tipo, i) => ({
+                    label: tipo,
+                    data: labels.map(mes => {
+                        const r = dadosFiltrados.find(ln => ln.mes === mes && ln.Indicador === tipo);
+                        return r ? limparNumero(r['Valor Real']) : 0;
+                    }),
+                    backgroundColor: cores[i % cores.length],
+                    borderRadius: 6
+                }));
             } else {
                 const valoresReais = dadosFiltrados.map(ln => limparNumero(ln['Valor Real']));
                 const metas = dadosFiltrados.map(ln => limparNumero(ln.Objetivo));
                 const coresBarras = valoresReais.map((valor, index) => {
                     const meta = metas[index];
                     const t = normalizar(tituloExibicao);
-                    if (t.includes("ABSENTEISMO") || t.includes("TURNOVER") || t.includes("DESLIGAMENTO")) { return (valor <= meta || meta === 0) ? '#22c55e' : '#ef4444'; }
+                    if (t.includes("ABSENTEISMO") || t.includes("TURNOVER") || t.includes("DESLIGAMENTO")) {
+                        return (valor <= meta || meta === 0) ? '#22c55e' : '#ef4444';
+                    }
                     return valor >= meta ? '#22c55e' : '#ef4444';
                 });
-                datasets = [{ label: 'Realizado', data: valoresReais, backgroundColor: coresBarras, borderRadius: 6 }, { label: 'Meta', data: metas, type: 'line', borderColor: '#475569', borderWidth: 3, fill: false }];
+
+                datasets = [
+                    {
+                        label: 'Realizado',
+                        data: valoresReais,
+                        backgroundColor: coresBarras,
+                        borderRadius: 6,
+                        datalabels: { align: 'end', anchor: 'end' } // Posiciona valor acima da barra
+                    },
+                    {
+                        label: 'Meta',
+                        data: metas,
+                        type: 'line',
+                        borderColor: '#475569',
+                        borderWidth: 3,
+                        fill: false,
+                        pointRadius: 4,
+                        datalabels: { display: false } // Esconde valor da linha de meta para não poluir
+                    }
+                ];
             }
-            new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: isStacked, grid: { display: false }, ticks: { color: '#64748b' } }, y: { stacked: isStacked, beginAtZero: true, grid: { color: '#e2e8f0' }, ticks: { color: '#64748b' } } }, plugins: { legend: { position: 'top', labels: { color: '#1e293b' } } } } });
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: { labels: labels, datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { top: 30 } }, // Espaço extra para o valor não sumir
+                    plugins: {
+                        legend: { position: 'top' },
+                        datalabels: {
+                            color: '#475569',
+                            font: { weight: 'bold', size: 11 },
+                            formatter: (value) => value > 0 ? value.toLocaleString('pt-BR') : ''
+                        }
+                    },
+                    scales: {
+                        x: { stacked: isStacked, grid: { display: false } },
+                        y: { 
+                            stacked: isStacked, 
+                            beginAtZero: true,
+                            grace: '10%' // Adiciona 10% de margem no topo do gráfico automaticamente
+                        }
+                    }
+                }
+            });
         }, 150);
     }
 
@@ -76,12 +136,9 @@
                 { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", info: "<b>Cálculo</b> %Aprovados em Treinamento = (Qtde Colaboradores Aprovados / Qtde Colaboradores Avaliados) * 100" },
                 { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", info: "<b>Cálculo</b> %TurnOver = (Qtde Colaboradores Desligados > 180 Dias / Qtde Colaboradores no Último Dia do Mês) * 100" },
                 { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", info: "<b>Cálculo</b> (Admissões + Desligamentos) ÷ 2 ÷ Total de colaboradores x 100" },
-                { chave: "SOLICITACAO", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS" },
                 { chave: "DESLIGAMENTO", titulo: "DESLIGAMENTOS (COMPOSIÇÃO TOTAL)", stacked: true, info: "<b>Detalhamento</b> Visão consolidada de Pedidos + Mandados" },
                 { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", info: "<b>Cálculo</b> % Absenteísmo: Total de Horas Ausentes / Total de Horas Programadas para Trabalhar" },
-                { chave: "RETENCAO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", filtroExtra: "Meritocracia" },
-                { chave: "VALORIZACAO INTERNA", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA (MOV.)", filtroExtra: "MOVIMENTACOES", info: "<b>Métrica</b> Recrutamento Interno + Direcionado" },
-                { chave: "VALORIZACAO INTERNA", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA (TAXA)", filtroExtra: "TAXA DE PROMOÇÃO", info: "<b>Métrica</b> N° Total da taxa de promoção Interna" }
+                { chave: "RETENCAO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", filtroExtra: "Meritocracia" }
             ];
             config.forEach(item => {
                 let filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(item.chave)));

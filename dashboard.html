@@ -8,16 +8,13 @@
     <style>
         body { background-color: #0f172a; color: #f1f5f9; font-family: sans-serif; padding: 20px; }
         .card { background: #1e293b; border-radius: 15px; padding: 25px; max-width: 950px; margin: 20px auto; border: 1px solid #334155; }
-        
         .grid-info { display: grid; grid-template-columns: 1fr 280px; gap: 20px; align-items: center; }
         .info-box { background: #0f172a; padding: 15px; border-radius: 10px; border-left: 4px solid #38bdf8; font-size: 0.85rem; line-height: 1.5; }
         .info-box b { color: #38bdf8; display: block; margin-bottom: 5px; text-transform: uppercase; font-size: 0.75rem; }
-
         h2 { color: #38bdf8; margin: 0; font-size: 1.4rem; text-transform: uppercase; }
         .sub { color: #94a3b8; font-size: 0.85rem; margin-bottom: 20px; }
         .chart-container { position: relative; height: 320px; width: 100%; }
         .back-btn { color: #94a3b8; text-decoration: none; font-size: 0.9rem; margin-bottom: 20px; display: inline-block; }
-        
         @media (max-width: 768px) { .grid-info { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -42,11 +39,11 @@
         return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
     }
 
-    function criarGrafico(tituloExibicao, dadosFiltrados, infoAdicional = null) {
+    function criarGrafico(tituloExibicao, dadosFiltrados, infoAdicional = null, isStacked = false) {
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
 
-        let htmlCartao = `
+        container.innerHTML += `
             <div class="card">
                 <h2>${tituloExibicao}</h2>
                 <p class="sub">Grupo Coplac | Performance</p>
@@ -56,50 +53,59 @@
                 </div>
             </div>`;
 
-        container.innerHTML += htmlCartao;
-
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${idUnique}`);
-            const labels = dadosFiltrados.map(ln => ln.mes); 
-            const valoresReais = dadosFiltrados.map(ln => limparNumero(ln['Valor Real']));
-            const metas = dadosFiltrados.map(ln => limparNumero(ln.Objetivo));
+            const labels = [...new Set(dadosFiltrados.map(ln => ln.mes))];
+            let datasets = [];
 
-            const coresBarras = valoresReais.map((valor, index) => {
-                const meta = metas[index];
-                const t = normalizar(tituloExibicao);
-                // Verde se MENOR ou IGUAL à meta para indicadores de "saída" ou "falta"
-                if (t.includes("ABSENTEISMO") || t.includes("TURNOVER") || t.includes("DESLIGAMENTO")) {
-                    return (valor <= meta || meta === 0) ? '#10b981' : '#ef4444';
-                }
-                // Verde se MAIOR ou IGUAL para treinamentos e retenção
-                return valor >= meta ? '#10b981' : '#ef4444';
-            });
+            if (isStacked) {
+                const tipos = [...new Set(dadosFiltrados.map(ln => ln.Indicador))];
+                const cores = ['#38bdf8', '#fbbf24', '#f87171'];
+                datasets = tipos.map((tipo, i) => ({
+                    label: tipo,
+                    data: labels.map(mes => {
+                        const registro = dadosFiltrados.find(ln => ln.mes === mes && ln.Indicador === tipo);
+                        return registro ? limparNumero(registro['Valor Real']) : 0;
+                    }),
+                    backgroundColor: cores[i % cores.length],
+                    borderRadius: 5
+                }));
+            } else {
+                const valoresReais = dadosFiltrados.map(ln => limparNumero(ln['Valor Real']));
+                const metas = dadosFiltrados.map(ln => limparNumero(ln.Objetivo));
+                const coresBarras = valoresReais.map((valor, index) => {
+                    const meta = metas[index];
+                    const t = normalizar(tituloExibicao);
+                    if (t.includes("ABSENTEISMO") || t.includes("TURNOVER") || t.includes("DESLIGAMENTO")) {
+                        return (valor <= meta || meta === 0) ? '#10b981' : '#ef4444';
+                    }
+                    return valor >= meta ? '#10b981' : '#ef4444';
+                });
+
+                datasets = [
+                    { label: 'Realizado', data: valoresReais, backgroundColor: coresBarras, borderRadius: 5 },
+                    { label: 'Meta', data: metas, type: 'line', borderColor: '#ffffff', borderWidth: 2, fill: false }
+                ];
+            }
 
             new Chart(ctx, {
                 type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: 'Realizado', data: valoresReais, backgroundColor: coresBarras, borderRadius: 5 },
-                        { label: 'Meta', data: metas, type: 'line', borderColor: '#ffffff', borderWidth: 2, fill: false, pointBackgroundColor: '#ffffff' }
-                    ]
-                },
+                data: { labels: labels, datasets: datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
-                        x: { ticks: { color: '#94a3b8' } }
-                    }
+                        x: { stacked: isStacked, ticks: { color: '#94a3b8' } },
+                        y: { stacked: isStacked, beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } }
+                    },
+                    plugins: { legend: { labels: { color: '#f1f5f9' } } }
                 }
             });
         }, 150);
     }
 
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
-        download: true,
-        header: true,
-        skipEmptyLines: true,
+        download: true, header: true, skipEmptyLines: true,
         complete: function(results) {
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
@@ -110,36 +116,43 @@
                 { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03" },
                 { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL" },
                 { chave: "SOLICITACAO", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS" },
+                // GRÁFICO EMPILHADO (COMPOSIÇÃO)
                 { 
                     chave: "DESLIGAMENTO", 
-                    titulo: "DESLIGAMENTOS (TOTAL)",
-                    info: "<b>Composição</b> Quantidade total de pedidos + Mandados" 
+                    titulo: "DESLIGAMENTOS (COMPOSIÇÃO TOTAL)", 
+                    stacked: true,
+                    info: "<b>Detalhamento</b> Visão consolidada de Pedidos + Mandados" 
+                },
+                // NOVOS GRÁFICOS INDIVIDUAIS
+                { 
+                    chave: "DESLIGAMENTO", 
+                    titulo: "DESLIGAMENTOS - PEDIDOS", 
+                    filtroExtra: "PEDIDOS" 
+                },
+                { 
+                    chave: "DESLIGAMENTO", 
+                    titulo: "DESLIGAMENTOS - MANDADO", 
+                    filtroExtra: "MANDADO" 
                 },
                 { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03" },
                 { chave: "RETENCAO", titulo: "RETENÇÃO", filtroExtra: "Meritocracia" },
                 { 
-                    chave: "VALORIZACAO INTERNA", 
-                    titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA (MOVIMENTAÇÕES)",
-                    filtroExtra: "MOVIMENTACOES",
-                    info: "<b>Métrica de Movimentação</b> N° Movimentações Internas<br>Recrutamento Interno +<br>Recrutamento Direcionado"
+                    chave: "VALORIZACAO INTERNA", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA (MOV.)",
+                    filtroExtra: "MOVIMENTACOES", info: "<b>Métrica</b> Recrutamento Interno + Direcionado"
                 },
                 { 
-                    chave: "VALORIZACAO INTERNA", 
-                    titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA (TAXA)",
-                    filtroExtra: "TAXA DE PROMOÇÃO",
-                    info: "<b>Métrica de Promoção</b> N° Total da taxa de promoção Interna"
+                    chave: "VALORIZACAO INTERNA", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA (TAXA)",
+                    filtroExtra: "TAXA DE PROMOÇÃO", info: "<b>Métrica</b> N° Total da taxa de promoção Interna"
                 }
             ];
 
             config.forEach(item => {
                 let filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(item.chave)));
-                
                 if (item.filtroExtra) {
                     filtrados = filtrados.filter(ln => normalizar(ln.Indicador).includes(normalizar(item.filtroExtra)));
                 }
-
                 if (filtrados.length > 0) {
-                    criarGrafico(item.titulo, filtrados, item.info || null);
+                    criarGrafico(item.titulo, filtrados, item.info || null, item.stacked || false);
                 }
             });
         }

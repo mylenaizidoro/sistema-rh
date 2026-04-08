@@ -148,28 +148,32 @@
                 { 
                     chave: "SOLICITACAO", 
                     titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS (MOD)", 
-                    filtroExtra: "MOD",
+                    filtroIndicador: "MOD",
                     info: "<b>Nota</b> pedido de desligamento em 15 dias MOD" 
                 },
 
-                // NOVO INDICADOR MOI
+                // INDICADOR MOI
                 { 
                     chave: "SOLICITACAO", 
                     titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS (MOI)", 
-                    filtroExtra: "MOI",
+                    filtroIndicador: "MOI",
                     info: "<b>Nota Técnica</b> N° de solicitação de desligamento dentro do mês MOI" 
                 },
 
                 { chave: "DESLIGAMENTO", titulo: "DESLIGAMENTOS (COMPOSIÇÃO TOTAL)", stacked: true, info: "<b>Detalhamento</b> Visão consolidada de Pedidos + Mandados" },
                 { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", info: "<b>Cálculo</b> % Absenteísmo: Total de Horas Ausentes / Total de Horas Programadas para Trabalhar" },
-                { chave: "RETENCAO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", filtroExtra: "Meritocracia" }
+                { chave: "RETENCAO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", filtroIndicador: "Meritocracia" }
             ];
 
             config.forEach(item => {
+                // Filtra pelo Processo
                 let filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(item.chave)));
-                if (item.filtroExtra) { 
-                    filtrados = filtrados.filter(ln => normalizar(ln.Indicador).includes(normalizar(item.filtroExtra))); 
+                
+                // Filtra pelo Indicador (MOD ou MOI) se houver
+                if (item.filtroIndicador) { 
+                    filtrados = filtrados.filter(ln => normalizar(ln.Indicador).includes(normalizar(item.filtroIndicador))); 
                 }
+
                 if (filtrados.length > 0) { 
                     criarGrafico(item.titulo, filtrados, item.info || null, item.stacked || false); 
                 }

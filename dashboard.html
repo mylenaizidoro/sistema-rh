@@ -28,7 +28,6 @@
     <div id="container-graficos"></div>
 
 <script>
-    // Registrar o plugin de labels para todos os gráficos
     Chart.register(ChartDataLabels);
 
     const planilhaDrive = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
@@ -83,7 +82,7 @@
                         data: valoresReais,
                         backgroundColor: coresBarras,
                         borderRadius: 6,
-                        datalabels: { align: 'end', anchor: 'end' } // Posiciona valor acima da barra
+                        datalabels: { align: 'end', anchor: 'end' }
                     },
                     {
                         label: 'Meta',
@@ -93,7 +92,7 @@
                         borderWidth: 3,
                         fill: false,
                         pointRadius: 4,
-                        datalabels: { display: false } // Esconde valor da linha de meta para não poluir
+                        datalabels: { display: false }
                     }
                 ];
             }
@@ -104,13 +103,16 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    layout: { padding: { top: 30 } }, // Espaço extra para o valor não sumir
+                    layout: { padding: { top: 35 } },
                     plugins: {
                         legend: { position: 'top' },
                         datalabels: {
                             color: '#475569',
-                            font: { weight: 'bold', size: 11 },
-                            formatter: (value) => value > 0 ? value.toLocaleString('pt-BR') : ''
+                            font: { weight: 'bold', size: 12 },
+                            // CORREÇÃO: Formata com vírgula para o padrão brasileiro
+                            formatter: (value) => {
+                                return value !== 0 ? value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : '';
+                            }
                         }
                     },
                     scales: {
@@ -118,7 +120,11 @@
                         y: { 
                             stacked: isStacked, 
                             beginAtZero: true,
-                            grace: '10%' // Adiciona 10% de margem no topo do gráfico automaticamente
+                            grace: '15%',
+                            ticks: {
+                                // Também aplica a vírgula no eixo lateral (Y)
+                                callback: (value) => value.toLocaleString('pt-BR')
+                            }
                         }
                     }
                 }

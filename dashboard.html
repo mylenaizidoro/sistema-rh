@@ -42,7 +42,6 @@
         return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
     }
 
-    // Função para gráficos de barra simples ou linha de meta
     function criarGrafico(tituloExibicao, dadosFiltrados, infoAdicional = null, isStacked = false) {
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
@@ -78,7 +77,7 @@
                 });
 
                 datasets = [
-                    { label: 'Realizado', data: valoresReais, backgroundColor: coresBarras, borderRadius: 6, datalabels: { align: 'end', anchor: 'end' } },
+                    { label: 'Realizado', data: valoresReais, backgroundColor: coresBarras, borderRadius: 6 },
                     { label: 'Meta', data: metas, type: 'line', borderColor: '#475569', borderWidth: 3, fill: false, pointRadius: 4, datalabels: { display: false } }
                 ];
             }
@@ -87,27 +86,20 @@
                 type: 'bar',
                 data: { labels: labels, datasets: datasets },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    layout: { padding: { top: 35 } },
+                    responsive: true, maintainAspectRatio: false,
                     plugins: {
                         legend: { position: 'top' },
                         datalabels: {
-                            color: '#475569',
-                            font: { weight: 'bold', size: 12 },
+                            color: '#475569', font: { weight: 'bold' },
                             formatter: (value) => value !== 0 ? value.toLocaleString('pt-BR') : ''
                         }
                     },
-                    scales: {
-                        x: { stacked: isStacked, grid: { display: false } },
-                        y: { stacked: isStacked, beginAtZero: true, grace: '15%' }
-                    }
+                    scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grace: '15%' } }
                 }
             });
         }, 150);
     }
 
-    // Função para gráficos Consolidados (MOD + MOI empilhados)
     function criarGraficoConsolidado(titulo, dadosMOD, dadosMOI, notaTecnica) {
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
@@ -125,8 +117,8 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'MOI', data: vMOI, backgroundColor: '#cbd5e1', stack: 's1' }, // Cinza Claro
-                        { label: 'MOD', data: vMOD, backgroundColor: '#475569', stack: 's1' }, // Cinza Escuro
+                        { label: 'MOI', data: vMOI, backgroundColor: '#cbd5e1', stack: 's1' },
+                        { label: 'MOD', data: vMOD, backgroundColor: '#475569', stack: 's1' },
                         { label: 'Meta Total', data: meta, type: 'line', borderColor: '#000', borderWidth: 2, pointRadius: 5, datalabels: { display: false } }
                     ]
                 },
@@ -137,7 +129,7 @@
                             color: '#000', font: { weight: 'bold' },
                             formatter: (val, ctx) => {
                                 if (ctx.datasetIndex === 0) { 
-                                    const total = vMOD[ctx.dataIndex] + vMOI[ctx.dataIndex];
+                                    const total = (vMOD[ctx.dataIndex] || 0) + (vMOI[ctx.dataIndex] || 0);
                                     return total > 0 ? total : '';
                                 }
                                 return val > 0 ? val : '';
@@ -145,7 +137,7 @@
                             anchor: 'end', align: 'top'
                         }
                     },
-                    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
+                    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, grace: '15%' } }
                 }
             });
         }, 150);
@@ -157,14 +149,14 @@
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
 
-            // LISTA DE INDICADORES (Individuais removidos: SOLICITACAO 15 dias MOD/MOI)
+            // 1. INDICADORES SIMPLES
             const config = [
-                { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", info: "<b>Nota Técnica</b> Horas de treinamentos realizados" },
-                { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", info: "% Aprovados em Treinamento" },
-                { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", info: "% TurnOver mensal" },
-                { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", info: "Cálculo universal de TurnOver" },
-                { chave: "DESLIGAMENTO", titulo: "DESLIGAMENTOS (COMPOSIÇÃO TOTAL)", stacked: true, info: "Visão consolidada de Pedidos + Mandados" },
-                { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", info: "% Absenteísmo mensal" },
+                { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", info: "Total de horas realizadas." },
+                { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO" },
+                { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03" },
+                { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL" },
+                { chave: "DESLIGAMENTO", titulo: "DESLIGAMENTOS (COMPOSIÇÃO TOTAL)", stacked: true },
+                { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03" },
                 { chave: "RETENCAO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", filtroExtra: "Meritocracia" }
             ];
 
@@ -174,18 +166,19 @@
                 if (filtrados.length > 0) criarGrafico(item.titulo, filtrados, item.info || null, item.stacked);
             });
 
-            // GRÁFICO CONSOLIDADO: 15 DIAS
-            const d15MOD = dados.filter(ln => normalizar(ln.Processo).includes("SOLICITACAO"));
-            const d15MOI = dados.filter(ln => normalizar(ln.Processo).includes("TURNOVER_MOI"));
+            // 2. CONSOLIDADO 15 DIAS
+            const d15MOD = dados.filter(ln => normalizar(ln.Processo).includes("SOLICITACAO") && !normalizar(ln.Processo).includes("16 A 30"));
+            const d15MOI = dados.filter(ln => normalizar(ln.Processo).includes("TURNOVER_MOI") && !normalizar(ln.Processo).includes("16 A 30"));
             if (d15MOD.length > 0 || d15MOI.length > 0) {
-                criarGraficoConsolidado("TURNOVER - SOLICITAÇÃO 15 DIAS (CONSOLIDADO)", d15MOD, d15MOI, "Soma das solicitações MOD + MOI em 15 dias.");
+                criarGraficoConsolidado("TURNOVER - SOLICITAÇÃO 15 DIAS (CONSOLIDADO)", d15MOD, d15MOI, "Soma MOD + MOI em 15 dias.");
             }
 
-            // GRÁFICO CONSOLIDADO: 16 A 30 DIAS
+            // 3. CONSOLIDADO 16 A 30 DIAS (Lógica de filtro reforçada)
             const d1630MOD = dados.filter(ln => normalizar(ln.Processo).includes("16 A 30") && normalizar(ln.Indicador).includes("MOD"));
             const d1630MOI = dados.filter(ln => normalizar(ln.Processo).includes("16 A 30") && normalizar(ln.Indicador).includes("MOI"));
+            
             if (d1630MOD.length > 0 || d1630MOI.length > 0) {
-                criarGraficoConsolidado("TURNOVER - SOLICITAÇÃO 16 A 30 DIAS (CONSOLIDADO)", d1630MOD, d1630MOI, "Soma das solicitações MOD + MOI entre 16 e 30 dias.");
+                criarGraficoConsolidado("TURNOVER - SOLICITAÇÃO 16 A 30 DIAS (CONSOLIDADO)", d1630MOD, d1630MOI, "Soma MOD + MOI entre 16 e 30 dias.");
             }
         }
     });

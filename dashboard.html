@@ -23,7 +23,7 @@
 <body>
     <div style="max-width: 950px; margin: auto;">
         <a href="index.html" class="back-btn">← Voltar para perfis</a>
-        <h1>Gestão de Indicadores PA-03</h1>
+        <h1>Gestão de Indicadores - DHO</h1>
     </div>
     <div id="container-graficos"></div>
 
@@ -70,7 +70,6 @@
                 const coresBarras = valoresReais.map((valor, index) => {
                     const meta = metas[index];
                     const t = normalizar(tituloExibicao);
-                    // Lógica para indicadores onde "menos é melhor" (Absenteísmo, Turnover e Solicitações)
                     if (t.includes("ABSENTEISMO") || t.includes("TURNOVER") || t.includes("DESLIGAMENTO") || t.includes("DIA") || t.includes("16 A 30")) {
                         return (valor <= meta || meta === 0) ? '#22c55e' : '#ef4444';
                     }

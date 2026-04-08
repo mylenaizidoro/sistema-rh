@@ -8,53 +8,23 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         body { background-color: #f8fafc; color: #1e293b; font-family: 'Segoe UI', sans-serif; padding: 20px; }
-        
-        /* Estilo do Cabeçalho com Logo */
-        .header-container { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            max-width: 950px; 
-            margin: 0 auto 30px auto; 
-            background: #ffffff;
-            padding: 20px 30px;
-            border-radius: 16px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        .header-text h1 { margin: 0; color: #0f172a; font-weight: 700; font-size: 1.8rem; }
-        /* Ajuste do tamanho da logo fornecida */
-        .logo-img { max-height: 50px; width: auto; }
-
         .card { background: #ffffff; border-radius: 16px; padding: 30px; max-width: 950px; margin: 25px auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         .grid-info { display: grid; grid-template-columns: 1fr 280px; gap: 25px; align-items: center; }
         .info-box { background: #f1f5f9; padding: 20px; border-radius: 12px; border-left: 5px solid #0284c7; font-size: 0.9rem; line-height: 1.6; color: #475569; }
         .info-box b { color: #0284c7; display: block; margin-bottom: 8px; text-transform: uppercase; font-size: 0.8rem; }
+        h1 { color: #0f172a; font-weight: 700; text-align: center; margin-bottom: 30px; text-transform: uppercase; }
         h2 { color: #0284c7; margin: 0; font-size: 1.4rem; text-transform: uppercase; }
         .sub { color: #64748b; font-size: 0.85rem; margin-bottom: 25px; }
         .chart-container { position: relative; height: 380px; width: 100%; }
-        .back-btn { color: #64748b; text-decoration: none; font-size: 0.9rem; display: inline-block; margin-bottom: 10px; margin-left: 10px; }
-        
-        @media (max-width: 768px) { 
-            .header-container { flex-direction: column; text-align: center; gap: 15px; }
-            .grid-info { grid-template-columns: 1fr; } 
-        }
+        .back-btn { color: #64748b; text-decoration: none; font-size: 0.9rem; display: inline-block; margin-bottom: 20px; }
+        @media (max-width: 768px) { .grid-info { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
     <div style="max-width: 950px; margin: auto;">
         <a href="index.html" class="back-btn">← Voltar para perfis</a>
+        <h1>GESTÃO DE INDICADORES - DHO CURITIBA</h1>
     </div>
-
-    <div class="header-container">
-        <div class="header-text">
-            <h1>Gestão de Indicadores - DHO</h1>
-        </div>
-        <div class="header-logo">
-            <img src="coplac_logo.png" alt="Logo Grupo Coplac" class="logo-img">
-        </div>
-    </div>
-
     <div id="container-graficos"></div>
 
 <script>

@@ -26,7 +26,7 @@
     const planilhaDrive = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
 
     function limparNumero(v) {
-        if (v === undefined || v === null || v.toString().trim() === "") return 0;
+        if (!v || v.toString().trim() === "") return 0;
         let n = v.toString().replace(/\s/g, '').replace(',', '.');
         return parseFloat(n) || 0;
     }
@@ -42,12 +42,13 @@
         container.innerHTML += `
             <div class="card">
                 <h2>${tituloExibicao}</h2>
-                <p class="sub">Análise de Performance | Grupo Coplac</p>
+                <p class="sub">Grupo Coplac | Performance</p>
                 <div class="chart-container"><canvas id="chart-${idGrafico}"></canvas></div>
             </div>`;
 
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${idGrafico}`);
+            // Usa 'mes' em minúsculo conforme seu print
             const labels = dadosFiltrados.map(ln => ln.mes); 
             const valoresReais = dadosFiltrados.map(ln => limparNumero(ln['Valor Real']));
             const metas = dadosFiltrados.map(ln => limparNumero(ln.Objetivo));
@@ -55,9 +56,11 @@
             const coresBarras = valoresReais.map((valor, index) => {
                 const meta = metas[index];
                 const t = normalizar(tituloExibicao);
+                // Turnover e Absenteísmo: Verde se for MENOR que a meta
                 if (t.includes("ABSENTEISMO") || t.includes("TURNOVER")) {
                     return (valor <= meta || meta === 0) ? '#10b981' : '#ef4444';
                 }
+                // Outros: Verde se for MAIOR que a meta
                 return valor >= meta ? '#10b981' : '#ef4444';
             });
 
@@ -79,7 +82,7 @@
                     }
                 }
             });
-        }, 100);
+        }, 150);
     }
 
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
@@ -90,18 +93,20 @@
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
             
-            // Usaremos uma lógica de busca por "contém" para evitar erros de plural/singular
-            const mapeamento = [
-                { busca: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO" },
-                { busca: "TURNOVER PA - 03", titulo: "TURNOVER PA - 03" },
-                { busca: "CALCULO UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL" },
-                { busca: "SOLICITACAO", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS" },
-                { busca: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03" },
-                { busca: "RETENCAO", titulo: "RETENÇÃO" }
+            // BUSCA POR PALAVRAS-CHAVE (Mais seguro contra erros de digitação)
+            const config = [
+                { chave: "TREINAMENTO", titulo: "HORAS DE TREINAMENTO" },
+                { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03" },
+                { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL" },
+                { chave: "SOLICITACAO", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS" },
+                { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03" },
+                { chave: "RETENCAO", titulo: "RETENÇÃO" }
             ];
 
-            mapeamento.forEach(item => {
-                const filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(item.busca)));
+            config.forEach(item => {
+                // Procura na planilha qualquer processo que contenha a palavra-chave
+                const filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(item.chave)));
+                
                 if (filtrados.length > 0) {
                     criarGrafico(item.titulo, filtrados);
                 }

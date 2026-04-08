@@ -42,10 +42,16 @@
         return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
     }
 
-    function criarGrafico(tituloExibicao, dadosFiltrados) {
+    // Função para Indicadores Individuais com opção de Nota Técnica lateral
+    function criarGrafico(tituloExibicao, dadosFiltrados, notaTecnica = "") {
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
-        container.innerHTML += `<div class="card"><h2>${tituloExibicao}</h2><p class="sub">Grupo Coplac | Performance</p><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div></div>`;
+        
+        let layoutHtml = notaTecnica 
+            ? `<div class="grid-info"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div><div class="info-box"><b>DETALHAMENTO</b> ${notaTecnica}</div></div>`
+            : `<div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>`;
+
+        container.innerHTML += `<div class="card"><h2>${tituloExibicao}</h2><p class="sub">Grupo Coplac | Performance</p>${layoutHtml}</div>`;
         
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${idUnique}`);
@@ -90,6 +96,7 @@
         }, 150);
     }
 
+    // Função para Gráficos Consolidados (MOD + MOI empilhados)
     function criarGraficoConsolidado(titulo, dadosMOD, dadosMOI, notaTecnica) {
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
@@ -141,44 +148,33 @@
 
             // 1. INDICADORES GERAIS (INDIVIDUAIS)
             const config = [
-                { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO" },
-                { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO" },
-                { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03" },
-                { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL" },
-                { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03" }
+                { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", nota: "Horas de treinamentos programados e realizados no mês" },
+                { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", nota: "" },
+                { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", nota: "" },
+                { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", nota: "" },
+                { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", nota: "" }
             ];
 
             config.forEach(item => {
                 let filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(item.chave)));
-                if (filtrados.length > 0) criarGrafico(item.titulo, filtrados);
+                if (filtrados.length > 0) criarGrafico(item.titulo, filtrados, item.nota);
             });
 
-            // 2. CONSOLIDADOS (PEDIDOS DE DESLIGAMENTO)
+            // 2. INDICADORES CONSOLIDADOS (PEDIDOS DE DESLIGAMENTO)
             
-            // 15 DIAS
-            const d15MOD = dados.filter(ln => normalizar(ln.Processo).includes("15 DIAS") && normalizar(ln.Indicador) === "MOD");
-            const d15MOI = dados.filter(ln => normalizar(ln.Processo).includes("15 DIAS") && normalizar(ln.Indicador) === "MOI");
-            if (d15MOD.length || d15MOI.length) criarGraficoConsolidado("TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS (CONSOLIDADO)", d15MOD, d15MOI, "Soma de MOD + MOI em até 15 dias.");
+            const pedidos = [
+                { termo: "15 DIAS", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS (CONSOLIDADO)", desc: "Soma de MOD + MOI em até 15 dias." },
+                { termo: "16 A 30", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS (CONSOLIDADO)", desc: "Soma de MOD + MOI entre 16 e 30 dias." },
+                { termo: "31 A 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 31 A 90 DIAS (CONSOLIDADO)", desc: "Soma de MOD + MOI entre 31 e 90 dias." },
+                { termo: "ACIMA DE 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO ACIMA DE 90 DIAS (CONSOLIDADO)", desc: "Soma de MOD + MOI acima de 90 dias." },
+                { termo: "PEDIDOS DE DESLIGAMENTO MES", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO GERAL NO MÊS (CONSOLIDADO)", desc: "Soma total de pedidos de desligamento no mês." }
+            ];
 
-            // 16 A 30 DIAS
-            const d16MOD = dados.filter(ln => normalizar(ln.Processo).includes("16 A 30") && normalizar(ln.Indicador) === "MOD");
-            const d16MOI = dados.filter(ln => normalizar(ln.Processo).includes("16 A 30") && normalizar(ln.Indicador) === "MOI");
-            if (d16MOD.length || d16MOI.length) criarGraficoConsolidado("TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS (CONSOLIDADO)", d16MOD, d16MOI, "Soma de MOD + MOI entre 16 e 30 dias.");
-
-            // 31 A 90 DIAS
-            const d31MOD = dados.filter(ln => normalizar(ln.Processo).includes("31 A 90") && normalizar(ln.Indicador) === "MOD");
-            const d31MOI = dados.filter(ln => normalizar(ln.Processo).includes("31 A 90") && normalizar(ln.Indicador) === "MOI");
-            if (d31MOD.length || d31MOI.length) criarGraficoConsolidado("TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 31 A 90 DIAS (CONSOLIDADO)", d31MOD, d31MOI, "Soma de MOD + MOI entre 31 e 90 dias.");
-
-            // ACIMA DE 90 DIAS
-            const d90MOD = dados.filter(ln => normalizar(ln.Processo).includes("ACIMA DE 90") && normalizar(ln.Indicador) === "MOD");
-            const d90MOI = dados.filter(ln => normalizar(ln.Processo).includes("ACIMA DE 90") && normalizar(ln.Indicador) === "MOI");
-            if (d90MOD.length || d90MOI.length) criarGraficoConsolidado("TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO ACIMA DE 90 DIAS (CONSOLIDADO)", d90MOD, d90MOI, "Soma de MOD + MOI acima de 90 dias.");
-
-            // GERAL NO MÊS
-            const dGeralMOD = dados.filter(ln => normalizar(ln.Processo).includes("PEDIDOS DE DESLIGAMENTO MES") && normalizar(ln.Indicador) === "MOD");
-            const dGeralMOI = dados.filter(ln => normalizar(ln.Processo).includes("PEDIDOS DE DESLIGAMENTO MES") && normalizar(ln.Indicador) === "MOI");
-            if (dGeralMOD.length || dGeralMOI.length) criarGraficoConsolidado("TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO GERAL NO MÊS (CONSOLIDADO)", dGeralMOD, dGeralMOI, "Soma total de pedidos de desligamento no mês.");
+            pedidos.forEach(p => {
+                const dMOD = dados.filter(ln => normalizar(ln.Processo).includes(p.termo) && normalizar(ln.Indicador) === "MOD");
+                const dMOI = dados.filter(ln => normalizar(ln.Processo).includes(p.termo) && normalizar(ln.Indicador) === "MOI");
+                if (dMOD.length || dMOI.length) criarGraficoConsolidado(p.titulo, dMOD, dMOI, p.desc);
+            });
         }
     });
 </script>

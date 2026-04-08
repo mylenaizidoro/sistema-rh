@@ -70,7 +70,7 @@
                 const coresBarras = valoresReais.map((valor, index) => {
                     const meta = metas[index];
                     const t = normalizar(tituloExibicao);
-                    if (t.includes("ABSENTEISMO") || t.includes("TURNOVER") || t.includes("DESLIGAMENTO")) {
+                    if (t.includes("ABSENTEISMO") || t.includes("TURNOVER") || t.includes("DESLIGAMENTO") || t.includes("MOI")) {
                         return (valor <= meta || meta === 0) ? '#22c55e' : '#ef4444';
                     }
                     return valor >= meta ? '#22c55e' : '#ef4444';
@@ -139,16 +139,14 @@
                 { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", info: "<b>Cálculo</b> %TurnOver = (Qtde Colaboradores Desligados > 180 Dias / Qtde Colaboradores no Último Dia do Mês) * 100" },
                 { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", info: "<b>Cálculo</b> (Admissões + Desligamentos) ÷ 2 ÷ Total de colaboradores x 100" },
                 { 
-                    chave: "SOLICITACAO DE DESLIGAMENTOS", 
+                    chave: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS", 
                     titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS", 
-                    filtroExtra: "MOD",
                     info: "<b>Nota</b> pedido de desligamento em 15 dias MOD" 
                 },
-                // INDICADOR NOVO ADICIONADO AQUI:
+                // NOVO INDICADOR COM A CHAVE ATUALIZADA DO EXCEL
                 { 
-                    chave: "SOLICITACAO DE DESLIGAMENTO MES", 
+                    chave: "TURNOVER_MOI", 
                     titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO MES", 
-                    filtroExtra: "MOI",
                     info: "<b>MOI</b> N° de solicitação de desligamento dentro do mês" 
                 },
                 { chave: "DESLIGAMENTO", titulo: "DESLIGAMENTOS (COMPOSIÇÃO TOTAL)", stacked: true, info: "<b>Detalhamento</b> Visão consolidada de Pedidos + Mandados" },

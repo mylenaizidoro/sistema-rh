@@ -149,7 +149,7 @@
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
 
-            // 1. INDICADORES SIMPLES
+            // 1. INDICADORES TRADICIONAIS
             const config = [
                 { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", info: "Total de horas realizadas." },
                 { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO" },
@@ -166,16 +166,16 @@
                 if (filtrados.length > 0) criarGrafico(item.titulo, filtrados, item.info || null, item.stacked);
             });
 
-            // 2. CONSOLIDADO 15 DIAS
-            const d15MOD = dados.filter(ln => normalizar(ln.Processo).includes("SOLICITACAO") && !normalizar(ln.Processo).includes("16 A 30"));
-            const d15MOI = dados.filter(ln => normalizar(ln.Processo).includes("TURNOVER_MOI") && !normalizar(ln.Processo).includes("16 A 30"));
+            // 2. CONSOLIDADO 15 DIAS (IDENTIFICADO POR "SOLICITACAO" E "TURNOVER_MOI")
+            const d15MOD = dados.filter(ln => normalizar(ln.Processo) === "SOLICITACAO");
+            const d15MOI = dados.filter(ln => normalizar(ln.Processo) === "TURNOVER_MOI");
             if (d15MOD.length > 0 || d15MOI.length > 0) {
                 criarGraficoConsolidado("TURNOVER - SOLICITAÇÃO 15 DIAS (CONSOLIDADO)", d15MOD, d15MOI, "Soma MOD + MOI em 15 dias.");
             }
 
-            // 3. CONSOLIDADO 16 A 30 DIAS (Lógica de filtro reforçada)
-            const d1630MOD = dados.filter(ln => normalizar(ln.Processo).includes("16 A 30") && normalizar(ln.Indicador).includes("MOD"));
-            const d1630MOI = dados.filter(ln => normalizar(ln.Processo).includes("16 A 30") && normalizar(ln.Indicador).includes("MOI"));
+            // 3. CONSOLIDADO 16 A 30 DIAS (IDENTIFICADO PELO TERMO "16 A 30" E "MOI16A30")
+            const d1630MOD = dados.filter(ln => normalizar(ln.Processo).includes("16 A 30") && normalizar(ln.Indicador) === "MOD");
+            const d1630MOI = dados.filter(ln => normalizar(ln.Processo).includes("MOI16A30") || (normalizar(ln.Processo).includes("16 A 30") && normalizar(ln.Indicador) === "MOI"));
             
             if (d1630MOD.length > 0 || d1630MOI.length > 0) {
                 criarGraficoConsolidado("TURNOVER - SOLICITAÇÃO 16 A 30 DIAS (CONSOLIDADO)", d1630MOD, d1630MOI, "Soma MOD + MOI entre 16 e 30 dias.");

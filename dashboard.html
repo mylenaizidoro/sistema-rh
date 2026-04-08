@@ -48,17 +48,18 @@
 
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${idGrafico}`);
-            // Ajustado para ler a coluna 'mes' conforme sua planilha
-            const labels = dadosFiltrados.map(ln => ln.mes); 
+            const labels = dadosFiltrados.map(ln => ln.mes); // Lendo 'mes' minúsculo como no seu Excel
             const valoresReais = dadosFiltrados.map(ln => limparNumero(ln['Valor Real']));
             const metas = dadosFiltrados.map(ln => limparNumero(ln.Objetivo));
 
             const coresBarras = valoresReais.map((valor, index) => {
                 const meta = metas[index];
                 const t = normalizar(tituloOriginal);
+                // Lógica: Verde se estiver ABAIXO da meta para Turnover e Absenteísmo
                 if (t.includes("ABSENTEISMO") || t.includes("TURNOVER")) {
                     return valor <= meta ? '#10b981' : '#ef4444';
                 }
+                // Lógica: Verde se estiver ACIMA da meta para Treinamento e Retenção
                 return valor >= meta ? '#10b981' : '#ef4444';
             });
 
@@ -67,8 +68,21 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'Realizado', data: valoresReais, backgroundColor: coresBarras, borderRadius: 5 },
-                        { label: 'Meta', data: metas, type: 'line', borderColor: '#ffffff', borderWidth: 2, fill: false, pointBackgroundColor: '#ffffff' }
+                        { 
+                            label: 'Realizado', 
+                            data: valoresReais, 
+                            backgroundColor: coresBarras, 
+                            borderRadius: 5 
+                        },
+                        { 
+                            label: 'Meta', 
+                            data: metas, 
+                            type: 'line', 
+                            borderColor: '#ffffff', 
+                            borderWidth: 2, 
+                            fill: false,
+                            pointBackgroundColor: '#ffffff'
+                        }
                     ]
                 },
                 options: {
@@ -92,16 +106,20 @@
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
             
-            // Nomes ajustados para baterem com o que está na sua imagem
+            // LISTA COMPLETA DOS INDICADORES CONFORME SUA PLANILHA
             const processosDesejados = [
                 "HORAS DE TREINAMENTO", 
                 "TURNOVER PA - 03", 
+                "TURNOVER - CALCULO UNIVERSAL",
+                "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS",
                 "ABSENTEISMO PA - 03", 
                 "RETENCAO"
             ];
 
             processosDesejados.forEach(proc => {
-                const filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(proc)));
+                // Filtro que busca o nome exato do processo para não misturar os Turnovers
+                const filtrados = dados.filter(ln => normalizar(ln.Processo) === normalizar(proc));
+                
                 if (filtrados.length > 0) {
                     criarGrafico(proc, filtrados);
                 }

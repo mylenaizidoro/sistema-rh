@@ -67,9 +67,11 @@
             const coresBarras = valoresReais.map((valor, index) => {
                 const meta = metas[index];
                 const t = normalizar(tituloExibicao);
-                if (t.includes("ABSENTEISMO") || t.includes("TURNOVER")) {
+                // Verde se MENOR ou IGUAL à meta para indicadores de "saída" ou "falta"
+                if (t.includes("ABSENTEISMO") || t.includes("TURNOVER") || t.includes("DESLIGAMENTO")) {
                     return (valor <= meta || meta === 0) ? '#10b981' : '#ef4444';
                 }
+                // Verde se MAIOR ou IGUAL para treinamentos e retenção
                 return valor >= meta ? '#10b981' : '#ef4444';
             });
 
@@ -102,23 +104,25 @@
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
             
-            // CONFIGURAÇÃO DOS INDICADORES
             const config = [
                 { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO" },
                 { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO" },
                 { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03" },
                 { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL" },
                 { chave: "SOLICITACAO", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS" },
+                { 
+                    chave: "DESLIGAMENTO", 
+                    titulo: "DESLIGAMENTOS (TOTAL)",
+                    info: "<b>Composição</b> Quantidade total de pedidos + Mandados" 
+                },
                 { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03" },
                 { chave: "RETENCAO", titulo: "RETENÇÃO", filtroExtra: "Meritocracia" },
-                // GRÁFICO 1: MOVIMENTAÇÕES
                 { 
                     chave: "VALORIZACAO INTERNA", 
                     titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA (MOVIMENTAÇÕES)",
                     filtroExtra: "MOVIMENTACOES",
                     info: "<b>Métrica de Movimentação</b> N° Movimentações Internas<br>Recrutamento Interno +<br>Recrutamento Direcionado"
                 },
-                // GRÁFICO 2: TAXA DE PROMOÇÃO
                 { 
                     chave: "VALORIZACAO INTERNA", 
                     titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA (TAXA)",
@@ -130,7 +134,6 @@
             config.forEach(item => {
                 let filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(item.chave)));
                 
-                // Se houver filtro extra (para separar os dois de Valorização), aplica aqui
                 if (item.filtroExtra) {
                     filtrados = filtrados.filter(ln => normalizar(ln.Indicador).includes(normalizar(item.filtroExtra)));
                 }

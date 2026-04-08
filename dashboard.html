@@ -48,7 +48,6 @@
 
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${idGrafico}`);
-            // Usa 'mes' em minúsculo conforme seu print
             const labels = dadosFiltrados.map(ln => ln.mes); 
             const valoresReais = dadosFiltrados.map(ln => limparNumero(ln['Valor Real']));
             const metas = dadosFiltrados.map(ln => limparNumero(ln.Objetivo));
@@ -56,11 +55,12 @@
             const coresBarras = valoresReais.map((valor, index) => {
                 const meta = metas[index];
                 const t = normalizar(tituloExibicao);
-                // Turnover e Absenteísmo: Verde se for MENOR que a meta
+                
+                // Turnover e Absenteísmo: Verde se for MENOR ou IGUAL à meta
                 if (t.includes("ABSENTEISMO") || t.includes("TURNOVER")) {
                     return (valor <= meta || meta === 0) ? '#10b981' : '#ef4444';
                 }
-                // Outros: Verde se for MAIOR que a meta
+                // Treinamentos e Retenção: Verde se for MAIOR ou IGUAL à meta
                 return valor >= meta ? '#10b981' : '#ef4444';
             });
 
@@ -93,20 +93,20 @@
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
             
-            // BUSCA POR PALAVRAS-CHAVE (Mais seguro contra erros de digitação)
+            // LISTA ATUALIZADA COM OS 8 INDICADORES
             const config = [
-                { chave: "TREINAMENTO", titulo: "HORAS DE TREINAMENTO" },
+                { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO" },
+                { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO" },
                 { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03" },
                 { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL" },
                 { chave: "SOLICITACAO", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS" },
                 { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03" },
-                { chave: "RETENCAO", titulo: "RETENÇÃO" }
+                { chave: "RETENCAO", titulo: "RETENÇÃO" },
+                { chave: "VALORIZACAO INTERNA", titulo: "PLANO DE VALORIZAÇÃO INTERNA" }
             ];
 
             config.forEach(item => {
-                // Procura na planilha qualquer processo que contenha a palavra-chave
                 const filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(item.chave)));
-                
                 if (filtrados.length > 0) {
                     criarGrafico(item.titulo, filtrados);
                 }

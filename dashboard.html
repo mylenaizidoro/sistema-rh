@@ -35,24 +35,31 @@
         return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
     }
 
-    function criarGrafico(grupo, dadosFiltrados) {
+    function criarGrafico(tituloOriginal, dadosFiltrados) {
         const container = document.getElementById('container-graficos');
+        const idGrafico = btoa(tituloOriginal).replace(/[^a-z0-9]/gi, '');
+
         container.innerHTML += `
             <div class="card">
-                <h2>${grupo}</h2>
+                <h2>${tituloOriginal}</h2>
                 <p class="sub">Análise de Performance | Grupo Coplac</p>
-                <div class="chart-container"><canvas id="chart-${grupo}"></canvas></div>
+                <div class="chart-container"><canvas id="chart-${idGrafico}"></canvas></div>
             </div>`;
 
         setTimeout(() => {
-            const ctx = document.getElementById(`chart-${grupo}`);
-            const labels = dadosFiltrados.map(ln => ln.Mês);
+            const ctx = document.getElementById(`chart-${idGrafico}`);
+            // Ajustado para ler a coluna 'mes' conforme sua planilha
+            const labels = dadosFiltrados.map(ln => ln.mes); 
             const valoresReais = dadosFiltrados.map(ln => limparNumero(ln['Valor Real']));
             const metas = dadosFiltrados.map(ln => limparNumero(ln.Objetivo));
 
-            // LÓGICA DE CORES: Verde se Real >= Meta, Vermelho se Real < Meta
             const coresBarras = valoresReais.map((valor, index) => {
-                return valor >= metas[index] ? '#10b981' : '#ef4444'; 
+                const meta = metas[index];
+                const t = normalizar(tituloOriginal);
+                if (t.includes("ABSENTEISMO") || t.includes("TURNOVER")) {
+                    return valor <= meta ? '#10b981' : '#ef4444';
+                }
+                return valor >= meta ? '#10b981' : '#ef4444';
             });
 
             new Chart(ctx, {
@@ -60,21 +67,8 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { 
-                            label: 'Realizado', 
-                            data: valoresReais, 
-                            backgroundColor: coresBarras, 
-                            borderRadius: 5 
-                        },
-                        { 
-                            label: 'Meta', 
-                            data: metas, 
-                            type: 'line', 
-                            borderColor: '#ffffff', 
-                            borderWidth: 2, 
-                            fill: false,
-                            pointBackgroundColor: '#ef4444'
-                        }
+                        { label: 'Realizado', data: valoresReais, backgroundColor: coresBarras, borderRadius: 5 },
+                        { label: 'Meta', data: metas, type: 'line', borderColor: '#ffffff', borderWidth: 2, fill: false, pointBackgroundColor: '#ffffff' }
                     ]
                 },
                 options: {
@@ -84,9 +78,7 @@
                         y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
                         x: { ticks: { color: '#94a3b8' } }
                     },
-                    plugins: { 
-                        legend: { labels: { color: '#f1f5f9' } }
-                    }
+                    plugins: { legend: { labels: { color: '#f1f5f9' } } }
                 }
             });
         }, 100);
@@ -100,12 +92,18 @@
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
             
-            const grupos = ["TREINAMENTO", "TURNOVER", "ABSENTEISMO", "RETENCAO"];
+            // Nomes ajustados para baterem com o que está na sua imagem
+            const processosDesejados = [
+                "HORAS DE TREINAMENTO", 
+                "TURNOVER PA - 03", 
+                "ABSENTEISMO PA - 03", 
+                "RETENCAO"
+            ];
 
-            grupos.forEach(grupo => {
-                const filtrados = dados.filter(ln => normalizar(ln.Processo).includes(grupo));
+            processosDesejados.forEach(proc => {
+                const filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(proc)));
                 if (filtrados.length > 0) {
-                    criarGrafico(grupo, filtrados);
+                    criarGrafico(proc, filtrados);
                 }
             });
         }

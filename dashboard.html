@@ -46,7 +46,7 @@
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
         
-        // Layout com box lateral de detalhamento para a frase
+        // Layout que coloca a frase lateralmente no box de detalhamento
         let layoutHtml = notaTecnica 
             ? `<div class="grid-info"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div><div class="info-box"><b>DETALHAMENTO</b> ${notaTecnica}</div></div>`
             : `<div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>`;
@@ -145,7 +145,7 @@
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
 
-            // 1. INDICADORES GERAIS (INDIVIDUAIS)
+            // 1. INDICADORES GERAIS (INDIVIDUAIS COM FRASES LATERAIS)
             const config = [
                 { 
                     chave: "HORAS DE TREINAMENTO", 
@@ -167,7 +167,11 @@
                     titulo: "TURNOVER - CÁLCULO UNIVERSAL", 
                     nota: "(Admissões + Desligamentos) ÷ 2 ÷ Total de colaboradores x 100" 
                 },
-                { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", nota: "" }
+                { 
+                    chave: "ABSENTEISMO", 
+                    titulo: "ABSENTEÍSMO PA - 03", 
+                    nota: "% Absenteísmo: Total de Horas Ausentes / Total de Horas Programadas para Trabalhar." 
+                }
             ];
 
             config.forEach(item => {

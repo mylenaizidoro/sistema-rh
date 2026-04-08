@@ -70,7 +70,7 @@
                 const coresBarras = valoresReais.map((valor, index) => {
                     const meta = metas[index];
                     const t = normalizar(tituloExibicao);
-                    if (t.includes("ABSENTEISMO") || t.includes("TURNOVER") || t.includes("DESLIGAMENTO") || t.includes("DIA") || t.includes("16 A 30")) {
+                    if (t.includes("ABSENTEISMO") || t.includes("TURNOVER") || t.includes("DESLIGAMENTO") || t.includes("DIA") || t.includes("15 DIAS") || t.includes("16 A 30")) {
                         return (valor <= meta || meta === 0) ? '#22c55e' : '#ef4444';
                     }
                     return valor >= meta ? '#22c55e' : '#ef4444';
@@ -138,7 +138,7 @@
                 { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", info: "<b>Cálculo</b> (Admissões + Desligamentos) ÷ 2 ÷ Total de colaboradores x 100" },
                 { 
                     chave: "SOLICITACAO", 
-                    titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS DIA", 
+                    titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS 15 DIAS", 
                     info: "<b>MOD</b> pedido de desligamento em 15 dias" 
                 },
                 { 

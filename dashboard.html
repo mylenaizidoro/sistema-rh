@@ -42,7 +42,6 @@
         return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
     }
 
-    // Função para gráficos normais (Metas e Realizados)
     function criarGrafico(tituloExibicao, dadosFiltrados) {
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
@@ -91,7 +90,6 @@
         }, 150);
     }
 
-    // Função para gráficos empilhados (MOD + MOI)
     function criarGraficoConsolidado(titulo, dadosMOD, dadosMOI, notaTecnica) {
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
@@ -100,9 +98,20 @@
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${idUnique}`);
             const labels = [...new Set([...dadosMOD.map(d => d.mes), ...dadosMOI.map(d => d.mes)])].sort();
-            const vMOD = labels.map(m => limparNumero(dadosMOD.find(ln => ln.mes === m)?.['Valor Real']));
-            const vMOI = labels.map(m => limparNumero(dadosMOI.find(ln => ln.mes === m)?.['Valor Real']));
-            const meta = labels.map(m => (limparNumero(dadosMOD.find(ln => ln.mes === m)?.Objetivo) || 0) + (limparNumero(dadosMOI.find(ln => ln.mes === m)?.Objetivo) || 0));
+            
+            const vMOD = labels.map(m => {
+                const r = dadosMOD.find(ln => ln.mes === m);
+                return r ? limparNumero(r['Valor Real']) : 0;
+            });
+            const vMOI = labels.map(m => {
+                const r = dadosMOI.find(ln => ln.mes === m);
+                return r ? limparNumero(r['Valor Real']) : 0;
+            });
+            const meta = labels.map(m => {
+                const rMOD = dadosMOD.find(ln => ln.mes === m);
+                const rMOI = dadosMOI.find(ln => ln.mes === m);
+                return (limparNumero(rMOD?.Objetivo) || 0) + (limparNumero(rMOI?.Objetivo) || 0);
+            });
 
             new Chart(ctx, {
                 type: 'bar',
@@ -121,7 +130,7 @@
                             color: '#000', font: { weight: 'bold' },
                             formatter: (val, ctx) => {
                                 if (ctx.datasetIndex === 1) { 
-                                    const total = (vMOD[ctx.dataIndex] || 0) + (vMOI[ctx.dataIndex] || 0);
+                                    const total = vMOD[ctx.dataIndex] + vMOI[ctx.dataIndex];
                                     return total > 0 ? total : '';
                                 }
                                 return '';
@@ -141,7 +150,7 @@
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
 
-            // 1. INDICADORES GERAIS (Recuperados)
+            // 1. INDICADORES GERAIS
             const config = [
                 { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO" },
                 { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO" },
@@ -156,8 +165,8 @@
             });
 
             // 2. CONSOLIDADO 15 DIAS
-            const d15MOD = dados.filter(ln => normalizar(ln.Processo).includes("SOLICITACAO DE DESLIGAMENTOS") && !ln.Processo.includes("16") && !ln.Processo.includes("31") && normalizar(ln.Indicador) === "MOD");
-            const d15MOI = dados.filter(ln => normalizar(ln.Processo).includes("TURNOVER_MOI"));
+            const d15MOD = dados.filter(ln => normalizar(ln.Processo).includes("15 DIAS") && normalizar(ln.Indicador) === "MOD");
+            const d15MOI = dados.filter(ln => normalizar(ln.Processo).includes("15 DIAS") && normalizar(ln.Indicador) === "MOI");
             if (d15MOD.length || d15MOI.length) criarGraficoConsolidado("TURNOVER - SOLICITAÇÃO 15 DIAS (CONSOLIDADO)", d15MOD, d15MOI, "Soma MOD + MOI em 15 dias.");
 
             // 3. CONSOLIDADO 16 A 30 DIAS

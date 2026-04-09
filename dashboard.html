@@ -8,24 +8,55 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         body { background-color: #f8fafc; color: #1e293b; font-family: 'Segoe UI', sans-serif; padding: 20px; }
-        .card { background: #ffffff; border-radius: 16px; padding: 30px; max-width: 950px; margin: 25px auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .container-master { max-width: 1000px; margin: auto; }
+        
+        /* Estilo dos Cards de Resumo */
+        .summary-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .summary-card { background: #1e293b; color: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .summary-card h3 { margin: 0; font-size: 0.8rem; text-transform: uppercase; color: #94a3b8; }
+        .summary-card .value { font-size: 1.8rem; font-weight: bold; margin: 10px 0; color: #38bdf8; }
+        .summary-card .sub-value { font-size: 0.85rem; color: #22c55e; }
+
+        /* Estilo dos Gráficos */
+        .card { background: #ffffff; border-radius: 16px; padding: 30px; margin-bottom: 25px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         .grid-info { display: grid; grid-template-columns: 1fr 280px; gap: 25px; align-items: center; }
-        .info-box { background: #f1f5f9; padding: 20px; border-radius: 12px; border-left: 5px solid #0284c7; font-size: 0.9rem; line-height: 1.6; color: #475569; }
-        .info-box b { color: #0284c7; display: block; margin-bottom: 8px; text-transform: uppercase; font-size: 0.8rem; }
-        h1 { color: #0f172a; font-weight: 700; text-align: center; margin-bottom: 30px; text-transform: uppercase; }
-        h2 { color: #0284c7; margin: 0; font-size: 1.2rem; text-transform: uppercase; }
+        .info-box { background: #f1f5f9; padding: 20px; border-radius: 12px; border-left: 5px solid #0284c7; font-size: 0.9rem; color: #475569; }
+        h1 { color: #0f172a; text-align: center; margin-bottom: 30px; }
+        h2 { color: #0284c7; margin: 0; font-size: 1.2rem; }
         .sub { color: #64748b; font-size: 0.85rem; margin-bottom: 25px; }
         .chart-container { position: relative; height: 380px; width: 100%; }
-        .back-btn { color: #64748b; text-decoration: none; font-size: 0.9rem; display: inline-block; margin-bottom: 20px; }
+        
         @media (max-width: 768px) { .grid-info { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
-    <div style="max-width: 950px; margin: auto;">
-        <a href="index.html" class="back-btn">← Voltar para perfis</a>
-        <h1>GESTÃO DE INDICADORES - DHO CURITIBA</h1>
+
+<div class="container-master">
+    <h1>GESTÃO DE INDICADORES - DHO CURITIBA</h1>
+
+    <div class="summary-row" id="summary-container">
+        <div class="summary-card">
+            <h3>Hora-Homem Treinamento</h3>
+            <div class="value" id="val-hh">1.842,5 h</div>
+            <div class="sub-value">↗ 12.4%</div>
+        </div>
+        <div class="summary-card">
+            <h3>Meta Mensal (Progresso)</h3>
+            <div class="value" id="val-meta">88%</div>
+            <div class="sub-value" style="color:#ef4444">- 12%</div>
+        </div>
+        <div class="summary-card">
+            <h3>Participantes (Mês)</h3>
+            <div class="value" id="val-part">312</div>
+        </div>
+        <div class="summary-card">
+            <h3>Treinamentos Realizados</h3>
+            <div class="value" id="val-trein">28</div>
+        </div>
     </div>
+
     <div id="container-graficos"></div>
+</div>
 
 <script>
     Chart.register(ChartDataLabels);
@@ -34,22 +65,27 @@
 
     function limparNumero(v) {
         if (!v || v.toString().trim() === "") return 0;
-        let n = v.toString().replace(/\s/g, '').replace(',', '.');
-        return parseFloat(n) || 0;
+        return parseFloat(v.toString().replace(/\s/g, '').replace(',', '.')) || 0;
     }
 
     function normalizar(txt) {
         return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
     }
 
+    // Função para Gráficos com Legenda Verde/Vermelha detalhada
     function criarGrafico(tituloExibicao, dadosFiltrados, notaTecnica = "") {
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
-        let layoutHtml = notaTecnica 
-            ? `<div class="grid-info"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div><div class="info-box"><b>DETALHAMENTO</b> ${notaTecnica}</div></div>`
-            : `<div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>`;
-
-        container.innerHTML += `<div class="card"><h2>${tituloExibicao}</h2><p class="sub">Grupo Coplac | Performance</p>${layoutHtml}</div>`;
+        
+        container.innerHTML += `
+            <div class="card">
+                <h2>${tituloExibicao}</h2>
+                <p class="sub">Grupo Coplac | Performance</p>
+                <div class="${notaTecnica ? 'grid-info' : ''}">
+                    <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
+                    ${notaTecnica ? `<div class="info-box"><b>DETALHAMENTO</b><br>${notaTecnica}</div>` : ''}
+                </div>
+            </div>`;
         
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${idUnique}`);
@@ -108,12 +144,17 @@
         }, 150);
     }
 
-    function criarGraficoConsolidado(titulo, dadosMOD, dadosMOI, notaTecnica) {
+    // Função para os Gráficos de MOD/MOI
+    function criarGraficoConsolidado(titulo, dadosMOD, dadosMOI) {
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
-        const textoDetalhamento = "TURNOVER - INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mês";
 
-        container.innerHTML += `<div class="card"><h2>${titulo}</h2><p class="sub">Grupo Coplac | Unificado</p><div class="grid-info"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div><div class="info-box"><b>DETALHAMENTO</b> ${textoDetalhamento}</div></div></div>`;
+        container.innerHTML += `
+            <div class="card">
+                <h2>${titulo}</h2>
+                <p class="sub">Grupo Coplac | Unificado</p>
+                <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
+            </div>`;
         
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${idUnique}`);
@@ -139,9 +180,9 @@
                     responsive: true, maintainAspectRatio: false,
                     plugins: {
                         datalabels: {
-                            color: '#fff', font: { weight: 'bold', size: 12 },
+                            color: '#fff', font: { weight: 'bold' },
                             formatter: (val) => val > 0 ? val : '',
-                            anchor: 'center', align: 'center', display: true
+                            anchor: 'center', align: 'center'
                         }
                     },
                     scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, grace: '20%' } }
@@ -156,6 +197,7 @@
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
 
+            // 1. Gráficos de Performance Individual
             const config = [
                 { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", nota: "Horas de treinamentos programados e realizados no mês" },
                 { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", nota: "%Aprovados em Treinamento = (Qtde Colaboradores Aprovados / Qtde Colaboradores Avaliados) * 100" },
@@ -169,22 +211,17 @@
                 if (filtrados.length > 0) criarGrafico(item.titulo, filtrados, item.nota);
             });
 
+            // 2. Gráficos Consolidados (MOD/MOI)
             const consolidados = [
-                { termo: "SOLICITACAO DE DESLIGAMENTO 15 DIAS", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS (CONSOLIDADO)" },
-                { termo: "SOLICITACAO DE DESLIGAMENTO 16 A 30", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS (CONSOLIDADO)" },
-                { termo: "SOLICITACAO DE DESLIGAMENTO 31 A 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 31 A 90 DIAS (CONSOLIDADO)" },
-                { termo: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO ACIMA DE 90 DIAS (CONSOLIDADO)" },
-                { termo: "PEDIDOS DE DESLIGAMENTO MES", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO GERAL NO MÊS (CONSOLIDADO)" },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS (CONSOLIDADO)" },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS (CONSOLIDADO)" },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", titulo: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS (CONSOLIDADO)" },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", titulo: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS (CONSOLIDADO)" }
+                { termo: "SOLICITACAO DE DESLIGAMENTO 15 DIAS", titulo: "TURNOVER - SOLICITAÇÃO 15 DIAS (CONSOLIDADO)" },
+                { termo: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", titulo: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS (CONSOLIDADO)" },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", titulo: "TURNOVER - INICIATIVA EMPRESA GERAL (CONSOLIDADO)" }
             ];
 
             consolidados.forEach(p => {
                 const dMOD = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(p.termo)) && normalizar(ln.Indicador) === "MOD");
                 const dMOI = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(p.termo)) && normalizar(ln.Indicador) === "MOI");
-                if (dMOD.length || dMOI.length) criarGraficoConsolidado(p.titulo, dMOD, dMOI, "");
+                if (dMOD.length || dMOI.length) criarGraficoConsolidado(p.titulo, dMOD, dMOI);
             });
         }
     });

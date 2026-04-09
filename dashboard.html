@@ -97,7 +97,11 @@
     function criarGraficoConsolidado(titulo, dadosMOD, dadosMOI, notaTecnica) {
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
-        container.innerHTML += `<div class="card"><h2>${titulo}</h2><p class="sub">Grupo Coplac | Unificado</p><div class="grid-info"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div><div class="info-box"><b>DETALHAMENTO</b> ${notaTecnica}</div></div></div>`;
+        
+        // Detalhamento fixo solicitado
+        const textoDetalhamento = "TURNOVER - INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mês";
+
+        container.innerHTML += `<div class="card"><h2>${titulo}</h2><p class="sub">Grupo Coplac | Unificado</p><div class="grid-info"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div><div class="info-box"><b>DETALHAMENTO</b> ${textoDetalhamento}</div></div></div>`;
         
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${idUnique}`);
@@ -105,7 +109,6 @@
             const vMOD = labels.map(m => limparNumero(dadosMOD.find(ln => ln.mes === m)?.['Valor Real']));
             const vMOI = labels.map(m => limparNumero(dadosMOI.find(ln => ln.mes === m)?.['Valor Real']));
             
-            // Pega a meta sem somar (usa a meta do MOD ou MOI do mês)
             const meta = labels.map(m => {
                 const linha = dadosMOD.find(ln => ln.mes === m) || dadosMOI.find(ln => ln.mes === m);
                 return limparNumero(linha?.Objetivo);
@@ -126,19 +129,11 @@
                     plugins: {
                         datalabels: {
                             color: '#fff', 
-                            font: { weight: 'bold' },
-                            formatter: (val, context) => {
-                                // Se for a barra do topo (MOD), mostra o total em cima
-                                if (context.datasetIndex === 1) {
-                                    const total = (vMOD[context.dataIndex] || 0) + (vMOI[context.dataIndex] || 0);
-                                    return total > 0 ? total : '';
-                                }
-                                return val > 0 ? val : ''; // Mostra o valor interno da fatia
-                            },
-                            anchor: (context) => context.datasetIndex === 1 ? 'end' : 'center',
-                            align: (context) => context.datasetIndex === 1 ? 'top' : 'center',
-                            offset: 5,
-                            display: (context) => context.dataset.data[context.dataIndex] > 0
+                            font: { weight: 'bold', size: 12 },
+                            formatter: (val) => val > 0 ? val : '', 
+                            anchor: 'center',
+                            align: 'center',
+                            display: true 
                         }
                     },
                     scales: { 
@@ -156,7 +151,6 @@
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
 
-            // 1. INDICADORES INDIVIDUAIS
             const config = [
                 { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", nota: "Horas de treinamentos programados e realizados no mês" },
                 { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", nota: "%Aprovados em Treinamento = (Qtde Colaboradores Aprovados / Qtde Colaboradores Avaliados) * 100" },
@@ -170,17 +164,16 @@
                 if (filtrados.length > 0) criarGrafico(item.titulo, filtrados, item.nota);
             });
 
-            // 2. INDICADORES CONSOLIDADOS (EMPILHADOS)
             const consolidados = [
-                { termo: "SOLICITACAO DE DESLIGAMENTO 15 DIAS", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS (CONSOLIDADO)", desc: "Soma de MOD + MOI em até 15 dias." },
-                { termo: "SOLICITACAO DE DESLIGAMENTO 16 A 30", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS (CONSOLIDADO)", desc: "Soma de MOD + MOI entre 16 e 30 dias." },
-                { termo: "SOLICITACAO DE DESLIGAMENTO 31 A 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 31 A 90 DIAS (CONSOLIDADO)", desc: "Soma de MOD + MOI entre 31 e 90 dias." },
-                { termo: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO ACIMA DE 90 DIAS (CONSOLIDADO)", desc: "Soma de MOD + MOI acima de 90 dias." },
-                { termo: "PEDIDOS DE DESLIGAMENTO MES", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO GERAL NO MÊS (CONSOLIDADO)", desc: "Soma total de pedidos de desligamento no mês." },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS (CONSOLIDADO)", desc: "Iniciativa empresa até 15 dias." },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS (CONSOLIDADO)", desc: "Iniciativa empresa até 30 dias." },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", titulo: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS (CONSOLIDADO)", desc: "Iniciativa empresa entre 31 e 90 dias." },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", titulo: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS (CONSOLIDADO)", desc: "Soma total de iniciativa empresa no mês." }
+                { termo: "SOLICITACAO DE DESLIGAMENTO 15 DIAS", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS (CONSOLIDADO)", desc: "" },
+                { termo: "SOLICITACAO DE DESLIGAMENTO 16 A 30", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS (CONSOLIDADO)", desc: "" },
+                { termo: "SOLICITACAO DE DESLIGAMENTO 31 A 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 31 A 90 DIAS (CONSOLIDADO)", desc: "" },
+                { termo: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO ACIMA DE 90 DIAS (CONSOLIDADO)", desc: "" },
+                { termo: "PEDIDOS DE DESLIGAMENTO MES", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO GERAL NO MÊS (CONSOLIDADO)", desc: "" },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS (CONSOLIDADO)", desc: "" },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS (CONSOLIDADO)", desc: "" },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", titulo: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS (CONSOLIDADO)", desc: "" },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", titulo: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS (CONSOLIDADO)", desc: "" }
             ];
 
             consolidados.forEach(p => {

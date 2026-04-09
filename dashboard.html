@@ -46,7 +46,6 @@
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
         
-        // Layout que coloca a frase lateralmente no box de detalhamento
         let layoutHtml = notaTecnica 
             ? `<div class="grid-info"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div><div class="info-box"><b>DETALHAMENTO</b> ${notaTecnica}</div></div>`
             : `<div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>`;
@@ -145,7 +144,7 @@
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
 
-            // 1. INDICADORES GERAIS (INDIVIDUAIS COM FRASES LATERAIS)
+            // 1. INDICADORES GERAIS (INDIVIDUAIS)
             const config = [
                 { 
                     chave: "HORAS DE TREINAMENTO", 
@@ -179,13 +178,18 @@
                 if (filtrados.length > 0) criarGrafico(item.titulo, filtrados, item.nota);
             });
 
-            // 2. INDICADORES CONSOLIDADOS (PEDIDOS DE DESLIGAMENTO)
+            // 2. INDICADORES CONSOLIDADOS (PEDIDOS E INICIATIVA EMPRESA)
             const pedidos = [
                 { termo: "15 DIAS", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS (CONSOLIDADO)", desc: "Soma de MOD + MOI em até 15 dias." },
                 { termo: "16 A 30", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS (CONSOLIDADO)", desc: "Soma de MOD + MOI entre 16 e 30 dias." },
                 { termo: "31 A 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 31 A 90 DIAS (CONSOLIDADO)", desc: "Soma de MOD + MOI entre 31 e 90 dias." },
                 { termo: "ACIMA DE 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO ACIMA DE 90 DIAS (CONSOLIDADO)", desc: "Soma de MOD + MOI acima de 90 dias." },
-                { termo: "PEDIDOS DE DESLIGAMENTO MES", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO GERAL NO MÊS (CONSOLIDADO)", desc: "Soma total de pedidos de desligamento no mês." }
+                { termo: "PEDIDOS DE DESLIGAMENTO MES", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO GERAL NO MÊS (CONSOLIDADO)", desc: "Soma total de pedidos de desligamento no mês." },
+                { 
+                    termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA", 
+                    titulo: "TURNOVER - INICIATIVA DE DESLIGAMENTO DA EMPRESA (CONSOLIDADO)", 
+                    desc: "Soma consolidada (MOD + MOI) de desligamentos por iniciativa da empresa." 
+                }
             ];
 
             pedidos.forEach(p => {

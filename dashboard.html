@@ -146,31 +146,11 @@
 
             // 1. INDICADORES GERAIS (INDIVIDUAIS)
             const config = [
-                { 
-                    chave: "HORAS DE TREINAMENTO", 
-                    titulo: "HORAS DE TREINAMENTO", 
-                    nota: "Horas de treinamentos programados e realizados no mês" 
-                },
-                { 
-                    chave: "APROVADOS EM TREINAMENTO", 
-                    titulo: "APROVADOS EM TREINAMENTO", 
-                    nota: "%Aprovados em Treinamento = (Qtde Colaboradores Aprovados / Qtde Colaboradores Avaliados) * 100" 
-                },
-                { 
-                    chave: "TURNOVER PA", 
-                    titulo: "TURNOVER PA - 03", 
-                    nota: "%TurnOver = (Qtde Colaboradores Desligados > 180 Dias / Qtde Colaboradores no Último Dia do Mês) * 100" 
-                },
-                { 
-                    chave: "UNIVERSAL", 
-                    titulo: "TURNOVER - CÁLCULO UNIVERSAL", 
-                    nota: "(Admissões + Desligamentos) ÷ 2 ÷ Total de colaboradores x 100" 
-                },
-                { 
-                    chave: "ABSENTEISMO", 
-                    titulo: "ABSENTEÍSMO PA - 03", 
-                    nota: "% Absenteísmo: Total de Horas Ausentes / Total de Horas Programadas para Trabalhar." 
-                }
+                { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", nota: "Horas de treinamentos programados e realizados no mês" },
+                { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", nota: "%Aprovados em Treinamento = (Qtde Colaboradores Aprovados / Qtde Colaboradores Avaliados) * 100" },
+                { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", nota: "%TurnOver = (Qtde Colaboradores Desligados > 180 Dias / Qtde Colaboradores no Último Dia do Mês) * 100" },
+                { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", nota: "(Admissões + Desligamentos) ÷ 2 ÷ Total de colaboradores x 100" },
+                { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", nota: "% Absenteísmo: Total de Horas Ausentes / Total de Horas Programadas para Trabalhar." }
             ];
 
             config.forEach(item => {
@@ -185,16 +165,9 @@
                 { termo: "31 A 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 31 A 90 DIAS (CONSOLIDADO)", desc: "Soma de MOD + MOI entre 31 e 90 dias." },
                 { termo: "ACIMA DE 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO ACIMA DE 90 DIAS (CONSOLIDADO)", desc: "Soma de MOD + MOI acima de 90 dias." },
                 { termo: "PEDIDOS DE DESLIGAMENTO MES", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO GERAL NO MÊS (CONSOLIDADO)", desc: "Soma total de pedidos de desligamento no mês." },
-                { 
-                    termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA DENTRO DE 15 DIAS", 
-                    titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS (CONSOLIDADO)", 
-                    desc: "Soma consolidada (MOD + MOI) de desligamentos por iniciativa da empresa em até 15 dias." 
-                },
-                { 
-                    termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA DENTRO DE 30 DIAS", 
-                    titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS (CONSOLIDADO)", 
-                    desc: "Soma consolidada (MOD + MOI) de desligamentos por iniciativa da empresa em até 30 dias." 
-                }
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA DENTRO DE 15 DIAS", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS (CONSOLIDADO)", desc: "Soma consolidada (MOD + MOI) de desligamentos por iniciativa da empresa em até 15 dias." },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA DENTRO DE 30 DIAS", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS (CONSOLIDADO)", desc: "Soma consolidada (MOD + MOI) de desligamentos por iniciativa da empresa em até 30 dias." },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA DENTRO DE 31 A 90 DIAS", titulo: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS (CONSOLIDADO)", desc: "Soma consolidada (MOD + MOI) de desligamentos por iniciativa da empresa entre 31 e 90 dias." }
             ];
 
             pedidos.forEach(p => {

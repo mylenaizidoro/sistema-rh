@@ -54,20 +54,32 @@
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${idUnique}`);
             const labels = [...new Set(dadosFiltrados.map(ln => ln.mes))];
-            const valoresReais = labels.map(mes => {
-                const r = dadosFiltrados.find(ln => ln.mes === mes);
-                return r ? limparNumero(r['Valor Real']) : 0;
-            });
+            
             const metas = labels.map(mes => {
                 const r = dadosFiltrados.find(ln => ln.mes === mes);
                 return r ? limparNumero(r.Objetivo) : 0;
             });
-            
-            const coresBarras = valoresReais.map((valor, index) => {
+
+            const dadosDentroMeta = [];
+            const dadosForaMeta = [];
+
+            labels.forEach((mes, index) => {
+                const r = dadosFiltrados.find(ln => ln.mes === mes);
+                const valor = r ? limparNumero(r['Valor Real']) : 0;
                 const meta = metas[index];
                 const t = normalizar(tituloExibicao);
-                if (t.includes("ABSENTEISMO") || t.includes("TURNOVER")) return (valor <= meta || meta === 0) ? '#22c55e' : '#ef4444';
-                return valor >= meta ? '#22c55e' : '#ef4444';
+                
+                let atingiuMeta = (t.includes("ABSENTEISMO") || t.includes("TURNOVER")) 
+                    ? (valor <= meta || meta === 0) 
+                    : (valor >= meta);
+
+                if (atingiuMeta) {
+                    dadosDentroMeta.push(valor);
+                    dadosForaMeta.push(null);
+                } else {
+                    dadosDentroMeta.push(null);
+                    dadosForaMeta.push(valor);
+                }
             });
 
             new Chart(ctx, {
@@ -75,7 +87,8 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'Realizado', data: valoresReais, backgroundColor: coresBarras, borderRadius: 6 },
+                        { label: 'Realizado dentro da meta', data: dadosDentroMeta, backgroundColor: '#22c55e', borderRadius: 6, stack: 's' },
+                        { label: 'Realizado fora da meta', data: dadosForaMeta, backgroundColor: '#ef4444', borderRadius: 6, stack: 's' },
                         { label: 'Meta', data: metas, type: 'line', borderColor: '#475569', borderWidth: 3, fill: false, pointRadius: 4, datalabels: { display: false } }
                     ]
                 },
@@ -85,7 +98,8 @@
                         legend: { position: 'top' },
                         datalabels: {
                             color: '#475569', font: { weight: 'bold' },
-                            formatter: (value) => value !== 0 ? value.toLocaleString('pt-BR') : ''
+                            anchor: 'end', align: 'top',
+                            formatter: (val) => (val !== null && val !== 0) ? val.toLocaleString('pt-BR') : ''
                         }
                     },
                     scales: { y: { beginAtZero: true, grace: '15%' } }
@@ -97,8 +111,6 @@
     function criarGraficoConsolidado(titulo, dadosMOD, dadosMOI, notaTecnica) {
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
-        
-        // Detalhamento fixo solicitado
         const textoDetalhamento = "TURNOVER - INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mês";
 
         container.innerHTML += `<div class="card"><h2>${titulo}</h2><p class="sub">Grupo Coplac | Unificado</p><div class="grid-info"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div><div class="info-box"><b>DETALHAMENTO</b> ${textoDetalhamento}</div></div></div>`;
@@ -108,7 +120,6 @@
             const labels = [...new Set([...dadosMOD.map(d => d.mes), ...dadosMOI.map(d => d.mes)])].sort();
             const vMOD = labels.map(m => limparNumero(dadosMOD.find(ln => ln.mes === m)?.['Valor Real']));
             const vMOI = labels.map(m => limparNumero(dadosMOI.find(ln => ln.mes === m)?.['Valor Real']));
-            
             const meta = labels.map(m => {
                 const linha = dadosMOD.find(ln => ln.mes === m) || dadosMOI.find(ln => ln.mes === m);
                 return limparNumero(linha?.Objetivo);
@@ -128,18 +139,12 @@
                     responsive: true, maintainAspectRatio: false,
                     plugins: {
                         datalabels: {
-                            color: '#fff', 
-                            font: { weight: 'bold', size: 12 },
-                            formatter: (val) => val > 0 ? val : '', 
-                            anchor: 'center',
-                            align: 'center',
-                            display: true 
+                            color: '#fff', font: { weight: 'bold', size: 12 },
+                            formatter: (val) => val > 0 ? val : '',
+                            anchor: 'center', align: 'center', display: true
                         }
                     },
-                    scales: { 
-                        x: { stacked: true }, 
-                        y: { stacked: true, beginAtZero: true, grace: '20%' } 
-                    }
+                    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, grace: '20%' } }
                 }
             });
         }, 150);
@@ -165,21 +170,21 @@
             });
 
             const consolidados = [
-                { termo: "SOLICITACAO DE DESLIGAMENTO 15 DIAS", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS (CONSOLIDADO)", desc: "" },
-                { termo: "SOLICITACAO DE DESLIGAMENTO 16 A 30", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS (CONSOLIDADO)", desc: "" },
-                { termo: "SOLICITACAO DE DESLIGAMENTO 31 A 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 31 A 90 DIAS (CONSOLIDADO)", desc: "" },
-                { termo: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO ACIMA DE 90 DIAS (CONSOLIDADO)", desc: "" },
-                { termo: "PEDIDOS DE DESLIGAMENTO MES", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO GERAL NO MÊS (CONSOLIDADO)", desc: "" },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS (CONSOLIDADO)", desc: "" },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS (CONSOLIDADO)", desc: "" },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", titulo: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS (CONSOLIDADO)", desc: "" },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", titulo: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS (CONSOLIDADO)", desc: "" }
+                { termo: "SOLICITACAO DE DESLIGAMENTO 15 DIAS", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS (CONSOLIDADO)" },
+                { termo: "SOLICITACAO DE DESLIGAMENTO 16 A 30", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS (CONSOLIDADO)" },
+                { termo: "SOLICITACAO DE DESLIGAMENTO 31 A 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 31 A 90 DIAS (CONSOLIDADO)" },
+                { termo: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO ACIMA DE 90 DIAS (CONSOLIDADO)" },
+                { termo: "PEDIDOS DE DESLIGAMENTO MES", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO GERAL NO MÊS (CONSOLIDADO)" },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS (CONSOLIDADO)" },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS (CONSOLIDADO)" },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", titulo: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS (CONSOLIDADO)" },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", titulo: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS (CONSOLIDADO)" }
             ];
 
             consolidados.forEach(p => {
                 const dMOD = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(p.termo)) && normalizar(ln.Indicador) === "MOD");
                 const dMOI = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(p.termo)) && normalizar(ln.Indicador) === "MOI");
-                if (dMOD.length || dMOI.length) criarGraficoConsolidado(p.titulo, dMOD, dMOI, p.desc);
+                if (dMOD.length || dMOI.length) criarGraficoConsolidado(p.titulo, dMOD, dMOI, "");
             });
         }
     });

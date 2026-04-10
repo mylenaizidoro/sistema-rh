@@ -7,24 +7,49 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
-        body { background-color: #f1f5f9; color: #1e293b; font-family: 'Segoe UI', sans-serif; padding: 30px; margin: 0; }
+        /* Estilos Globais e Fundo */
+        body { background-color: #f1f5f9; color: #1e293b; font-family: 'Segoe UI', 'Roboto', sans-serif; padding: 30px; margin: 0; }
+        
+        /* Layout e Centralização */
         .page-container { max-width: 1000px; margin: auto; }
-        .back-btn { text-decoration: none; font-size: 0.95rem; color: #0284c7; background: #e0f2fe; padding: 10px 18px; border-radius: 8px; font-weight: 500; display: inline-flex; align-items: center; margin-bottom: 25px; }
-        h1.main-title { color: #1e293b; font-weight: 800; text-align: center; margin-bottom: 40px; text-transform: uppercase; font-size: 1.8rem; }
-        .card { background: #ffffff; border-radius: 16px; padding: 35px; margin-bottom: 30px; border: 1px solid #e2e8f0; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); }
+
+        /* Botão Voltar Estilizado */
+        .back-btn-container { margin-bottom: 25px; }
+        .back-btn { text-decoration: none; font-size: 0.95rem; color: #0284c7; background: #e0f2fe; padding: 10px 18px; border-radius: 8px; font-weight: 500; display: inline-flex; align-items: center; transition: background 0.2s; }
+        .back-btn:hover { background: #bae6fd; }
+
+        /* Título Principal */
+        h1.main-title { color: #1e293b; font-weight: 800; text-align: center; margin-bottom: 40px; text-transform: uppercase; font-size: 1.8rem; letter-spacing: 0.5px; }
+        
+        /* Estilo dos Cards (Gráficos) */
+        .card { background: #ffffff; border-radius: 16px; padding: 35px; margin-bottom: 30px; border: 1px solid #e2e8f0; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02); transition: transform 0.2s, box-shadow 0.2s; }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.03); }
+
+        /* Títulos e Subtítulos dentro dos Cards */
         h2.chart-title { color: #1e40af; margin: 0; font-size: 1.3rem; text-transform: uppercase; font-weight: 700; }
-        .sub-title { color: #94a3b8; font-size: 0.9rem; margin-top: 5px; margin-bottom: 30px; }
+        .sub-title { color: #94a3b8; font-size: 0.9rem; margin-top: 5px; margin-bottom: 30px; font-weight: 400; }
+
+        /* Grid de Informações e Gráfico */
         .grid-info { display: grid; grid-template-columns: 1fr 280px; gap: 30px; align-items: center; }
-        .info-box { background: #e0f2fe; padding: 22px; border-radius: 12px; border-left: 5px solid #0284c7; font-size: 0.92rem; line-height: 1.6; color: #1f2937; }
-        .info-box b { color: #0369a1; display: block; margin-bottom: 10px; text-transform: uppercase; font-size: 0.85rem; }
+        
+        /* Caixa de Detalhamento Estilizada */
+        .info-box { background: #e0f2fe; padding: 22px; border-radius: 12px; border-left: 5px solid #0284c7; font-size: 0.92rem; line-height: 1.6; color: #1f2937; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.03); }
+        .info-box b { color: #0369a1; display: block; margin-bottom: 10px; text-transform: uppercase; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.5px; }
+        
+        /* Container do Gráfico */
         .chart-container { position: relative; height: 380px; width: 100%; }
+
+        /* Responsividade */
         @media (max-width: 850px) { .grid-info { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
     <div class="page-container">
-        <a href="index.html" class="back-btn">← Voltar para perfis</a>
+        <div class="back-btn-container">
+            <a href="index.html" class="back-btn">← Voltar para perfis</a>
+        </div>
         <h1 class="main-title">GESTÃO DE INDICADORES - DHO CURITIBA</h1>
+        
         <div id="container-graficos"></div>
     </div>
 
@@ -47,15 +72,11 @@
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
         
-        container.innerHTML += `
-            <div class="card">
-                <h2 class="chart-title">${tituloExibicao}</h2>
-                <p class="sub-title">Grupo Coplac | Performance</p>
-                <div class="grid-info">
-                    <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box"><b>DETALHAMENTO</b> ${notaTecnica}</div>
-                </div>
-            </div>`;
+        let layoutHtml = notaTecnica 
+            ? `<div class="grid-info"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div><div class="info-box"><b>DETALHAMENTO</b> ${notaTecnica}</div></div>`
+            : `<div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>`;
+
+        container.innerHTML += `<div class="card"><h2 class="chart-title">${tituloExibicao}</h2><p class="sub-title">Grupo Coplac | Performance</p>${layoutHtml}</div>`;
         
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${idUnique}`);
@@ -63,12 +84,29 @@
             
             const metas = labels.map(mes => {
                 const r = dadosFiltrados.find(ln => (ln.mes || ln.Mes) === mes);
-                return r ? limparNumero(r.Objetivo || r['10'] || r['430']) : 0;
+                return r ? limparNumero(r.Objetivo || r['10']) : 0;
             });
 
-            const dadosValores = labels.map(mes => {
+            const dadosDentroMeta = [];
+            const dadosForaMeta = [];
+
+            labels.forEach((mes, index) => {
                 const r = dadosFiltrados.find(ln => (ln.mes || ln.Mes) === mes);
-                return r ? limparNumero(r.Qtd || r['Valor Real'] || r['9105']) : 0;
+                const valor = r ? limparNumero(r.Qtd || r['Valor Real']) : 0;
+                const meta = metas[index];
+                const t = normalizar(tituloExibicao);
+                
+                let atingiuMeta = (t.includes("ABSENTEISMO") || t.includes("TURNOVER")) 
+                    ? (valor <= meta || meta === 0) 
+                    : (valor >= meta);
+
+                if (atingiuMeta) {
+                    dadosDentroMeta.push(valor);
+                    dadosForaMeta.push(null);
+                } else {
+                    dadosDentroMeta.push(null);
+                    dadosForaMeta.push(valor);
+                }
             });
 
             new Chart(ctx, {
@@ -76,35 +114,72 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { 
-                            label: 'Realizado', 
-                            data: dadosValores, 
-                            backgroundColor: '#1e40af', 
-                            borderRadius: 6 
-                        },
-                        { 
-                            label: 'Meta', 
-                            data: metas, 
-                            type: 'line', 
-                            borderColor: '#546e7a', 
-                            borderWidth: 3, 
-                            fill: false, 
-                            pointRadius: 5, 
-                            datalabels: { display: false } 
-                        }
+                        { label: 'Dentro da meta', data: dadosDentroMeta, backgroundColor: '#2ecc71', borderRadius: 6, stack: 's' }, // VERDE AJUSTADO
+                        { label: 'Fora da meta', data: dadosForaMeta, backgroundColor: '#e74c3c', borderRadius: 6, stack: 's' }, // VERMELHO AJUSTADO
+                        { label: 'Meta', data: metas, type: 'line', borderColor: '#546e7a', borderWidth: 3, fill: false, pointRadius: 5, pointBackgroundColor: '#546e7a', datalabels: { display: false } } // META AJUSTADA
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'top' },
+                        legend: { position: 'top', labels: { boxWidth: 15, padding: 15, font: { size: 12 } } },
                         datalabels: {
-                            color: '#1e293b', font: { weight: 'bold' },
-                            anchor: 'end', align: 'top',
-                            formatter: (val) => val > 0 ? val.toLocaleString('pt-BR') : ''
+                            color: '#1e293b', font: { weight: 'bold', size: 12 },
+                            anchor: 'end', align: 'top', offset: 5,
+                            formatter: (val) => (val !== null && val !== 0) ? val.toLocaleString('pt-BR') : ''
                         }
                     },
-                    scales: { y: { beginAtZero: true, grace: '15%' } }
+                    scales: { 
+                        y: { beginAtZero: true, grace: '15%', grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 } } },
+                        x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+                    }
+                }
+            });
+        }, 150);
+    }
+
+    function criarGraficoConsolidado(titulo, dadosMOD, dadosMOI, notaTecnica) {
+        const container = document.getElementById('container-graficos');
+        const idUnique = Math.random().toString(36).substr(2, 9);
+        
+        container.innerHTML += `<div class="card"><h2 class="chart-title">${titulo}</h2><p class="sub-title">Grupo Coplac | Unificado</p><div class="grid-info"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div><div class="info-box"><b>DETALHAMENTO</b> ${notaTecnica || 'Indicador consolidado por categoria (MOD/MOI).'}</div></div></div>`;
+        
+        setTimeout(() => {
+            const ctx = document.getElementById(`chart-${idUnique}`);
+            const labels = [...new Set([...dadosMOD.map(d => d.mes || d.Mes), ...dadosMOI.map(d => d.mes || d.Mes)])].sort();
+            
+            const vMOD = labels.map(m => limparNumero(dadosMOD.find(ln => (ln.mes || ln.Mes) === m)?.Qtd || dadosMOD.find(ln => (ln.mes || ln.Mes) === m)?.['Valor Real']));
+            const vMOI = labels.map(m => limparNumero(dadosMOI.find(ln => (ln.mes || ln.Mes) === m)?.Qtd || dadosMOI.find(ln => (ln.mes || ln.Mes) === m)?.['Valor Real']));
+            
+            const meta = labels.map(m => {
+                const linha = dadosMOD.find(ln => (ln.mes || ln.Mes) === m) || dadosMOI.find(ln => (ln.mes || ln.Mes) === m);
+                return limparNumero(linha?.Objetivo || linha?.['10']);
+            });
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'MOI', data: vMOI, backgroundColor: '#a3b1c6', stack: 's1', borderRadius: 0 }, // CINZA AZULADO (MOI)
+                        { label: 'MOD', data: vMOD, backgroundColor: '#1e40af', stack: 's1', borderRadius: 0 }, // AZUL SAFIRA (MOD)
+                        { label: 'Meta', data: meta, type: 'line', borderColor: '#334155', borderWidth: 2, pointRadius: 6, pointBackgroundColor: '#ffffff', pointBorderColor: '#334155', pointBorderWidth: 2, datalabels: { display: false } } // META AJUSTADA
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 15, padding: 15, font: { size: 12 } } },
+                        datalabels: {
+                            color: '#ffffff', font: { weight: 'bold', size: 12 },
+                            formatter: (val) => val > 0 ? val.toLocaleString('pt-BR') : '',
+                            anchor: 'center', align: 'center', display: true
+                        }
+                    },
+                    scales: { 
+                        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } }, 
+                        y: { stacked: true, beginAtZero: true, grace: '20%', grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 } } } 
+                    }
                 }
             });
         }, 150);
@@ -116,20 +191,44 @@
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
 
+            // 1. INDICADORES SIMPLES
             const config = [
-                { chave: "HORA-HOMEM TREINAMENTO", titulo: "HORA-HOMEM DE TREINAMENTO", nota: "Total de horas de treinamento realizadas pelos colaboradores no período." },
                 { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", nota: "Horas de treinamentos programados e realizados no mês" },
-                { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", nota: "%Aprovados em Treinamento" },
-                { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", nota: "Desligados > 180 Dias" },
-                { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", nota: "Total de Horas Ausentes / Horas Programadas" }
+                { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", nota: "%Aprovados em Treinamento = (Qtde Colaboradores Aprovados / Qtde Colaboradores Avaliados) * 100" },
+                { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", nota: "%TurnOver = (Qtde Colaboradores Desligados > 180 Dias / Qtde Colaboradores no Último Dia do Mês) * 100" },
+                { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", nota: "(Admissões + Desligamentos) ÷ 2 ÷ Total de colaboradores x 100" },
+                { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", nota: "% Absenteísmo: Total de Horas Ausentes / Total de Horas Programadas para Trabalhar." }
             ];
 
             config.forEach(item => {
                 let filtrados = dados.filter(ln => normalizar(ln.Processo || ln.indicadores || "").includes(normalizar(item.chave)));
                 if (filtrados.length > 0) criarGrafico(item.titulo, filtrados, item.nota);
             });
-            
-            // Lógica de consolidados MOD/MOI permanece a mesma aqui...
+
+            // 2. INDICADORES CONSOLIDADOS (MOD + MOI)
+            const consolidados = [
+                { termo: "SOLICITACAO DE DESLIGAMENTO 15 DIAS", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS (CONSOLIDADO)" },
+                { termo: "SOLICITACAO DE DESLIGAMENTO 16 A 30", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS (CONSOLIDADO)" },
+                { termo: "SOLICITACAO DE DESLIGAMENTO 31 A 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 31 A 90 DIAS (CONSOLIDADO)" },
+                { termo: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO ACIMA DE 90 DIAS (CONSOLIDADO)" },
+                { termo: "PEDIDOS DE DESLIGAMENTO MES", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO GERAL NO MÊS (CONSOLIDADO)" },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS (CONSOLIDADO)" },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS (CONSOLIDADO)" },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", titulo: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS (CONSOLIDADO)" },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", titulo: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS (CONSOLIDADO)" }
+            ];
+
+            consolidados.forEach(p => {
+                const dMOD = dados.filter(ln => 
+                    normalizar(ln.Processo || ln.indicadores || "").includes(normalizar(p.termo)) && 
+                    normalizar(ln.Indicador || ln.MOI || "") === "MOD"
+                );
+                const dMOI = dados.filter(ln => 
+                    normalizar(ln.Processo || ln.indicadores || "").includes(normalizar(p.termo)) && 
+                    normalizar(ln.Indicador || ln.MOI || "") === "MOI"
+                );
+                if (dMOD.length || dMOI.length) criarGraficoConsolidado(p.titulo, dMOD, dMOI, "");
+            });
         }
     });
 </script>

@@ -17,7 +17,6 @@
         .sub { color: #64748b; font-size: 0.85rem; margin-bottom: 25px; }
         .chart-container { position: relative; height: 380px; width: 100%; }
         .back-btn { color: #64748b; text-decoration: none; font-size: 0.9rem; display: inline-block; margin-bottom: 20px; }
-        @media (max-width: 768px) { .grid-info { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -30,7 +29,7 @@
 <script>
     Chart.register(ChartDataLabels);
 
-    // URL da Planilha (Certifique-se de que a coluna de valores no Excel se chama "Qtd" e a de meta "Objetivo")
+    // AJUSTE DO LINK: Trocado de /pubhtml para output=csv
     const planilhaDrive = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
 
     function limparNumero(v) {
@@ -54,20 +53,20 @@
         
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${idUnique}`);
-            const labels = [...new Set(dadosFiltrados.map(ln => ln.Mes || ln.mes))];
+            const labels = [...new Set(dadosFiltrados.map(ln => ln.mes || ln.Mes))];
             
             const metas = labels.map(mes => {
-                const r = dadosFiltrados.find(ln => (ln.Mes || ln.mes) === mes);
-                return r ? limparNumero(r.Objetivo) : 0;
+                const r = dadosFiltrados.find(ln => (ln.mes || ln.Mes) === mes);
+                // Na sua planilha a meta está na coluna G (que o CSV lê como "10" ou "Objetivo")
+                return r ? limparNumero(r.Objetivo || r['10']) : 0;
             });
 
             const dadosDentroMeta = [];
             const dadosForaMeta = [];
 
             labels.forEach((mes, index) => {
-                const r = dadosFiltrados.find(ln => (ln.Mes || ln.mes) === mes);
-                // Ajustado para buscar a coluna "Qtd" conforme sua imagem
-                const valor = r ? limparNumero(r.Qtd || r['Valor Real']) : 0;
+                const r = dadosFiltrados.find(ln => (ln.mes || ln.Mes) === mes);
+                const valor = r ? limparNumero(r.Qtd) : 0;
                 const meta = metas[index];
                 const t = normalizar(tituloExibicao);
                 
@@ -113,21 +112,18 @@
     function criarGraficoConsolidado(titulo, dadosMOD, dadosMOI, notaTecnica) {
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
-        const textoDetalhamento = "TURNOVER - INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mês";
-
-        container.innerHTML += `<div class="card"><h2>${titulo}</h2><p class="sub">Grupo Coplac | Unificado</p><div class="grid-info"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div><div class="info-box"><b>DETALHAMENTO</b> ${textoDetalhamento}</div></div></div>`;
+        container.innerHTML += `<div class="card"><h2>${titulo}</h2><p class="sub">Grupo Coplac | Unificado</p><div class="grid-info"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div><div class="info-box"><b>DETALHAMENTO</b> TURNOVER - INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mês</div></div></div>`;
         
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${idUnique}`);
-            const labels = [...new Set([...dadosMOD.map(d => d.Mes || d.mes), ...dadosMOI.map(d => d.Mes || d.mes)])].sort();
+            const labels = [...new Set([...dadosMOD.map(d => d.mes || d.Mes), ...dadosMOI.map(d => d.mes || d.Mes)])].sort();
             
-            // Ajustado para usar "Qtd"
-            const vMOD = labels.map(m => limparNumero(dadosMOD.find(ln => (ln.Mes || ln.mes) === m)?.[Object.keys(dadosMOD[0]).find(k => normalizar(k) === 'QTD') || 'Qtd']));
-            const vMOI = labels.map(m => limparNumero(dadosMOI.find(ln => (ln.Mes || ln.mes) === m)?.[Object.keys(dadosMOI[0]).find(k => normalizar(k) === 'QTD') || 'Qtd']));
+            const vMOD = labels.map(m => limparNumero(dadosMOD.find(ln => (ln.mes || ln.Mes) === m)?.Qtd));
+            const vMOI = labels.map(m => limparNumero(dadosMOI.find(ln => (ln.mes || ln.Mes) === m)?.Qtd));
             
             const meta = labels.map(m => {
-                const linha = dadosMOD.find(ln => (ln.Mes || ln.mes) === m) || dadosMOI.find(ln => (ln.Mes || ln.mes) === m);
-                return limparNumero(linha?.Objetivo);
+                const linha = dadosMOD.find(ln => (ln.mes || ln.Mes) === m) || dadosMOI.find(ln => (ln.mes || ln.Mes) === m);
+                return limparNumero(linha?.Objetivo || linha?.['10']);
             });
 
             new Chart(ctx, {
@@ -155,53 +151,29 @@
         }, 150);
     }
 
-    Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
-        download: true, header: true, skipEmptyLines: true,
+    Papa.parse(planilhaDrive, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
         complete: function(results) {
             const dados = results.data;
-            document.getElementById('container-graficos').innerHTML = "";
-
-            // Configuração dos indicadores simples
-            const config = [
-                { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", nota: "Horas de treinamentos programados e realizados no mês" },
-                { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", nota: "%Aprovados em Treinamento = (Qtde Colaboradores Aprovados / Qtde Colaboradores Avaliados) * 100" },
-                { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", nota: "%TurnOver = (Qtde Colaboradores Desligados > 180 Dias / Qtde Colaboradores no Último Dia do Mês) * 100" },
-                { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", nota: "(Admissões + Desligamentos) ÷ 2 ÷ Total de colaboradores x 100" },
-                { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", nota: "% Absenteísmo: Total de Horas Ausentes / Total de Horas Programadas para Trabalhar." }
-            ];
-
-            config.forEach(item => {
-                let filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(item.chave)));
-                if (filtrados.length > 0) criarGrafico(item.titulo, filtrados, item.nota);
-            });
-
-            // Indicadores Consolidados (MOD + MOI)
+            
+            // FILTROS BASEADOS NA SUA PLANILHA REAL
             const consolidados = [
-                { termo: "SOLICITACAO DE DESLIGAMENTO 15 DIAS", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS (CONSOLIDADO)" },
-                // ABAIXO A ALTERAÇÃO SOLICITADA PARA O TERMO ESPECÍFICO
-                { termo: "SOLICITACAO DE DESLIGAMENTO 16 A 30 DIAS", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS (CONSOLIDADO)" },
-                { termo: "SOLICITACAO DE DESLIGAMENTO 31 A 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 31 A 90 DIAS (CONSOLIDADO)" },
-                { termo: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO ACIMA DE 90 DIAS (CONSOLIDADO)" },
-                { termo: "PEDIDOS DE DESLIGAMENTO MES", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO GERAL NO MÊS (CONSOLIDADO)" },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS (CONSOLIDADO)" },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS (CONSOLIDADO)" },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", titulo: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS (CONSOLIDADO)" },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", titulo: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS (CONSOLIDADO)" }
+                { termo: "TURNOVER - SOLICITACAO DE DESLIGAMENTO 16 A 30 DIAS", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS (CONSOLIDADO)" }
             ];
 
             consolidados.forEach(p => {
-                // Filtra garantindo que olhe a coluna Processo e a coluna Indicador (ou MOI/MOD)
-                const dMOD = dados.filter(ln => {
-                    const procMatch = normalizar(ln.Processo).includes(normalizar(p.termo));
-                    const indMatch = normalizar(ln.Indicador || ln.MOD || ln.MOI || "") === "MOD";
-                    return procMatch && indMatch;
-                });
+                // Filtra usando a coluna 'indicadores' e 'MOI' (que é onde está MOD/MOI na sua planilha)
+                const dMOD = dados.filter(ln => 
+                    normalizar(ln.indicadores || "").includes(normalizar(p.termo)) && 
+                    normalizar(ln.MOI || "") === "MOD"
+                );
 
-                const dMOI = dados.filter(ln => {
-                    const procMatch = normalizar(ln.Processo).includes(normalizar(p.termo));
-                    const indMatch = normalizar(ln.Indicador || ln.MOD || ln.MOI || "") === "MOI";
-                    return procMatch && indMatch;
-                });
+                const dMOI = dados.filter(ln => 
+                    normalizar(ln.indicadores || "").includes(normalizar(p.termo)) && 
+                    normalizar(ln.MOI || "") === "MOI"
+                );
 
                 if (dMOD.length || dMOI.length) {
                     criarGraficoConsolidado(p.titulo, dMOD, dMOI, "");

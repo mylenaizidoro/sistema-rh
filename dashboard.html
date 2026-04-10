@@ -1,209 +1,385 @@
 <!DOCTYPE html>
+
 <html lang="pt-br">
+
 <head>
+
     <meta charset="UTF-8">
-    <title>DHO — Gestão de Indicadores</title>
+
+    <title>Dashboard RH - Grupo Coplac</title>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
     <style>
-        /* Estilo Dark Mode Premium */
-        body { 
-            background-color: #0f1113; 
-            color: #ffffff; 
-            font-family: 'Inter', 'Segoe UI', sans-serif; 
-            padding: 40px; 
-            margin: 0; 
-        }
 
-        .page-container { max-width: 1100px; margin: auto; }
+        body { background-color: #f8fafc; color: #1e293b; font-family: 'Segoe UI', sans-serif; padding: 20px; }
 
-        /* Cabeçalho */
-        .header-section { margin-bottom: 40px; }
-        .header-top { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
-        .icon-box { background: #1e293b; padding: 10px; border-radius: 12px; display: flex; align-items: center; }
-        h1 { font-size: 2.2rem; font-weight: 700; margin: 0; letter-spacing: -1px; }
-        .subtitle { color: #94a3b8; font-size: 1.1rem; }
+        .card { background: #ffffff; border-radius: 16px; padding: 30px; max-width: 950px; margin: 25px auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
 
-        /* Grid de Cards */
-        .dashboard-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); 
-            gap: 20px; 
-            margin-bottom: 30px; 
-        }
+        .grid-info { display: grid; grid-template-columns: 1fr 280px; gap: 25px; align-items: center; }
 
-        /* Estilo dos Cards Baseado na Imagem */
-        .kpi-card { 
-            background: #16181a; 
-            border-radius: 24px; 
-            padding: 24px; 
-            border: 1px solid #26292b;
-            transition: transform 0.2s;
-        }
+        .info-box { background: #f1f5f9; padding: 20px; border-radius: 12px; border-left: 5px solid #0284c7; font-size: 0.9rem; line-height: 1.6; color: #475569; }
 
-        .kpi-title { 
-            color: #94a3b8; 
-            font-size: 0.85rem; 
-            font-weight: 700; 
-            text-transform: uppercase; 
-            letter-spacing: 1px;
-            margin-bottom: 15px;
-        }
+        .info-box b { color: #0284c7; display: block; margin-bottom: 8px; text-transform: uppercase; font-size: 0.8rem; }
 
-        .kpi-value-container { display: flex; align-items: baseline; gap: 15px; }
-        .kpi-value { font-size: 2.5rem; font-weight: 700; color: #ffffff; }
-        
-        /* Badge de Tendência */
-        .trend-badge { 
-            padding: 4px 12px; 
-            border-radius: 20px; 
-            font-size: 0.9rem; 
-            font-weight: 600; 
-            display: flex; 
-            align-items: center; 
-            gap: 5px;
-        }
-        .trend-up { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-        .trend-down { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+        h1 { color: #0f172a; font-weight: 700; text-align: center; margin-bottom: 30px; text-transform: uppercase; }
 
-        /* Container do Gráfico */
-        .chart-card { 
-            background: #16181a; 
-            border-radius: 24px; 
-            padding: 30px; 
-            border: 1px solid #26292b; 
-            margin-top: 20px;
-        }
-        .chart-container { height: 350px; width: 100%; position: relative; }
+        h2 { color: #0284c7; margin: 0; font-size: 1.2rem; text-transform: uppercase; }
 
-        .info-detail {
-            margin-top: 20px;
-            padding: 15px;
-            background: #1e293b;
-            border-radius: 12px;
-            font-size: 0.85rem;
-            color: #cbd5e1;
-        }
+        .sub { color: #64748b; font-size: 0.85rem; margin-bottom: 25px; }
+
+        .chart-container { position: relative; height: 380px; width: 100%; }
+
+        .back-btn { color: #64748b; text-decoration: none; font-size: 0.9rem; display: inline-block; margin-bottom: 20px; }
+
+        @media (max-width: 768px) { .grid-info { grid-template-columns: 1fr; } }
+
     </style>
+
 </head>
+
 <body>
 
-<div class="page-container">
-    <div class="header-section">
-        <div class="header-top">
-            <div class="icon-box">🏢</div>
-            <h1>DHO — Treinamento & Desenvolvimento</h1>
-        </div>
-        <p class="subtitle">Indicadores automáticos e trilhas por cargo (protótipo).</p>
+    <div style="max-width: 950px; margin: auto;">
+
+        <a href="index.html" class="back-btn">← Voltar para perfis</a>
+
+        <h1>GESTÃO DE INDICADORES - DHO CURITIBA</h1>
+
     </div>
 
-    <div id="kpi-grid" class="dashboard-grid"></div>
-    <div id="charts-main"></div>
-</div>
+    <div id="container-graficos"></div>
+
+
 
 <script>
+
     Chart.register(ChartDataLabels);
+
+
 
     const planilhaDrive = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
 
+
+
     function limparNumero(v) {
+
         if (!v || v.toString().trim() === "") return 0;
+
         let n = v.toString().replace(/\s/g, '').replace(',', '.');
+
         return parseFloat(n) || 0;
+
     }
+
+
 
     function normalizar(txt) {
+
         return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
+
     }
 
-    // Função para criar o Card de Destaque (Igual à imagem)
-    function criarKpiCard(titulo, valor, tendencia, sulfixo = "") {
-        const grid = document.getElementById('kpi-grid');
-        const trendClass = tendencia >= 0 ? 'trend-up' : 'trend-down';
-        const trendIcon = tendencia >= 0 ? '↗' : '↘';
 
-        grid.innerHTML += `
-            <div class="kpi-card">
-                <div class="kpi-title">${titulo}</div>
-                <div class="kpi-value-container">
-                    <div class="kpi-value">${valor}${sulfixo}</div>
-                    <div class="trend-badge ${trendClass}">
-                        ${trendIcon} ${Math.abs(tendencia)}%
-                    </div>
-                </div>
-            </div>
-        `;
-    }
 
-    function criarGraficoDark(titulo, dadosFiltrados, nota) {
-        const container = document.getElementById('charts-main');
-        const id = 'ch-' + Math.random().toString(36).substr(2, 5);
+    function criarGrafico(tituloExibicao, dadosFiltrados, notaTecnica = "") {
 
-        container.innerHTML += `
-            <div class="chart-card">
-                <div class="kpi-title">${titulo}</div>
-                <div class="chart-container"><canvas id="${id}"></canvas></div>
-                ${nota ? `<div class="info-detail"><b>INFO:</b> ${nota}</div>` : ''}
-            </div>
-        `;
+        const container = document.getElementById('container-graficos');
+
+        const idUnique = Math.random().toString(36).substr(2, 9);
+
+        let layoutHtml = notaTecnica 
+
+            ? `<div class="grid-info"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div><div class="info-box"><b>DETALHAMENTO</b> ${notaTecnica}</div></div>`
+
+            : `<div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>`;
+
+
+
+        container.innerHTML += `<div class="card"><h2>${tituloExibicao}</h2><p class="sub">Grupo Coplac | Performance</p>${layoutHtml}</div>`;
+
+        
 
         setTimeout(() => {
-            const ctx = document.getElementById(id);
-            const labels = [...new Set(dadosFiltrados.map(d => d.mes || d.Mes))];
-            const valores = labels.map(m => {
-                const r = dadosFiltrados.find(ln => (ln.mes || ln.Mes) === m);
-                return limparNumero(r.Qtd || r['Valor Real'] || r['9105']);
+
+            const ctx = document.getElementById(`chart-${idUnique}`);
+
+            const labels = [...new Set(dadosFiltrados.map(ln => ln.mes))];
+
+            
+
+            const metas = labels.map(mes => {
+
+                const r = dadosFiltrados.find(ln => ln.mes === mes);
+
+                return r ? limparNumero(r.Objetivo) : 0;
+
             });
+
+
+
+            const dadosDentroMeta = [];
+
+            const dadosForaMeta = [];
+
+
+
+            labels.forEach((mes, index) => {
+
+                const r = dadosFiltrados.find(ln => ln.mes === mes);
+
+                const valor = r ? limparNumero(r['Valor Real']) : 0;
+
+                const meta = metas[index];
+
+                const t = normalizar(tituloExibicao);
+
+                
+
+                let atingiuMeta = (t.includes("ABSENTEISMO") || t.includes("TURNOVER")) 
+
+                    ? (valor <= meta || meta === 0) 
+
+                    : (valor >= meta);
+
+
+
+                if (atingiuMeta) {
+
+                    dadosDentroMeta.push(valor);
+
+                    dadosForaMeta.push(null);
+
+                } else {
+
+                    dadosDentroMeta.push(null);
+
+                    dadosForaMeta.push(valor);
+
+                }
+
+            });
+
+
 
             new Chart(ctx, {
+
                 type: 'bar',
+
                 data: {
+
                     labels: labels,
-                    datasets: [{
-                        data: valores,
-                        backgroundColor: '#3b82f6',
-                        borderRadius: 8,
-                        barThickness: 30
-                    }]
+
+                    datasets: [
+
+                        { label: 'Realizado dentro da meta', data: dadosDentroMeta, backgroundColor: '#22c55e', borderRadius: 6, stack: 's' },
+
+                        { label: 'Realizado fora da meta', data: dadosForaMeta, backgroundColor: '#ef4444', borderRadius: 6, stack: 's' },
+
+                        { label: 'Meta', data: metas, type: 'line', borderColor: '#475569', borderWidth: 3, fill: false, pointRadius: 4, datalabels: { display: false } }
+
+                    ]
+
                 },
+
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { 
-                        legend: { display: false },
-                        datalabels: { color: '#fff', anchor: 'end', align: 'top' }
+
+                    responsive: true, maintainAspectRatio: false,
+
+                    plugins: {
+
+                        legend: { position: 'top' },
+
+                        datalabels: {
+
+                            color: '#475569', font: { weight: 'bold' },
+
+                            anchor: 'end', align: 'top',
+
+                            formatter: (val) => (val !== null && val !== 0) ? val.toLocaleString('pt-BR') : ''
+
+                        }
+
                     },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { color: '#64748b' } },
-                        y: { grid: { color: '#26292b' }, ticks: { color: '#64748b' } }
-                    }
+
+                    scales: { y: { beginAtZero: true, grace: '15%' } }
+
                 }
+
             });
-        }, 100);
+
+        }, 150);
+
     }
 
-    Papa.parse(planilhaDrive, {
-        download: true, header: true, skipEmptyLines: true,
-        complete: function(results) {
-            const dados = results.data;
-            
-            // Exemplo de criação dos cards de topo com base na sua imagem
-            criarKpiCard("HORA-HOMEM DE TREINAMENTO (MÊS)", "1.842,5", 12.4, " h");
-            criarKpiCard("META MENSAL (PROGRESSO)", "88", -12, "%");
 
-            // Gerar gráficos principais
+
+    function criarGraficoConsolidado(titulo, dadosMOD, dadosMOI, notaTecnica) {
+
+        const container = document.getElementById('container-graficos');
+
+        const idUnique = Math.random().toString(36).substr(2, 9);
+
+        const textoDetalhamento = "TURNOVER - INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mês";
+
+
+
+        container.innerHTML += `<div class="card"><h2>${titulo}</h2><p class="sub">Grupo Coplac | Unificado</p><div class="grid-info"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div><div class="info-box"><b>DETALHAMENTO</b> ${textoDetalhamento}</div></div></div>`;
+
+        
+
+        setTimeout(() => {
+
+            const ctx = document.getElementById(`chart-${idUnique}`);
+
+            const labels = [...new Set([...dadosMOD.map(d => d.mes), ...dadosMOI.map(d => d.mes)])].sort();
+
+            const vMOD = labels.map(m => limparNumero(dadosMOD.find(ln => ln.mes === m)?.['Valor Real']));
+
+            const vMOI = labels.map(m => limparNumero(dadosMOI.find(ln => ln.mes === m)?.['Valor Real']));
+
+            const meta = labels.map(m => {
+
+                const linha = dadosMOD.find(ln => ln.mes === m) || dadosMOI.find(ln => ln.mes === m);
+
+                return limparNumero(linha?.Objetivo);
+
+            });
+
+
+
+            new Chart(ctx, {
+
+                type: 'bar',
+
+                data: {
+
+                    labels: labels,
+
+                    datasets: [
+
+                        { label: 'MOI', data: vMOI, backgroundColor: '#cbd5e1', stack: 's1' },
+
+                        { label: 'MOD', data: vMOD, backgroundColor: '#475569', stack: 's1' },
+
+                        { label: 'Meta', data: meta, type: 'line', borderColor: '#000', borderWidth: 2, pointRadius: 5, datalabels: { display: false } }
+
+                    ]
+
+                },
+
+                options: {
+
+                    responsive: true, maintainAspectRatio: false,
+
+                    plugins: {
+
+                        datalabels: {
+
+                            color: '#fff', font: { weight: 'bold', size: 12 },
+
+                            formatter: (val) => val > 0 ? val : '',
+
+                            anchor: 'center', align: 'center', display: true
+
+                        }
+
+                    },
+
+                    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, grace: '20%' } }
+
+                }
+
+            });
+
+        }, 150);
+
+    }
+
+
+
+    Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
+
+        download: true, header: true, skipEmptyLines: true,
+
+        complete: function(results) {
+
+            const dados = results.data;
+
+            document.getElementById('container-graficos').innerHTML = "";
+
+
+
             const config = [
-                { chave: "Hora-Homem Treinamento", titulo: "Histórico Hora-Homem", nota: "Consolidado de horas realizadas." },
-                { chave: "TURNOVER PA", titulo: "Taxa de Turnover", nota: "Colaboradores > 180 dias." }
+
+                { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", nota: "Horas de treinamentos programados e realizados no mês" },
+
+                { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", nota: "%Aprovados em Treinamento = (Qtde Colaboradores Aprovados / Qtde Colaboradores Avaliados) * 100" },
+
+                { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", nota: "%TurnOver = (Qtde Colaboradores Desligados > 180 Dias / Qtde Colaboradores no Último Dia do Mês) * 100" },
+
+                { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", nota: "(Admissões + Desligamentos) ÷ 2 ÷ Total de colaboradores x 100" },
+
+                { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", nota: "% Absenteísmo: Total de Horas Ausentes / Total de Horas Programadas para Trabalhar." }
+
             ];
 
+
+
             config.forEach(item => {
-                let filtrados = dados.filter(ln => normalizar(ln.Processo || ln.indicadores || "").includes(normalizar(item.chave)));
-                if (filtrados.length > 0) criarGraficoDark(item.titulo, filtrados, item.nota);
+
+                let filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(item.chave)));
+
+                if (filtrados.length > 0) criarGrafico(item.titulo, filtrados, item.nota);
+
             });
+
+
+
+            const consolidados = [
+
+                { termo: "SOLICITACAO DE DESLIGAMENTO 15 DIAS", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS (CONSOLIDADO)" },
+
+                { termo: "SOLICITACAO DE DESLIGAMENTO 16 A 30", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS (CONSOLIDADO)" },
+
+                { termo: "SOLICITACAO DE DESLIGAMENTO 31 A 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 31 A 90 DIAS (CONSOLIDADO)" },
+
+                { termo: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO ACIMA DE 90 DIAS (CONSOLIDADO)" },
+
+                { termo: "PEDIDOS DE DESLIGAMENTO MES", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO GERAL NO MÊS (CONSOLIDADO)" },
+
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS (CONSOLIDADO)" },
+
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS (CONSOLIDADO)" },
+
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", titulo: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS (CONSOLIDADO)" },
+
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", titulo: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS (CONSOLIDADO)" }
+
+            ];
+
+
+
+            consolidados.forEach(p => {
+
+                const dMOD = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(p.termo)) && normalizar(ln.Indicador) === "MOD");
+
+                const dMOI = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(p.termo)) && normalizar(ln.Indicador) === "MOI");
+
+                if (dMOD.length || dMOI.length) criarGraficoConsolidado(p.titulo, dMOD, dMOI, "");
+
+            });
+
         }
+
     });
+
 </script>
+
 </body>
-</html>
+
+</html> 

@@ -17,7 +17,6 @@
         .sub { color: #64748b; font-size: 0.85rem; margin-bottom: 25px; }
         .chart-container { position: relative; height: 380px; width: 100%; }
         .back-btn { color: #64748b; text-decoration: none; font-size: 0.9rem; display: inline-block; margin-bottom: 20px; }
-        @media (max-width: 768px) { .grid-info { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -44,12 +43,22 @@
         return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
     }
 
-    function criarGrafico(tituloExibicao, dadosFiltrados, notaTecnica = "") {
+    function criarGrafico(itemConfig, dadosGerais) {
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
-        let layoutHtml = `<div class="grid-info"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div><div class="info-box"><b>DETALHAMENTO</b> ${notaTecnica}</div></div>`;
+        const dadosFiltrados = dadosGerais.filter(ln => normalizar(ln.Processo).includes(normalizar(itemConfig.chave)));
 
-        container.innerHTML += `<div class="card"><h2>${tituloExibicao}</h2><p class="sub">Grupo Coplac | Performance</p>${layoutHtml}</div>`;
+        if (dadosFiltrados.length === 0) return;
+
+        container.innerHTML += `
+            <div class="card">
+                <h2>${itemConfig.titulo}</h2>
+                <p class="sub">Grupo Coplac | Performance</p>
+                <div class="grid-info">
+                    <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
+                    <div class="info-box"><b>DETALHAMENTO</b> ${itemConfig.nota}</div>
+                </div>
+            </div>`;
         
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${idUnique}`);
@@ -67,21 +76,15 @@
                 const r = dadosFiltrados.find(ln => ln.mes === mes);
                 const valor = r ? limparNumero(r['Valor Real'] || r.Qtd) : 0;
                 const meta = metas[index];
-                const t = normalizar(tituloExibicao);
                 
-                let atingiuMeta;
-                // Lógica corrigida:
-                // Se for RETENÇÃO ou TREINAMENTO -> Verde se for MAIOR ou IGUAL à meta
-                // Se for ABSENTEÍSMO ou TURNOVER -> Verde se for MENOR ou IGUAL à meta
-                if (t.includes("RETENCAO") || t.includes("TREINAMENTO")) {
-                    atingiuMeta = (valor >= meta);
-                } else if (t.includes("ABSENTEISMO") || t.includes("TURNOVER")) {
-                    atingiuMeta = (valor <= meta);
+                let atingiu;
+                if (itemConfig.tipo === "MENOR_MELHOR") {
+                    atingiu = (valor <= meta);
                 } else {
-                    atingiuMeta = (valor >= meta);
+                    atingiu = (valor >= meta);
                 }
 
-                if (atingiuMeta) {
+                if (atingiu) {
                     dadosDentroMeta.push(valor);
                     dadosForaMeta.push(null);
                 } else {
@@ -116,12 +119,19 @@
         }, 150);
     }
 
-    function criarGraficoConsolidado(titulo, dadosMOD, dadosMOI, notaTecnica) {
+    function criarGraficoConsolidado(titulo, dadosMOD, dadosMOI) {
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
-        const textoDetalhamento = "Indicador consolidado por categoria (MOD/MOI).";
 
-        container.innerHTML += `<div class="card"><h2>${titulo}</h2><p class="sub">Grupo Coplac | Unificado</p><div class="grid-info"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div><div class="info-box"><b>DETALHAMENTO</b> ${textoDetalhamento}</div></div></div>`;
+        container.innerHTML += `
+            <div class="card">
+                <h2>${titulo}</h2>
+                <p class="sub">Grupo Coplac | Unificado</p>
+                <div class="grid-info">
+                    <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
+                    <div class="info-box"><b>DETALHAMENTO</b> Indicador unificado por categoria.</div>
+                </div>
+            </div>`;
         
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${idUnique}`);
@@ -164,38 +174,29 @@
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
 
-            // 1. Gráficos de Performance Individual
+            // CONFIGURAÇÃO DOS INDICADORES E SUAS REGRAS DE COR
             const config = [
-                { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", nota: "Horas de treinamentos programados e realizados no mês" },
-                { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", nota: "%Aprovados em Treinamento = (Qtde Colaboradores Aprovados / Qtde Colaboradores Avaliados) * 100" },
-                { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", nota: "%TurnOver = (Qtde Colaboradores Desligados > 180 Dias / Qtde Colaboradores no Último Dia do Mês) * 100" },
-                { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", nota: "(Admissões + Desligamentos) ÷ 2 ÷ Total de colaboradores x 100" },
-                { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", nota: "% Absenteísmo: Total de Horas Ausentes / Total de Horas Programadas para Trabalhar." },
-                { chave: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", nota: "Acompanhamento de promoções internas e meritocracia." }
+                { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Horas de treinamentos programados e realizados no mês." },
+                { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "%Aprovados = (Qtde Aprovados / Qtde Avaliados) * 100." },
+                { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "%TurnOver = (Qtde Desligados > 180 Dias / Qtde Colaboradores) * 100." },
+                { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Admissões + Desligamentos) ÷ 2 ÷ Total x 100." },
+                { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "% Absenteísmo: Total Horas Ausentes / Total Horas Programadas." },
+                { chave: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", tipo: "MAIOR_MELHOR", nota: "Acompanhamento de promoções internas e meritocracia." }
             ];
 
-            config.forEach(item => {
-                let filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(item.chave)));
-                if (filtrados.length > 0) criarGrafico(item.titulo, filtrados, item.nota);
-            });
+            // Renderiza Performance
+            config.forEach(c => criarGrafico(c, dados));
 
-            // 2. Gráficos Consolidados (MOD/MOI)
+            // Renderiza Consolidados
             const consolidados = [
-                { termo: "SOLICITACAO DE DESLIGAMENTO 15 DIAS", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS (CONSOLIDADO)" },
-                { termo: "SOLICITACAO DE DESLIGAMENTO 16 A 30", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS (CONSOLIDADO)" },
-                { termo: "SOLICITACAO DE DESLIGAMENTO 31 A 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 31 A 90 DIAS (CONSOLIDADO)" },
-                { termo: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO ACIMA DE 90 DIAS (CONSOLIDADO)" },
                 { termo: "PEDIDOS DE DESLIGAMENTO MES", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO GERAL NO MÊS (CONSOLIDADO)" },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS (CONSOLIDADO)" },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS (CONSOLIDADO)" },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", titulo: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS (CONSOLIDADO)" },
                 { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", titulo: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS (CONSOLIDADO)" }
             ];
 
             consolidados.forEach(p => {
                 const dMOD = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(p.termo)) && normalizar(ln.Indicador) === "MOD");
                 const dMOI = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(p.termo)) && normalizar(ln.Indicador) === "MOI");
-                if (dMOD.length || dMOI.length) criarGraficoConsolidado(p.titulo, dMOD, dMOI, "");
+                if (dMOD.length || dMOI.length) criarGraficoConsolidado(p.titulo, dMOD, dMOI);
             });
         }
     });

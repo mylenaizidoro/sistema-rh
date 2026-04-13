@@ -17,6 +17,7 @@
         .sub { color: #64748b; font-size: 0.85rem; margin-bottom: 25px; }
         .chart-container { position: relative; height: 380px; width: 100%; }
         .back-btn { color: #64748b; text-decoration: none; font-size: 0.9rem; display: inline-block; margin-bottom: 20px; }
+        @media (max-width: 768px) { .grid-info { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -69,9 +70,12 @@
                 const t = normalizar(tituloExibicao);
                 
                 let atingiuMeta;
-                // Lógica: Se for turnover ou absenteísmo, menor é melhor.
-                // Se for retenção ou treinamento, maior é melhor.
-                if (t.includes("ABSENTEISMO") || t.includes("TURNOVER")) {
+                // Lógica corrigida:
+                // Se for RETENÇÃO ou TREINAMENTO -> Verde se for MAIOR ou IGUAL à meta
+                // Se for ABSENTEÍSMO ou TURNOVER -> Verde se for MENOR ou IGUAL à meta
+                if (t.includes("RETENCAO") || t.includes("TREINAMENTO")) {
+                    atingiuMeta = (valor >= meta);
+                } else if (t.includes("ABSENTEISMO") || t.includes("TURNOVER")) {
                     atingiuMeta = (valor <= meta);
                 } else {
                     atingiuMeta = (valor >= meta);
@@ -112,13 +116,55 @@
         }, 150);
     }
 
-    // Função de carregamento principal (Manteve os consolidados abaixo)
+    function criarGraficoConsolidado(titulo, dadosMOD, dadosMOI, notaTecnica) {
+        const container = document.getElementById('container-graficos');
+        const idUnique = Math.random().toString(36).substr(2, 9);
+        const textoDetalhamento = "Indicador consolidado por categoria (MOD/MOI).";
+
+        container.innerHTML += `<div class="card"><h2>${titulo}</h2><p class="sub">Grupo Coplac | Unificado</p><div class="grid-info"><div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div><div class="info-box"><b>DETALHAMENTO</b> ${textoDetalhamento}</div></div></div>`;
+        
+        setTimeout(() => {
+            const ctx = document.getElementById(`chart-${idUnique}`);
+            const labels = [...new Set([...dadosMOD.map(d => d.mes), ...dadosMOI.map(d => d.mes)])].sort();
+            const vMOD = labels.map(m => limparNumero(dadosMOD.find(ln => ln.mes === m)?.['Valor Real'] || dadosMOD.find(ln => ln.mes === m)?.Qtd));
+            const vMOI = labels.map(m => limparNumero(dadosMOI.find(ln => ln.mes === m)?.['Valor Real'] || dadosMOI.find(ln => ln.mes === m)?.Qtd));
+            const meta = labels.map(m => {
+                const linha = dadosMOD.find(ln => ln.mes === m) || dadosMOI.find(ln => ln.mes === m);
+                return limparNumero(linha?.Objetivo);
+            });
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'MOI', data: vMOI, backgroundColor: '#cbd5e1', stack: 's1' },
+                        { label: 'MOD', data: vMOD, backgroundColor: '#475569', stack: 's1' },
+                        { label: 'Meta', data: meta, type: 'line', borderColor: '#000', borderWidth: 2, pointRadius: 5, datalabels: { display: false } }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        datalabels: {
+                            color: '#fff', font: { weight: 'bold', size: 11 },
+                            formatter: (val) => val > 0 ? val : '',
+                            anchor: 'center', align: 'center', display: true
+                        }
+                    },
+                    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, grace: '20%' } }
+                }
+            });
+        }, 150);
+    }
+
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
         download: true, header: true, skipEmptyLines: true,
         complete: function(results) {
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
 
+            // 1. Gráficos de Performance Individual
             const config = [
                 { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", nota: "Horas de treinamentos programados e realizados no mês" },
                 { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", nota: "%Aprovados em Treinamento = (Qtde Colaboradores Aprovados / Qtde Colaboradores Avaliados) * 100" },
@@ -132,8 +178,25 @@
                 let filtrados = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(item.chave)));
                 if (filtrados.length > 0) criarGrafico(item.titulo, filtrados, item.nota);
             });
-            
-            // ... (Aqui você pode manter a parte dos consolidados do código anterior se desejar eles abaixo)
+
+            // 2. Gráficos Consolidados (MOD/MOI)
+            const consolidados = [
+                { termo: "SOLICITACAO DE DESLIGAMENTO 15 DIAS", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS (CONSOLIDADO)" },
+                { termo: "SOLICITACAO DE DESLIGAMENTO 16 A 30", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS (CONSOLIDADO)" },
+                { termo: "SOLICITACAO DE DESLIGAMENTO 31 A 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 31 A 90 DIAS (CONSOLIDADO)" },
+                { termo: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO ACIMA DE 90 DIAS (CONSOLIDADO)" },
+                { termo: "PEDIDOS DE DESLIGAMENTO MES", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO GERAL NO MÊS (CONSOLIDADO)" },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS (CONSOLIDADO)" },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS (CONSOLIDADO)" },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", titulo: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS (CONSOLIDADO)" },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", titulo: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS (CONSOLIDADO)" }
+            ];
+
+            consolidados.forEach(p => {
+                const dMOD = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(p.termo)) && normalizar(ln.Indicador) === "MOD");
+                const dMOI = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(p.termo)) && normalizar(ln.Indicador) === "MOI");
+                if (dMOD.length || dMOI.length) criarGraficoConsolidado(p.titulo, dMOD, dMOI, "");
+            });
         }
     });
 </script>

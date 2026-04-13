@@ -43,7 +43,7 @@
         return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
     }
 
-    function criarGrafico(itemConfig, dadosGerais) {
+    function criarGraficoPerformance(itemConfig, dadosGerais) {
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
         const dadosFiltrados = dadosGerais.filter(ln => normalizar(ln.Processo).includes(normalizar(itemConfig.chave)));
@@ -77,12 +77,7 @@
                 const valor = r ? limparNumero(r['Valor Real'] || r.Qtd) : 0;
                 const meta = metas[index];
                 
-                let atingiu;
-                if (itemConfig.tipo === "MENOR_MELHOR") {
-                    atingiu = (valor <= meta);
-                } else {
-                    atingiu = (valor >= meta);
-                }
+                let atingiu = (itemConfig.tipo === "MENOR_MELHOR") ? (valor <= meta) : (valor >= meta);
 
                 if (atingiu) {
                     dadosDentroMeta.push(valor);
@@ -129,7 +124,7 @@
                 <p class="sub">Grupo Coplac | Unificado</p>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box"><b>DETALHAMENTO</b> Indicador unificado por categoria.</div>
+                    <div class="info-box"><b>DETALHAMENTO</b> Comparativo entre Mão de Obra Direta (MOD) e Indireta (MOI).</div>
                 </div>
             </div>`;
         
@@ -157,7 +152,7 @@
                     responsive: true, maintainAspectRatio: false,
                     plugins: {
                         datalabels: {
-                            color: '#fff', font: { weight: 'bold', size: 11 },
+                            color: '#fff', font: { weight: 'bold', size: 10 },
                             formatter: (val) => val > 0 ? val : '',
                             anchor: 'center', align: 'center', display: true
                         }
@@ -174,29 +169,37 @@
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
 
-            // CONFIGURAÇÃO DOS INDICADORES E SUAS REGRAS DE COR
-            const config = [
+            // 1. LISTA COMPLETA DE PERFORMANCE (CORES DINÂMICAS)
+            const performanceConfig = [
                 { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Horas de treinamentos programados e realizados no mês." },
-                { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "%Aprovados = (Qtde Aprovados / Qtde Avaliados) * 100." },
-                { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "%TurnOver = (Qtde Desligados > 180 Dias / Qtde Colaboradores) * 100." },
-                { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Admissões + Desligamentos) ÷ 2 ÷ Total x 100." },
-                { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "% Absenteísmo: Total Horas Ausentes / Total Horas Programadas." },
+                { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "%Aprovados em Treinamento = (Qtde Colaboradores Aprovados / Qtde Colaboradores Avaliados) * 100" },
+                { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "%TurnOver = (Qtde Colaboradores Desligados > 180 Dias / Qtde Colaboradores no Último Dia do Mês) * 100" },
+                { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Admissões + Desligamentos) ÷ 2 ÷ Total de colaboradores x 100" },
+                { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "% Absenteísmo: Total de Horas Ausentes / Total de Horas Programadas para Trabalhar." },
                 { chave: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", tipo: "MAIOR_MELHOR", nota: "Acompanhamento de promoções internas e meritocracia." }
             ];
 
-            // Renderiza Performance
-            config.forEach(c => criarGrafico(c, dados));
+            performanceConfig.forEach(c => criarGraficoPerformance(c, dados));
 
-            // Renderiza Consolidados
-            const consolidados = [
+            // 2. LISTA COMPLETA DE CONSOLIDADOS (MOD/MOI)
+            const consolidadosConfig = [
+                { termo: "SOLICITACAO DE DESLIGAMENTO 15 DIAS", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS (CONSOLIDADO)" },
+                { termo: "SOLICITACAO DE DESLIGAMENTO 16 A 30", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS (CONSOLIDADO)" },
+                { termo: "SOLICITACAO DE DESLIGAMENTO 31 A 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 31 A 90 DIAS (CONSOLIDADO)" },
+                { termo: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO ACIMA DE 90 DIAS (CONSOLIDADO)" },
                 { termo: "PEDIDOS DE DESLIGAMENTO MES", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO GERAL NO MÊS (CONSOLIDADO)" },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS (CONSOLIDADO)" },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS (CONSOLIDADO)" },
+                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", titulo: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS (CONSOLIDADO)" },
                 { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", titulo: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS (CONSOLIDADO)" }
             ];
 
-            consolidados.forEach(p => {
+            consolidadosConfig.forEach(p => {
                 const dMOD = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(p.termo)) && normalizar(ln.Indicador) === "MOD");
                 const dMOI = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(p.termo)) && normalizar(ln.Indicador) === "MOI");
-                if (dMOD.length || dMOI.length) criarGraficoConsolidado(p.titulo, dMOD, dMOI);
+                if (dMOD.length || dMOI.length) {
+                    criarGraficoConsolidado(p.titulo, dMOD, dMOI);
+                }
             });
         }
     });

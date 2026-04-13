@@ -67,14 +67,19 @@
 
             labels.forEach((mes, index) => {
                 const r = dadosFiltrados.find(ln => ln.mes === mes);
-                // AJUSTE AQUI: Tenta ler 'Valor Real' ou 'Qtd'
                 const valor = r ? limparNumero(r['Valor Real'] || r.Qtd) : 0;
                 const meta = metas[index];
                 const t = normalizar(tituloExibicao);
                 
-                let atingiuMeta = (t.includes("ABSENTEISMO") || t.includes("TURNOVER")) 
-                    ? (valor <= meta || meta === 0) 
-                    : (valor >= meta);
+                // LÓGICA DE META:
+                // Para Absenteísmo e Turnover: Menor é melhor (Verde se <= Meta)
+                // Para Treinamento e RETENÇÃO: Maior é melhor (Verde se >= Meta)
+                let atingiuMeta;
+                if (t.includes("ABSENTEISMO") || t.includes("TURNOVER")) {
+                    atingiuMeta = (valor <= meta);
+                } else {
+                    atingiuMeta = (valor >= meta);
+                }
 
                 if (atingiuMeta) {
                     dadosDentroMeta.push(valor);
@@ -90,8 +95,8 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'Realizado dentro da meta', data: dadosDentroMeta, backgroundColor: '#22c55e', borderRadius: 6, stack: 's' },
-                        { label: 'Realizado fora da meta', data: dadosForaMeta, backgroundColor: '#ef4444', borderRadius: 6, stack: 's' },
+                        { label: 'Dentro da meta', data: dadosDentroMeta, backgroundColor: '#22c55e', borderRadius: 6, stack: 's' },
+                        { label: 'Fora da meta', data: dadosForaMeta, backgroundColor: '#ef4444', borderRadius: 6, stack: 's' },
                         { label: 'Meta', data: metas, type: 'line', borderColor: '#475569', borderWidth: 3, fill: false, pointRadius: 4, datalabels: { display: false } }
                     ]
                 },
@@ -165,7 +170,6 @@
                 { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", nota: "%TurnOver = (Qtde Colaboradores Desligados > 180 Dias / Qtde Colaboradores no Último Dia do Mês) * 100" },
                 { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", nota: "(Admissões + Desligamentos) ÷ 2 ÷ Total de colaboradores x 100" },
                 { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", nota: "% Absenteísmo: Total de Horas Ausentes / Total de Horas Programadas para Trabalhar." },
-                // ADICIONADO AQUI NO CONFIG PARA APARECER SEPARADO
                 { chave: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", nota: "Acompanhamento de promoções internas e meritocracia." }
             ];
 

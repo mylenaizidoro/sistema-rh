@@ -50,8 +50,9 @@
 
         if (dadosFiltrados.length === 0) return;
 
-        // REGRA DE PORCENTAGEM: Apenas para os 3 itens solicitados
-        const exibirPorcentagem = itemConfig.chave.includes("TURNOVER PA") || 
+        // REGRA DE PORCENTAGEM ATUALIZADA (ABSENTEISMO + PEDIDOS ANTERIORES)
+        const exibirPorcentagem = itemConfig.chave.includes("ABSENTEISMO") || 
+                                 itemConfig.chave.includes("TURNOVER PA") || 
                                  itemConfig.chave.includes("UNIVERSAL") || 
                                  itemConfig.chave.includes("APROVADOS EM TREINAMENTO");
 
@@ -180,7 +181,7 @@
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
 
-            // 1. ABSENTEISMO (Número)
+            // 1. ABSENTEISMO (%)
             criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "% Absenteísmo: Total de Horas Ausentes / Total de Horas Programadas para Trabalhar." }, dados);
 
             // 2. TURNOVER PA-03 (%)
@@ -189,7 +190,7 @@
             // 3. TURNOVER CALCULO (%)
             criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Admissões + Desligamentos) ÷ 2 ÷ Total de colaboradores x 100" }, dados);
 
-            // --- GRUPO DE CONSOLIDADOS (Números) ---
+            // --- CONSOLIDADOS (Números) ---
             const consolidadosConfig = [
                 { termo: "SOLICITACAO DE DESLIGAMENTO 16 A 30", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS (CONSOLIDADO)" },
                 { termo: "SOLICITACAO DE DESLIGAMENTO 31 A 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 31 A 90 DIAS (CONSOLIDADO)" },

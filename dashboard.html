@@ -8,15 +8,27 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         body { background-color: #f8fafc; color: #1e293b; font-family: 'Segoe UI', sans-serif; padding: 20px; }
-        .card { background: #ffffff; border-radius: 16px; padding: 30px; max-width: 1000px; margin: 25px auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .card { background: #ffffff; border-radius: 16px; padding: 30px; max-width: 1000px; margin: 25px auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); page-break-inside: avoid; }
         .grid-info { display: grid; grid-template-columns: 1fr 280px; gap: 25px; align-items: center; }
         .info-box { background: #f1f5f9; padding: 20px; border-radius: 12px; border-left: 5px solid #0284c7; font-size: 0.9rem; line-height: 1.6; color: #475569; }
         .info-box b { color: #0284c7; display: block; margin-bottom: 8px; text-transform: uppercase; font-size: 0.8rem; }
-        h1 { color: #0f172a; font-weight: 700; text-align: center; margin-bottom: 30px; text-transform: uppercase; }
+        h1 { color: #0f172a; font-weight: 700; text-align: center; margin-bottom: 20px; text-transform: uppercase; }
         h2 { color: #0284c7; margin: 0; font-size: 1.2rem; text-transform: uppercase; }
         .sub { color: #64748b; font-size: 0.85rem; margin-bottom: 25px; }
         .chart-container { position: relative; height: 420px; width: 100%; }
         .back-btn { color: #64748b; text-decoration: none; font-size: 0.9rem; display: inline-block; margin-bottom: 20px; }
+
+        /* Estilos dos Filtros e PDF */
+        .controls { text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .btn { padding: 10px 20px; border: 1px solid #0284c7; background: white; color: #0284c7; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s; }
+        .btn.active { background: #0284c7; color: white; }
+        .btn-pdf { background: #0f172a; color: white; border-color: #0f172a; margin-left: 20px; }
+        
+        @media print {
+            .controls, .back-btn, .btn { display: none !important; }
+            body { background: white; padding: 0; }
+            .card { box-shadow: none; border: 1px solid #eee; margin: 10px auto; }
+        }
     </style>
 </head>
 <body>
@@ -24,6 +36,13 @@
     <div style="max-width: 1000px; margin: auto;">
         <a href="index.html" class="back-btn">← Voltar para perfis</a>
         <h1>GESTÃO DE INDICADORES - DHO CURITIBA</h1>
+        
+        <div class="controls">
+            <button class="btn active" onclick="filtrarAno('TODOS', this)">Ver Todos</button>
+            <button class="btn" onclick="filtrarAno('2025', this)">2025</button>
+            <button class="btn" onclick="filtrarAno('2026', this)">2026</button>
+            <button class="btn btn-pdf" onclick="window.print()">Exportar PDF</button>
+        </div>
     </div>
 
     <div id="container-graficos"></div>
@@ -33,10 +52,13 @@
 
     const planilhaDrive = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
 
-    // --- ESCALA DE MESES FIXA E SEQUENCIAL ---
-    const labelsSequenciais = [];
-    for(let m=1; m<=12; m++) labelsSequenciais.push(`${m.toString().padStart(2,'0')}/2025`);
-    for(let m=1; m<=12; m++) labelsSequenciais.push(`${m.toString().padStart(2,'0')}/2026`);
+    let dadosGlobais = [];
+    let anoSelecionado = 'TODOS';
+
+    // Escala completa original
+    const labelsTodos = [];
+    for(let m=1; m<=12; m++) labelsTodos.push(`${m.toString().padStart(2,'0')}/2025`);
+    for(let m=1; m<=12; m++) labelsTodos.push(`${m.toString().padStart(2,'0')}/2026`);
 
     function limparNumero(v) {
         if (!v || v.toString().trim() === "") return 0;
@@ -48,12 +70,21 @@
         return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
     }
 
+    function filtrarAno(ano, btn) {
+        anoSelecionado = ano;
+        document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderizarDashboard();
+    }
+
     function criarGraficoPerformance(itemConfig, dadosGerais) {
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
         const dadosFiltrados = dadosGerais.filter(ln => normalizar(ln.Processo).includes(normalizar(itemConfig.chave)));
 
         if (dadosFiltrados.length === 0) return;
+
+        const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
 
         const exibirPorcentagem = itemConfig.chave.includes("ABSENTEISMO") || 
                                  itemConfig.chave.includes("TURNOVER PA") || 
@@ -72,60 +103,45 @@
         
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${idUnique}`);
-            
-            // Busca as metas e valores seguindo a ordem da escala sequencial
-            const metas = labelsSequenciais.map(mes => {
-                const r = dadosFiltrados.find(ln => ln.mes === mes);
-                return r ? limparNumero(r.Objetivo) : 0;
-            });
+            const metas = labelsExibicao.map(mes => limparNumero(dadosFiltrados.find(ln => ln.mes === mes)?.Objetivo));
+            const dDentro = []; const dFora = [];
 
-            const dadosDentroMeta = [];
-            const dadosForaMeta = [];
-
-            labelsSequenciais.forEach((mes, index) => {
+            labelsExibicao.forEach((mes, idx) => {
                 const r = dadosFiltrados.find(ln => ln.mes === mes);
                 const valor = r ? limparNumero(r['Valor Real'] || r.Qtd) : null;
-                const meta = metas[index];
+                const meta = metas[idx];
                 
                 if (valor !== null) {
                     let atingiu = (itemConfig.tipo === "MENOR_MELHOR") ? (valor <= meta) : (valor >= meta);
-                    if (atingiu) {
-                        dadosDentroMeta.push(valor);
-                        dadosForaMeta.push(null);
-                    } else {
-                        dadosDentroMeta.push(null);
-                        dadosForaMeta.push(valor);
-                    }
-                } else {
-                    dadosDentroMeta.push(null);
-                    dadosForaMeta.push(null);
-                }
+                    if (atingiu) { dDentro.push(valor); dFora.push(null); }
+                    else { dDentro.push(null); dFora.push(valor); }
+                } else { dDentro.push(null); dFora.push(null); }
             });
 
             new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: labelsSequenciais,
+                    labels: labelsExibicao,
                     datasets: [
-                        { label: 'Dentro da meta', data: dadosDentroMeta, backgroundColor: '#22c55e', borderRadius: 4, barPercentage: 0.8 },
-                        { label: 'Fora da meta', data: dadosForaMeta, backgroundColor: '#ef4444', borderRadius: 4, barPercentage: 0.8 },
-                        { label: 'Meta', data: metas, type: 'line', borderColor: '#f97316', borderWidth: 3, fill: false, pointRadius: 4, pointBackgroundColor: '#f97316', datalabels: { display: false } }
+                        { label: 'Dentro da meta', data: dDentro, backgroundColor: '#22c55e', borderRadius: 4 },
+                        { label: 'Fora da meta', data: dFora, backgroundColor: '#ef4444', borderRadius: 4 },
+                        { label: 'Meta', data: metas, type: 'line', borderColor: '#f97316', borderWidth: 3, pointRadius: 4, datalabels: { display: false } }
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => `Realizado: ${ctx.raw}${exibirPorcentagem ? '%' : ''} (Meta: ${metas[ctx.dataIndex]}${exibirPorcentagem ? '%' : ''})`
+                            }
+                        },
                         datalabels: {
-                            color: '#0f172a', font: { weight: 'bold', size: 12 },
-                            anchor: 'end', align: 'top', offset: 8, rotation: -90,
-                            formatter: (val) => (val !== null && val !== 0) ? val.toLocaleString('pt-BR') + (exibirPorcentagem ? '%' : '') : ''
+                            color: '#0f172a', font: { weight: 'bold' }, anchor: 'end', align: 'top', offset: 8, rotation: -90,
+                            formatter: (v) => (v !== null) ? v.toLocaleString('pt-BR') + (exibirPorcentagem ? '%' : '') : ''
                         }
                     },
-                    scales: { 
-                        x: { ticks: { rotation: -45, font: { size: 10 } } },
-                        y: { beginAtZero: true, grace: '30%', ticks: { callback: function(value) { return value + (exibirPorcentagem ? '%' : ''); } } }
-                    }
+                    scales: { y: { beginAtZero: true, grace: '30%', ticks: { callback: (v) => v + (exibirPorcentagem ? '%' : '') } } }
                 }
             });
         }, 150);
@@ -134,6 +150,7 @@
     function criarGraficoConsolidado(titulo, dadosMOD, dadosMOI) {
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
+        const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
 
         container.innerHTML += `
             <div class="card">
@@ -146,76 +163,69 @@
             </div>`;
         
         setTimeout(() => {
-            const ctx = document.getElementById(`chart-${idUnique}`);
-            
-            const vMOD = labelsSequenciais.map(m => limparNumero(dadosMOD.find(ln => ln.mes === m)?.['Valor Real'] || dadosMOD.find(ln => ln.mes === m)?.Qtd));
-            const vMOI = labelsSequenciais.map(m => limparNumero(dadosMOI.find(ln => ln.mes === m)?.['Valor Real'] || dadosMOI.find(ln => ln.mes === m)?.Qtd));
-            const meta = labelsSequenciais.map(m => {
-                const linha = dadosMOD.find(ln => ln.mes === m) || dadosMOI.find(ln => ln.mes === m);
-                return limparNumero(linha?.Objetivo);
-            });
+            const vMOD = labelsExibicao.map(m => limparNumero(dadosMOD.find(ln => ln.mes === m)?.['Valor Real'] || dadosMOD.find(ln => ln.mes === m)?.Qtd));
+            const vMOI = labelsExibicao.map(m => limparNumero(dadosMOI.find(ln => ln.mes === m)?.['Valor Real'] || dadosMOI.find(ln => ln.mes === m)?.Qtd));
+            const meta = labelsExibicao.map(m => limparNumero((dadosMOD.find(ln => ln.mes === m) || dadosMOI.find(ln => ln.mes === m))?.Objetivo));
 
-            new Chart(ctx, {
+            new Chart(document.getElementById(`chart-${idUnique}`), {
                 type: 'bar',
                 data: {
-                    labels: labelsSequenciais,
+                    labels: labelsExibicao,
                     datasets: [
-                        { label: 'MOI', data: vMOI, backgroundColor: '#cbd5e1', stack: 's1', barPercentage: 0.8 },
-                        { label: 'MOD', data: vMOD, backgroundColor: '#475569', stack: 's1', barPercentage: 0.8 },
-                        { label: 'Meta', data: meta, type: 'line', borderColor: '#f97316', borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#f97316', datalabels: { display: false } }
+                        { label: 'MOI', data: vMOI, backgroundColor: '#cbd5e1', stack: 's1' },
+                        { label: 'MOD', data: vMOD, backgroundColor: '#475569', stack: 's1' },
+                        { label: 'Meta', data: meta, type: 'line', borderColor: '#f97316', borderWidth: 2, pointRadius: 4, datalabels: { display: false } }
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: {
-                        datalabels: {
-                            color: '#fff', font: { weight: 'bold', size: 10 },
-                            formatter: (val) => val > 0 ? val : '',
-                            anchor: 'center', align: 'center', display: true
-                        }
+                        tooltip: { mode: 'index', intersect: false },
+                        datalabels: { color: '#fff', formatter: (v) => v > 0 ? v : '', anchor: 'center', align: 'center' }
                     },
-                    scales: { 
-                        x: { stacked: true, ticks: { rotation: -45, font: { size: 10 } } }, 
-                        y: { stacked: true, beginAtZero: true, grace: '15%' } 
-                    }
+                    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, grace: '15%' } }
                 }
             });
         }, 150);
     }
 
+    function renderizarDashboard() {
+        document.getElementById('container-graficos').innerHTML = "";
+
+        // INDICADORES DE PERFORMANCE (MANTIDOS TODOS)
+        criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "% Absenteísmo: Total de Horas Ausentes / Total de Horas Programadas para Trabalhar." }, dadosGlobais);
+        criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "%TurnOver = (Qtde Colaboradores Desligados > 180 Dias / Qtde Colaboradores no Último Dia do Mês) * 100" }, dadosGlobais);
+        criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Admissões + Desligamentos) ÷ 2 ÷ Total de colaboradores x 100" }, dadosGlobais);
+
+        // INDICADORES CONSOLIDADOS (MANTIDOS TODOS)
+        const consolidadosConfig = [
+            { termo: "SOLICITACAO DE DESLIGAMENTO 16 A 30", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS (CONSOLIDADO)" },
+            { termo: "SOLICITACAO DE DESLIGAMENTO 31 A 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 31 A 90 DIAS (CONSOLIDADO)" },
+            { termo: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO ACIMA DE 90 DIAS (CONSOLIDADO)" },
+            { termo: "PEDIDOS DE DESLIGAMENTO MES", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO GERAL NO MÊS (CONSOLIDADO)" },
+            { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS (CONSOLIDADO)" },
+            { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS (CONSOLIDADO)" },
+            { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", titulo: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS (CONSOLIDADO)" },
+            { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", titulo: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS (CONSOLIDADO)" }
+        ];
+
+        consolidadosConfig.forEach(p => {
+            const dMOD = dadosGlobais.filter(ln => normalizar(ln.Processo).includes(normalizar(p.termo)) && normalizar(ln.Indicador) === "MOD");
+            const dMOI = dadosGlobais.filter(ln => normalizar(ln.Processo).includes(normalizar(p.termo)) && normalizar(ln.Indicador) === "MOI");
+            if (dMOD.length || dMOI.length) criarGraficoConsolidado(p.titulo, dMOD, dMOI);
+        });
+
+        // TREINAMENTO E VALORIZAÇÃO (MANTIDOS TODOS)
+        criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Horas de treinamentos programados e realizados no mês." }, dadosGlobais);
+        criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "%Aprovados em Treinamento = (Qtde Colaboradores Aprovados / Qtde Colaboradores Avaliados) * 100" }, dadosGlobais);
+        criarGraficoPerformance({ chave: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", titulo: "PLANO DE VALORIZAÇÃO INTERNA", tipo: "MAIOR_MELHOR", nota: "Acompanhamento de promoções internas e meritocracia." }, dadosGlobais);
+    }
+
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
         download: true, header: true, skipEmptyLines: true,
         complete: function(results) {
-            const dados = results.data;
-            document.getElementById('container-graficos').innerHTML = "";
-
-            // Chamadas originais dos seus gráficos
-            criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "% Absenteísmo: Total de Horas Ausentes / Total de Horas Programadas para Trabalhar." }, dados);
-            criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "%TurnOver = (Qtde Colaboradores Desligados > 180 Dias / Qtde Colaboradores no Último Dia do Mês) * 100" }, dados);
-            criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Admissões + Desligamentos) ÷ 2 ÷ Total de colaboradores x 100" }, dados);
-
-            const consolidadosConfig = [
-                { termo: "SOLICITACAO DE DESLIGAMENTO 16 A 30", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS (CONSOLIDADO)" },
-                { termo: "SOLICITACAO DE DESLIGAMENTO 31 A 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 31 A 90 DIAS (CONSOLIDADO)" },
-                { termo: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO ACIMA DE 90 DIAS (CONSOLIDADO)" },
-                { termo: "PEDIDOS DE DESLIGAMENTO MES", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO GERAL NO MÊS (CONSOLIDADO)" },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS (CONSOLIDADO)" },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", titulo: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS (CONSOLIDADO)" },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", titulo: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS (CONSOLIDADO)" },
-                { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", titulo: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS (CONSOLIDADO)" }
-            ];
-
-            consolidadosConfig.forEach(p => {
-                const dMOD = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(p.termo)) && normalizar(ln.Indicador) === "MOD");
-                const dMOI = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(p.termo)) && normalizar(ln.Indicador) === "MOI");
-                if (dMOD.length || dMOI.length) {
-                    criarGraficoConsolidado(p.titulo, dMOD, dMOI);
-                }
-            });
-
-            criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Horas de treinamentos programados e realizados no mês." }, dados);
-            criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "%Aprovados em Treinamento = (Qtde Colaboradores Aprovados / Qtde Colaboradores Avaliados) * 100" }, dados);
-            criarGraficoPerformance({ chave: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", titulo: "PLANO DE VALORIZAÇÃO INTERNA", tipo: "MAIOR_MELHOR", nota: "Acompanhamento de promoções internas e meritocracia." }, dados);
+            dadosGlobais = results.data;
+            renderizarDashboard();
         }
     });
 </script>

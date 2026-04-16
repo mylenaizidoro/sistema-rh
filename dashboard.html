@@ -9,17 +9,14 @@
     <style>
         body { background-color: #f1f5f9; color: #1e293b; font-family: 'Segoe UI', system-ui, sans-serif; padding: 20px; }
         
-        /* Cabeçalho e Filtros */
         .header-container { max-width: 1100px; margin: auto; }
         h1 { color: #0f172a; font-weight: 800; text-align: center; margin-bottom: 20px; text-transform: uppercase; letter-spacing: -0.5px; }
         
-        /* Cards de Resumo */
         .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
         .kpi-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .kpi-card small { color: #64748b; font-size: 0.75rem; text-transform: uppercase; font-weight: 600; }
         .kpi-card div { font-size: 1.8rem; font-weight: 700; color: #0284c7; margin-top: 5px; }
 
-        /* Estilo dos Gráficos */
         .card { background: #ffffff; border-radius: 16px; padding: 30px; max-width: 1000px; margin: 25px auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); page-break-inside: avoid; transition: 0.3s; }
         .grid-info { display: grid; grid-template-columns: 1fr 280px; gap: 25px; align-items: center; }
         .info-box { background: #f8fafc; padding: 20px; border-radius: 12px; border-left: 5px solid #0284c7; font-size: 0.9rem; line-height: 1.6; color: #475569; position: relative; }
@@ -31,15 +28,12 @@
         .sub { color: #64748b; font-size: 0.85rem; margin-bottom: 25px; }
         .chart-container { position: relative; height: 420px; width: 100%; }
 
-        /* Controles */
         .controls { text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; align-items: center; }
         .btn { padding: 10px 24px; border: 1px solid #e2e8f0; background: white; color: #475569; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .btn:hover { background: #f8fafc; }
         .btn.active { background: #0284c7; color: white; border-color: #0284c7; }
         
-        /* Filtro de Turno */
         .select-turno { padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; font-weight: 600; color: #475569; cursor: pointer; }
-
         .btn-pdf { background: #0f172a; color: white; border-color: #0f172a; margin-left: 20px; }
         .back-btn { color: #64748b; text-decoration: none; font-size: 0.9rem; display: inline-block; margin-bottom: 20px; }
 
@@ -47,7 +41,6 @@
             .controls, .back-btn, .btn { display: none !important; }
             body { background: white; padding: 0; }
             .card { box-shadow: none; border: 1px solid #eee; margin: 10px auto; width: 100%; }
-            .kpi-row { grid-template-columns: repeat(4, 1fr); }
         }
     </style>
 </head>
@@ -112,15 +105,12 @@
         renderizarDashboard();
     }
 
-    // Função central de filtro para garantir que os gráficos não sumam
     function obterDadosFiltrados(chaveProcesso) {
         return dadosGlobais.filter(ln => {
             const nomeProc = normalizar(ln.Processo);
             const nomeInd = normalizar(ln.Indicador);
-            
             const matchProcesso = nomeProc.includes(normalizar(chaveProcesso));
             const matchAno = anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado);
-            
             let matchTurno = true;
             if (turnoSelecionado !== 'TODOS') {
                 const termo = normalizar(turnoSelecionado);
@@ -150,19 +140,20 @@
     function criarGraficoPerformance(itemConfig) {
         const container = document.getElementById('container-graficos');
         const dados = obterDadosFiltrados(itemConfig.chave);
-        
         if (dados.length === 0) return;
 
         const idUnique = Math.random().toString(36).substr(2, 9);
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-        const exibirPct = itemConfig.chave.includes("ABSENTEISMO") || itemConfig.chave.includes("TURNOVER") || itemConfig.chave.includes("UNIVERSAL") || itemConfig.chave.includes("APROVADOS");
+        const exibirPct = itemConfig.chave.includes("ABSENTEISMO") || itemConfig.chave.includes("TURNOVER") || itemConfig.chave.includes("UNIVERSAL") || itemConfig.chave.includes("APROVADOS") || itemConfig.chave.includes("RETENÇÃO");
 
-        // Lógica de Alerta original
-        const ultimoDado = [...dados].reverse().find(d => labelsExibicao.includes(d.mes));
+        // LÓGICA DE ALERTA CORRIGIDA: Ignora meses futuros e ajusta para Maior/Menor melhor
+        const dadosComValor = dados.filter(d => limparNumero(d['Valor Real'] || d.Qtd) > 0);
+        const ultimoDadoValido = dadosComValor[dadosComValor.length - 1];
         let emAlerta = false;
-        if (ultimoDado) {
-            const v = limparNumero(ultimoDado['Valor Real'] || ultimoDado.Qtd);
-            const m = limparNumero(ultimoDado.Objetivo);
+
+        if (ultimoDadoValido) {
+            const v = limparNumero(ultimoDadoValido['Valor Real'] || ultimoDadoValido.Qtd);
+            const m = limparNumero(ultimoDadoValido.Objetivo);
             emAlerta = (itemConfig.tipo === "MENOR_MELHOR") ? (v > m) : (v < m);
         }
 
@@ -173,16 +164,15 @@
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
                     <div class="info-box ${emAlerta ? 'alert' : ''}">
-                        <b>${emAlerta ? '⚠️ ATENÇÃO - FORA DA META' : 'DETALHAMENTO'}</b> 
+                        <b>${emAlerta ? '⚠️ ATENÇÃO - FORA DA META' : '✅ PERFORMANCE ADEQUADA'}</b> 
                         ${itemConfig.nota}
                     </div>
                 </div>
             </div>`;
         
         setTimeout(() => {
-            const ctx = document.getElementById(`chart-${idUnique}`);
             const metas = labelsExibicao.map(m => limparNumero(dados.find(ln => ln.mes === m)?.Objetivo));
-            const dDentro = []; const dFora = [];
+            const dDentro = [], dFora = [];
 
             labelsExibicao.forEach((mes, idx) => {
                 const r = dados.find(ln => ln.mes === mes);
@@ -195,7 +185,7 @@
                 } else { dDentro.push(null); dFora.push(null); }
             });
 
-            new Chart(ctx, {
+            new Chart(document.getElementById(`chart-${idUnique}`), {
                 type: 'bar',
                 data: {
                     labels: labelsExibicao,
@@ -207,9 +197,7 @@
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { 
-                        datalabels: { anchor: 'end', align: 'top', formatter: (v) => v ? v + (exibirPct ? '%' : '') : '', font: { weight: 'bold' }, rotation: -90 } 
-                    }
+                    plugins: { datalabels: { anchor: 'end', align: 'top', formatter: (v) => v ? v + (exibirPct ? '%' : '') : '', font: { weight: 'bold' }, rotation: -90 } }
                 }
             });
         }, 150);
@@ -217,17 +205,13 @@
 
     function criarGraficoConsolidado(titulo, termo) {
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-        
-        // Filtra MOD e MOI respeitando o ano
         const dMOD = dadosGlobais.filter(ln => normalizar(ln.Processo).includes(normalizar(termo)) && normalizar(ln.Indicador) === "MOD" && (anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado)));
         const dMOI = dadosGlobais.filter(ln => normalizar(ln.Processo).includes(normalizar(termo)) && normalizar(ln.Indicador) === "MOI" && (anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado)));
 
         if (dMOD.length === 0 && dMOI.length === 0) return;
-
-        const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
 
-        container.innerHTML += `
+        document.getElementById('container-graficos').innerHTML += `
             <div class="card">
                 <h2>${titulo}</h2>
                 <p class="sub">Grupo Coplac | Unificado</p>
@@ -240,7 +224,6 @@
         setTimeout(() => {
             const vMOD = labelsExibicao.map(m => limparNumero(dMOD.find(ln => ln.mes === m)?.['Valor Real'] || dMOD.find(ln => ln.mes === m)?.Qtd));
             const vMOI = labelsExibicao.map(m => limparNumero(dMOI.find(ln => ln.mes === m)?.['Valor Real'] || dMOI.find(ln => ln.mes === m)?.Qtd));
-
             new Chart(document.getElementById(`chart-${idUnique}`), {
                 type: 'bar',
                 data: {

@@ -113,7 +113,8 @@
 
             let matchTurno = true;
             if (turnoSelecionado !== 'TODOS') {
-                matchTurno = nomeInd.includes(normalizar(turnoSelecionado)) || nomeProc.includes(normalizar(turnoSelecionado));
+                const termo = normalizar(turnoSelecionado);
+                matchTurno = nomeInd.includes(termo) || nomeProc.includes(termo);
             }
             return matchProcesso && matchAno && matchTurno;
         });
@@ -178,11 +179,13 @@
                     }
                 }
             });
-        }, 100);
+        }, 150);
     }
 
     function criarGraficoConsolidado(titulo, termo) {
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
+        
+        // MOD e MOI agora buscam dados filtrados pelo ano, mas ignoram o turno para não sumir
         const dMOD = dadosGlobais.filter(ln => normalizar(ln.Processo).includes(normalizar(termo)) && normalizar(ln.Indicador) === "MOD" && (anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado)));
         const dMOI = dadosGlobais.filter(ln => normalizar(ln.Processo).includes(normalizar(termo)) && normalizar(ln.Indicador) === "MOI" && (anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado)));
 
@@ -196,7 +199,7 @@
                 <h2>${titulo}</h2>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box"><b>COMPARATIVO</b> Visão unificada MOD vs MOI (Independente de turno).</div>
+                    <div class="info-box"><b>COMPARATIVO</b> Visão unificada MOD vs MOI.</div>
                 </div>
             </div>`;
         
@@ -213,30 +216,39 @@
                         { label: 'MOD', data: vMOD, backgroundColor: '#334155', stack: 's1' }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { datalabels: { color: '#fff', formatter: (v) => v > 0 ? v : '' } },
+                    scales: { x: { stacked: true }, y: { stacked: true } } 
+                }
             });
-        }, 100);
+        }, 150);
     }
 
     function renderizarDashboard() {
         document.getElementById('container-graficos').innerHTML = "";
         calcularResumo();
 
-        // Performance com Filtro de Turno
+        // 1. Performance com Filtro de Turno
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", nota: "Horas Ausentes / Horas Programadas." });
         criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", nota: "Desligados > 180 Dias / Ativos." });
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", nota: "(Adm+Desl)/2 / Total Ativos." });
 
-        // Consolidados MOD/MOI (Sempre visíveis)
-        const itens = [
+        // 2. Consolidados MOD/MOI (8 Indicadores mantidos)
+        const itensConsolidados = [
             { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
             { t: "PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - SOLICITAÇÃO GERAL NO MÊS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL" }
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", h: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS" }
         ];
-        itens.forEach(i => criarGraficoConsolidado(i.h, i.t));
+        itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
-        // Treinamento e Valorização
+        // 3. Outros (Com Filtro de Turno)
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", nota: "Total de horas acumuladas." });
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", nota: "% de aproveitamento." });
         criarGraficoPerformance({ chave: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", titulo: "VALORIZAÇÃO INTERNA", nota: "Índice de promoções." });

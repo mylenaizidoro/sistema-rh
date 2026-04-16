@@ -33,7 +33,7 @@
         .chart-container { position: relative; height: 400px; width: 100%; }
 
         @media print {
-            .controls, .back-btn { display: none !important; }
+            .controls, .btn, .back-btn { display: none !important; }
             body { background: white; padding: 0; }
             .card { box-shadow: none; border: 1px solid #eee; margin: 10px auto; }
         }
@@ -42,19 +42,17 @@
 <body>
 
     <div class="header-container">
-        <button onclick="window.location.href='index.html'" class="btn" style="margin-bottom: 20px;">← Voltar</button>
-        <h1>DASHBOARD DE PERFORMANCE - RH</h1>
+        <h1>GESTAO DE INDICADORES - DHO CURITIBA</h1>
         
         <div class="controls">
             <button class="btn active" onclick="filtrarAno('TODOS', this)">Ver Todos</button>
             <button class="btn" onclick="filtrarAno('2025', this)">2025</button>
             <button class="btn" onclick="filtrarAno('2026', this)">2026</button>
-            <button class="btn btn-pdf" onclick="window.print()">PDF / Relatório</button>
+            <button class="btn btn-pdf" onclick="window.print()">Exportar PDF</button>
         </div>
     </div>
 
     <div id="kpi-cards" class="kpi-container"></div>
-
     <div id="container-graficos"></div>
 
 <script>
@@ -84,48 +82,39 @@
         return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
     }
 
-    // Função para criar os Cards de Alerta no topo
     function criarCardsStatus(dados) {
         const container = document.getElementById('kpi-cards');
         container.innerHTML = "";
-        
         const kpis = [
-            { chave: "ABSENTEISMO", titulo: "Absenteísmo", tipo: "MENOR_MELHOR", suf: "%" },
-            { chave: "TURNOVER PA", titulo: "Turnover PA", tipo: "MENOR_MELHOR", suf: "%" },
-            { chave: "UNIVERSAL", titulo: "T. Universal", tipo: "MENOR_MELHOR", suf: "%" },
-            { chave: "APROVADOS EM TREINAMENTO", titulo: "Aprovação Trein.", tipo: "MAIOR_MELHOR", suf: "%" }
+            { chave: "ABSENTEISMO", titulo: "Absenteísmo", tipo: "MENOR_MELHOR" },
+            { chave: "TURNOVER PA", titulo: "Turnover PA", tipo: "MENOR_MELHOR" },
+            { chave: "UNIVERSAL", titulo: "T. Universal", tipo: "MENOR_MELHOR" }
         ];
 
         kpis.forEach(kpi => {
             const hist = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(kpi.chave)) && ln.mes);
             if (hist.length === 0) return;
-
-            // Pega o último registro disponível (mês mais recente)
             const ultimo = hist[hist.length - 1];
             const valor = limparNumero(ultimo['Valor Real'] || ultimo.Qtd);
             const meta = limparNumero(ultimo.Objetivo);
-            
             const atingiu = kpi.tipo === "MENOR_MELHOR" ? valor <= meta : valor >= meta;
-            const classe = atingiu ? "status-ok" : "status-alert";
-            const icone = atingiu ? "✓" : "⚠";
-
+            
             container.innerHTML += `
-                <div class="kpi-card ${classe}">
+                <div class="kpi-card ${atingiu ? 'status-ok' : 'status-alert'}">
                     <h3>${kpi.titulo}</h3>
-                    <div class="value">${valor}${kpi.suf}</div>
-                    <div style="font-size: 0.7rem;">Meta: ${meta}${kpi.suf}</div>
-                    <span class="status-icon">${icone}</span>
-                </div>
-            `;
+                    <div class="value">${valor}%</div>
+                    <div style="font-size: 0.7rem;">Meta: ${meta}% (${ultimo.mes})</div>
+                    <span class="status-icon">${atingiu ? '✓' : '⚠'}</span>
+                </div>`;
         });
     }
 
     function criarGraficoPerformance(itemConfig, dadosGerais) {
         const container = document.getElementById('container-graficos');
         const idUnique = Math.random().toString(36).substr(2, 9);
+        const labelsExibicao = anoAtual === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoAtual));
         const dadosFiltrados = dadosGerais.filter(ln => normalizar(ln.Processo).includes(normalizar(itemConfig.chave)));
 
-        const labelsExibicao = anoAtual === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoAtual));
         const exibirPorcentagem = itemConfig.chave.includes("ABSENTEISMO") || itemConfig.chave.includes("TURNOVER PA") || itemConfig.chave.includes("UNIVERSAL") || itemConfig.chave.includes("APROVADOS EM TREINAMENTO");
 
         container.innerHTML += `
@@ -139,17 +128,15 @@
         
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${idUnique}`);
-            const metas = labelsExibicao.map(mes => limparNumero(dadosFiltrados.find(ln => ln.mes === mes)?.Objetivo));
-            const dadosMeta = [];
-            const dadosFora = [];
+            const metas = labelsExibicao.map(m => limparNumero(dadosFiltrados.find(ln => ln.mes === m)?.Objetivo));
+            const dMeta = []; const dFora = [];
 
             labelsExibicao.forEach((mes, idx) => {
                 const r = dadosFiltrados.find(ln => ln.mes === mes);
-                if (!r) { dadosMeta.push(null); dadosFora.push(null); return; }
+                if (!r) { dMeta.push(null); dFora.push(null); return; }
                 const v = limparNumero(r['Valor Real'] || r.Qtd);
-                const m = metas[idx];
-                const ok = itemConfig.tipo === "MENOR_MELHOR" ? v <= m : v >= m;
-                if(ok) { dadosMeta.push(v); dadosFora.push(null); } else { dadosMeta.push(null); dadosFora.push(v); }
+                const ok = itemConfig.tipo === "MENOR_MELHOR" ? v <= metas[idx] : v >= metas[idx];
+                if(ok) { dMeta.push(v); dFora.push(null); } else { dMeta.push(null); dFora.push(v); }
             });
 
             new Chart(ctx, {
@@ -157,15 +144,14 @@
                 data: {
                     labels: labelsExibicao,
                     datasets: [
-                        { label: 'Dentro da Meta', data: dadosMeta, backgroundColor: '#22c55e', borderRadius: 5 },
-                        { label: 'Fora da Meta', data: dadosFora, backgroundColor: '#ef4444', borderRadius: 5 },
-                        { label: 'Meta', data: metas, type: 'line', borderColor: '#f97316', borderWidth: 3, pointRadius: 4, datalabels: { display: false } }
+                        { label: 'Dentro da Meta', data: dMeta, backgroundColor: '#22c55e', borderRadius: 4 },
+                        { label: 'Fora da Meta', data: dFora, backgroundColor: '#ef4444', borderRadius: 4 },
+                        { label: 'Meta', data: metas, type: 'line', borderColor: '#f97316', borderWidth: 2, pointRadius: 3, datalabels: { display: false } }
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: {
-                        tooltip: { enabled: true },
                         datalabels: {
                             anchor: 'end', align: 'top', offset: 5, rotation: -90, font: { weight: 'bold' },
                             formatter: (v) => v ? v + (exibirPorcentagem ? '%' : '') : ''
@@ -177,19 +163,72 @@
         }, 150);
     }
 
+    function criarGraficoConsolidado(titulo, dMOD, dMOI) {
+        const container = document.getElementById('container-graficos');
+        const idUnique = Math.random().toString(36).substr(2, 9);
+        const labelsExibicao = anoAtual === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoAtual));
+
+        container.innerHTML += `
+            <div class="card">
+                <h2>${titulo}</h2>
+                <div class="grid-info">
+                    <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
+                    <div class="info-box"><b>DETALHAMENTO</b> Comparativo entre MOD e MOI.</div>
+                </div>
+            </div>`;
+        
+        setTimeout(() => {
+            const vMOD = labelsExibicao.map(m => limparNumero(dMOD.find(ln => ln.mes === m)?.['Valor Real'] || dMOD.find(ln => ln.mes === m)?.Qtd));
+            const vMOI = labelsExibicao.map(m => limparNumero(dMOI.find(ln => ln.mes === m)?.['Valor Real'] || dMOI.find(ln => ln.mes === m)?.Qtd));
+            const meta = labelsExibicao.map(m => limparNumero((dMOD.find(ln => ln.mes === m) || dMOI.find(ln => ln.mes === m))?.Objetivo));
+
+            new Chart(document.getElementById(`chart-${idUnique}`), {
+                type: 'bar',
+                data: {
+                    labels: labelsExibicao,
+                    datasets: [
+                        { label: 'MOI', data: vMOI, backgroundColor: '#cbd5e1', stack: 's1' },
+                        { label: 'MOD', data: vMOD, backgroundColor: '#475569', stack: 's1' },
+                        { label: 'Meta', data: meta, type: 'line', borderColor: '#f97316', borderWidth: 2, datalabels: { display: false } }
+                    ]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } },
+                    plugins: { datalabels: { color: '#fff', font: { weight: 'bold' }, formatter: (v) => v > 0 ? v : '' } }
+                }
+            });
+        }, 150);
+    }
+
     function processarDashboard(dados) {
         document.getElementById('container-graficos').innerHTML = "";
         criarCardsStatus(dados);
         
+        // GRÁFICOS INDIVIDUAIS
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "% Horas Ausentes vs Horas Programadas." }, dados);
         criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "Desligados > 180 Dias vs Total Ativos." }, dados);
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "Média (Admissões + Desligamentos) vs Total." }, dados);
-        
-        // Exemplo de Consolidado Simplificado para Relatório
-        const itens = ["SOLICITACAO DE DESLIGAMENTO 16 A 30", "SOLICITACAO DE DESLIGAMENTO 31 A 90", "PEDIDOS DE DESLIGAMENTO MES"];
-        itens.forEach(it => {
-            criarGraficoPerformance({ chave: it, titulo: it, tipo: "MENOR_MELHOR", nota: "Acompanhamento mensal de solicitações." }, dados);
+
+        // GRÁFICOS CONSOLIDADOS (MOD/MOI)
+        const consolidados = [
+            { termo: "SOLICITACAO DE DESLIGAMENTO 16 A 30", titulo: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS (CONSOLIDADO)" },
+            { termo: "SOLICITACAO DE DESLIGAMENTO 31 A 90", titulo: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS (CONSOLIDADO)" },
+            { termo: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", titulo: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS (CONSOLIDADO)" },
+            { termo: "PEDIDOS DE DESLIGAMENTO MES", titulo: "TURNOVER - SOLICITAÇÃO GERAL NO MÊS (CONSOLIDADO)" },
+            { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", titulo: "TURNOVER - INICIATIVA EMPRESA GERAL (CONSOLIDADO)" }
+        ];
+
+        consolidados.forEach(p => {
+            const dMOD = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(p.termo)) && normalizar(ln.Indicador) === "MOD");
+            const dMOI = dados.filter(ln => normalizar(ln.Processo).includes(normalizar(p.termo)) && normalizar(ln.Indicador) === "MOI");
+            if (dMOD.length || dMOI.length) criarGraficoConsolidado(p.titulo, dMOD, dMOI);
         });
+
+        // INDICADORES DE TREINAMENTO E VALORIZAÇÃO
+        criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas realizadas." }, dados);
+        criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aprovação técnica." }, dados);
+        criarGraficoPerformance({ chave: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", titulo: "PLANO DE VALORIZAÇÃO INTERNA", tipo: "MAIOR_MELHOR", nota: "Acompanhamento de promoções internas." }, dados);
     }
 
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {

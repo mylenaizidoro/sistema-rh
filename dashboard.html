@@ -169,21 +169,17 @@
             const dados = results.data;
             document.getElementById('container-graficos').innerHTML = "";
 
-            // 1. LISTA DE PERFORMANCE (ORDEM REORGANIZADA)
-            const performanceConfig = [
-                { chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "% Absenteísmo: Total de Horas Ausentes / Total de Horas Programadas para Trabalhar." },
-                { chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Horas de treinamentos programados e realizados no mês." },
-                { chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "%Aprovados em Treinamento = (Qtde Colaboradores Aprovados / Qtde Colaboradores Avaliados) * 100" },
-                { chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "%TurnOver = (Qtde Colaboradores Desligados > 180 Dias / Qtde Colaboradores no Último Dia do Mês) * 100" },
-                { chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Admissões + Desligamentos) ÷ 2 ÷ Total de colaboradores x 100" },
-                { chave: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", tipo: "MAIOR_MELHOR", nota: "Acompanhamento de promoções internas e meritocracia." }
-            ];
+            // 1. ABSENTEISMO
+            criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "% Absenteísmo: Total de Horas Ausentes / Total de Horas Programadas para Trabalhar." }, dados);
 
-            performanceConfig.forEach(c => criarGraficoPerformance(c, dados));
+            // 2. TURNOVER PA-03
+            criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "%TurnOver = (Qtde Colaboradores Desligados > 180 Dias / Qtde Colaboradores no Último Dia do Mês) * 100" }, dados);
 
-            // 2. LISTA DE CONSOLIDADOS (MOD/MOI)
+            // 3. TURNOVER CALCULO
+            criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Admissões + Desligamentos) ÷ 2 ÷ Total de colaboradores x 100" }, dados);
+
+            // --- GRUPO DE CONSOLIDADOS (ORDEM SOLICITADA) ---
             const consolidadosConfig = [
-                { termo: "SOLICITACAO DE DESLIGAMENTO 15 DIAS", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 15 DIAS (CONSOLIDADO)" },
                 { termo: "SOLICITACAO DE DESLIGAMENTO 16 A 30", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 16 A 30 DIAS (CONSOLIDADO)" },
                 { termo: "SOLICITACAO DE DESLIGAMENTO 31 A 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO 31 A 90 DIAS (CONSOLIDADO)" },
                 { termo: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO ACIMA DE 90 DIAS (CONSOLIDADO)" },
@@ -201,6 +197,15 @@
                     criarGraficoConsolidado(p.titulo, dMOD, dMOI);
                 }
             });
+
+            // 4. HORAS DE TREINAMENTO
+            criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Horas de treinamentos programados e realizados no mês." }, dados);
+
+            // 5. APROVADOS EM TREINAMENTO
+            criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "%Aprovados em Treinamento = (Qtde Colaboradores Aprovados / Qtde Colaboradores Avaliados) * 100" }, dados);
+
+            // 6. PLANO DE VALORIZAÇÃO INTERNA
+            criarGraficoPerformance({ chave: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", titulo: "PLANO DE VALORIZAÇÃO INTERNA", tipo: "MAIOR_MELHOR", nota: "Acompanhamento de promoções internas e meritocracia." }, dados);
         }
     });
 </script>

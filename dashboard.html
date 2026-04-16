@@ -33,15 +33,12 @@
 
         /* Controles */
         .controls { text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-        .btn { padding: 10px 24px; border: 1px solid #e2e8f0; background: white; color: #475569; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
-        .btn:hover { background: #f8fafc; }
-        .btn.active { background: #0284c7; color: white; border-color: #0284c7; }
-        .select-custom { padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; font-weight: 600; color: #475569; }
-        .btn-pdf { background: #0f172a; color: white; border-color: #0f172a; margin-left: 20px; }
+        .select-custom { padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; font-weight: 600; color: #475569; cursor: pointer; }
+        .btn-pdf { padding: 10px 24px; background: #0f172a; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-left: 20px; }
         .back-btn { color: #64748b; text-decoration: none; font-size: 0.9rem; display: inline-block; margin-bottom: 20px; }
 
         @media print {
-            .controls, .back-btn, .btn { display: none !important; }
+            .controls, .back-btn { display: none !important; }
             body { background: white; padding: 0; }
             .card { box-shadow: none; border: 1px solid #eee; margin: 10px auto; width: 100%; }
             .kpi-row { grid-template-columns: repeat(4, 1fr); }
@@ -68,7 +65,7 @@
                 <option value="3º TURNO">3º Turno</option>
             </select>
 
-            <button class="btn btn-pdf" onclick="window.print()">Exportar PDF</button>
+            <button class="btn-pdf" onclick="window.print()">Exportar PDF</button>
         </div>
 
         <div id="kpi-summary" class="kpi-row"></div>
@@ -105,83 +102,64 @@
         renderizarDashboard();
     }
 
-    // Função mestre para filtrar os dados baseada no Ano E Turno
-    function obterDadosFiltradosPorContexto(chaveProcesso) {
+    function obterDadosFiltrados(chaveProcesso, forcarGeral = false) {
         return dadosGlobais.filter(ln => {
-            const matchProcesso = normalizar(ln.Processo).includes(normalizar(chaveProcesso));
+            const nomeProc = normalizar(ln.Processo);
+            const nomeInd = normalizar(ln.Indicador);
+            const matchProcesso = nomeProc.includes(normalizar(chaveProcesso));
             const matchAno = anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado);
             
-            // Verifica se o turno está na coluna Indicador ou no nome do Processo
-            const textoBusca = normalizar(ln.Indicador + " " + ln.Processo);
-            const matchTurno = turnoSelecionado === 'TODOS' || textoBusca.includes(normalizar(turnoSelecionado));
-            
+            if (forcarGeral) return matchProcesso && matchAno;
+
+            let matchTurno = true;
+            if (turnoSelecionado !== 'TODOS') {
+                matchTurno = nomeInd.includes(normalizar(turnoSelecionado)) || nomeProc.includes(normalizar(turnoSelecionado));
+            }
             return matchProcesso && matchAno && matchTurno;
         });
     }
 
     function calcularResumo() {
         const kpiDiv = document.getElementById('kpi-summary');
-        
-        const getMediaResumo = (chave) => {
-            const filtrados = obterDadosFiltradosPorContexto(chave);
+        const getMedia = (chave) => {
+            const filtrados = obterDadosFiltrados(chave);
             if (!filtrados.length) return "0";
             const soma = filtrados.reduce((acc, curr) => acc + limparNumero(curr['Valor Real'] || curr.Qtd), 0);
             return (soma / filtrados.length).toFixed(1);
         };
 
         kpiDiv.innerHTML = `
-            <div class="kpi-card"><small>Média Absenteísmo</small><div>${getMediaResumo("ABSENTEISMO")}%</div></div>
-            <div class="kpi-card"><small>Média Turnover Universal</small><div>${getMediaResumo("UNIVERSAL")}%</div></div>
-            <div class="kpi-card"><small>Total Horas Treinamento</small><div>${getMediaResumo("HORAS DE TREINAMENTO")}h</div></div>
-            <div class="kpi-card"><small>Aprovação Média</small><div>${getMediaResumo("APROVADOS EM TREINAMENTO")}%</div></div>
+            <div class="kpi-card"><small>Média Absenteísmo</small><div>${getMedia("ABSENTEISMO")}%</div></div>
+            <div class="kpi-card"><small>Média Turnover Universal</small><div>${getMedia("UNIVERSAL")}%</div></div>
+            <div class="kpi-card"><small>Total Horas Treinamento</small><div>${getMedia("HORAS DE TREINAMENTO")}h</div></div>
+            <div class="kpi-card"><small>Aprovação Média</small><div>${getMedia("APROVADOS EM TREINAMENTO")}%</div></div>
         `;
     }
 
     function criarGraficoPerformance(itemConfig) {
         const container = document.getElementById('container-graficos');
+        const dados = obterDadosFiltrados(itemConfig.chave);
+        if (dados.length === 0) return;
+
         const idUnique = Math.random().toString(36).substr(2, 9);
-        const dadosFiltrados = obterDadosFiltradosPorContexto(itemConfig.chave);
-
-        if (dadosFiltrados.length === 0) return;
-
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-        const exibirPorcentagem = itemConfig.chave.includes("ABSENTEISMO") || itemConfig.chave.includes("TURNOVER") || itemConfig.chave.includes("UNIVERSAL") || itemConfig.chave.includes("APROVADOS");
-
-        const ultimoDado = [...dadosFiltrados].reverse().find(d => labelsExibicao.includes(d.mes));
-        let emAlerta = false;
-        if (ultimoDado) {
-            const v = limparNumero(ultimoDado['Valor Real'] || ultimoDado.Qtd);
-            const m = limparNumero(ultimoDado.Objetivo);
-            emAlerta = (itemConfig.tipo === "MENOR_MELHOR") ? (v > m) : (v < m);
-        }
+        const exibirPct = itemConfig.chave.includes("ABSENTEISMO") || itemConfig.chave.includes("TURNOVER") || itemConfig.chave.includes("UNIVERSAL") || itemConfig.chave.includes("APROVADOS");
 
         container.innerHTML += `
             <div class="card">
                 <h2>${itemConfig.titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
-                <p class="sub">Grupo Coplac | Performance</p>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box ${emAlerta ? 'alert' : ''}">
-                        <b>${emAlerta ? '⚠️ ATENÇÃO - FORA DA META' : 'DETALHAMENTO'}</b> 
-                        ${itemConfig.nota}
-                    </div>
+                    <div class="info-box"><b>DETALHAMENTO</b> ${itemConfig.nota}</div>
                 </div>
             </div>`;
         
         setTimeout(() => {
             const ctx = document.getElementById(`chart-${idUnique}`);
-            const metas = labelsExibicao.map(mes => limparNumero(dadosFiltrados.find(ln => ln.mes === mes)?.Objetivo));
-            const dDentro = []; const dFora = [];
-
-            labelsExibicao.forEach((mes, idx) => {
-                const r = dadosFiltrados.find(ln => ln.mes === mes);
-                const valor = r ? limparNumero(r['Valor Real'] || r.Qtd) : null;
-                const meta = metas[idx];
-                if (valor !== null) {
-                    let atingiu = (itemConfig.tipo === "MENOR_MELHOR") ? (valor <= meta) : (valor >= meta);
-                    if (atingiu) { dDentro.push(valor); dFora.push(null); }
-                    else { dDentro.push(null); dFora.push(valor); }
-                } else { dDentro.push(null); dFora.push(null); }
+            const metaLine = labelsExibicao.map(m => limparNumero(dados.find(ln => ln.mes === m)?.Objetivo));
+            const dFinal = labelsExibicao.map(m => {
+                const r = dados.find(ln => ln.mes === m);
+                return r ? limparNumero(r['Valor Real'] || r.Qtd) : null;
             });
 
             new Chart(ctx, {
@@ -189,44 +167,84 @@
                 data: {
                     labels: labelsExibicao,
                     datasets: [
-                        { label: 'Dentro da Meta', data: dDentro, backgroundColor: '#10b981', borderRadius: 6 },
-                        { label: 'Fora da Meta', data: dFora, backgroundColor: '#f43f5e', borderRadius: 6 },
-                        { label: 'Meta', data: metas, type: 'line', borderColor: '#f59e0b', borderWidth: 3, pointRadius: 5, fill: false, datalabels: { display: false } }
+                        { label: 'Realizado', data: dFinal, backgroundColor: '#0284c7', borderRadius: 6 },
+                        { label: 'Meta', data: metaLine, type: 'line', borderColor: '#f59e0b', borderWidth: 2, fill: false, datalabels: { display: false } }
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: {
-                        legend: { labels: { usePointStyle: true, font: { weight: '600' } } },
-                        tooltip: { backgroundColor: '#0f172a', padding: 12, callbacks: { label: (ctx) => ` Realizado: ${ctx.raw}${exibirPorcentagem ? '%' : ''}` } },
-                        datalabels: { color: '#1e293b', font: { weight: 'bold', size: 11 }, anchor: 'end', align: 'top', offset: 5, rotation: -90, formatter: (v) => v ? v + (exibirPorcentagem ? '%' : '') : '' }
-                    },
-                    scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grace: '20%', ticks: { callback: (v) => v + (exibirPorcentagem ? '%' : '') } } }
+                    plugins: { 
+                        datalabels: { anchor: 'end', align: 'top', formatter: (v) => v ? v + (exibirPct ? '%' : '') : '' } 
+                    }
                 }
             });
-        }, 150);
+        }, 100);
+    }
+
+    function criarGraficoConsolidado(titulo, termo) {
+        const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
+        const dMOD = dadosGlobais.filter(ln => normalizar(ln.Processo).includes(normalizar(termo)) && normalizar(ln.Indicador) === "MOD" && (anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado)));
+        const dMOI = dadosGlobais.filter(ln => normalizar(ln.Processo).includes(normalizar(termo)) && normalizar(ln.Indicador) === "MOI" && (anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado)));
+
+        if (dMOD.length === 0 && dMOI.length === 0) return;
+
+        const container = document.getElementById('container-graficos');
+        const idUnique = Math.random().toString(36).substr(2, 9);
+
+        container.innerHTML += `
+            <div class="card">
+                <h2>${titulo}</h2>
+                <div class="grid-info">
+                    <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
+                    <div class="info-box"><b>COMPARATIVO</b> Visão unificada MOD vs MOI (Independente de turno).</div>
+                </div>
+            </div>`;
+        
+        setTimeout(() => {
+            const vMOD = labelsExibicao.map(m => limparNumero(dMOD.find(ln => ln.mes === m)?.['Valor Real'] || dMOD.find(ln => ln.mes === m)?.Qtd));
+            const vMOI = labelsExibicao.map(m => limparNumero(dMOI.find(ln => ln.mes === m)?.['Valor Real'] || dMOI.find(ln => ln.mes === m)?.Qtd));
+
+            new Chart(document.getElementById(`chart-${idUnique}`), {
+                type: 'bar',
+                data: {
+                    labels: labelsExibicao,
+                    datasets: [
+                        { label: 'MOI', data: vMOI, backgroundColor: '#94a3b8', stack: 's1' },
+                        { label: 'MOD', data: vMOD, backgroundColor: '#334155', stack: 's1' }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
+            });
+        }, 100);
     }
 
     function renderizarDashboard() {
         document.getElementById('container-graficos').innerHTML = "";
         calcularResumo();
 
-        // Lista de indicadores
-        criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "% Absenteísmo: Horas Ausentes / Horas Programadas." });
-        criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "%TurnOver: Desligados > 180 Dias / Total Ativos." });
-        criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "Fórmula: (Admissões + Desligamentos) / 2 / Total Ativos." });
+        // Performance com Filtro de Turno
+        criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", nota: "Horas Ausentes / Horas Programadas." });
+        criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", nota: "Desligados > 180 Dias / Ativos." });
+        criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", nota: "(Adm+Desl)/2 / Total Ativos." });
 
-        criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas de capacitação realizadas." });
-        criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de colaboradores com nota satisfatória." });
-        criarGraficoPerformance({ chave: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", titulo: "PLANO DE VALORIZAÇÃO INTERNA", tipo: "MAIOR_MELHOR", nota: "Índice de promoções e retenção de talentos internos." });
+        // Consolidados MOD/MOI (Sempre visíveis)
+        const itens = [
+            { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
+            { t: "PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - SOLICITAÇÃO GERAL NO MÊS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL" }
+        ];
+        itens.forEach(i => criarGraficoConsolidado(i.h, i.t));
+
+        // Treinamento e Valorização
+        criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", nota: "Total de horas acumuladas." });
+        criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", nota: "% de aproveitamento." });
+        criarGraficoPerformance({ chave: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", titulo: "VALORIZAÇÃO INTERNA", nota: "Índice de promoções." });
     }
 
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
         download: true, header: true, skipEmptyLines: true,
-        complete: function(results) {
-            dadosGlobais = results.data;
-            renderizarDashboard();
-        }
+        complete: function(r) { dadosGlobais = r.data; renderizarDashboard(); }
     });
 </script>
 </body>

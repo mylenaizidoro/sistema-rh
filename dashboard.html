@@ -10,7 +10,17 @@
         body { background-color: #f8fafc; color: #1e293b; font-family: 'Segoe UI', sans-serif; padding: 20px; }
         .header-container { max-width: 1000px; margin: auto; text-align: center; }
         
-        /* Cards de Alerta */
+        /* Seção de Treinamento - Visual Claro */
+        .training-section { background: white; padding: 25px; border-radius: 16px; max-width: 1000px; margin: 20px auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .training-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
+        .training-header h2 { font-size: 1.25rem; margin: 0; color: #0284c7; text-transform: uppercase; }
+        .training-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .training-card { background: #f1f5f9; padding: 20px; border-radius: 12px; border-left: 5px solid #0284c7; }
+        .training-card label { color: #64748b; font-size: 0.75rem; text-transform: uppercase; font-weight: 700; }
+        .training-card .big-value { font-size: 2.2rem; font-weight: 800; margin: 5px 0; color: #1e293b; }
+        .training-card .trend { font-size: 0.85rem; color: #16a34a; font-weight: 600; }
+
+        /* Cards de Alerta (Status Cards) */
         .kpi-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; max-width: 1000px; margin: 20px auto; }
         .kpi-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: left; position: relative; }
         .kpi-card h3 { font-size: 0.75rem; color: #64748b; margin: 0; text-transform: uppercase; }
@@ -23,19 +33,17 @@
         .grid-info { display: grid; grid-template-columns: 1fr 280px; gap: 25px; align-items: center; }
         .info-box { background: #f1f5f9; padding: 20px; border-radius: 12px; border-left: 5px solid #0284c7; font-size: 0.9rem; color: #475569; }
         
-        /* Botões */
         .controls { margin-bottom: 30px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
         .btn { padding: 10px 20px; border: 1px solid #0284c7; background: white; color: #0284c7; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s; }
         .btn.active { background: #0284c7; color: white; }
         .btn-pdf { background: #0f172a; color: white; border-color: #0f172a; }
-        .btn-pdf:hover { background: #334155; }
 
         .chart-container { position: relative; height: 400px; width: 100%; }
 
         @media print {
             .controls, .btn, .back-btn { display: none !important; }
             body { background: white; padding: 0; }
-            .card { box-shadow: none; border: 1px solid #eee; margin: 10px auto; }
+            .card, .training-section { box-shadow: none; border: 1px solid #eee; margin: 10px auto; }
         }
     </style>
 </head>
@@ -43,12 +51,29 @@
 
     <div class="header-container">
         <h1>GESTAO DE INDICADORES - DHO CURITIBA</h1>
-        
         <div class="controls">
             <button class="btn active" onclick="filtrarAno('TODOS', this)">Ver Todos</button>
             <button class="btn" onclick="filtrarAno('2025', this)">2025</button>
             <button class="btn" onclick="filtrarAno('2026', this)">2026</button>
             <button class="btn btn-pdf" onclick="window.print()">Exportar PDF</button>
+        </div>
+    </div>
+
+    <div class="training-section">
+        <div class="training-header">
+            <h2>Treinamento & Desenvolvimento</h2>
+        </div>
+        <div class="training-grid">
+            <div class="training-card">
+                <label>Hora-Homem de Treinamento (Mês)</label>
+                <div id="val-hh" class="big-value">0 h</div>
+                <span class="trend">↗ 12.4% em relação ao mês anterior</span>
+            </div>
+            <div class="training-card">
+                <label>Meta Mensal (Progresso)</label>
+                <div id="val-progresso" class="big-value">0%</div>
+                <label>Atingimento da meta programada</label>
+            </div>
         </div>
     </div>
 
@@ -82,6 +107,14 @@
         return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
     }
 
+    function atualizarDadosTreinamento(dados) {
+        const itemHH = dados.find(ln => normalizar(ln.Processo).includes("HORA-HOMEM TREINAMENTO"));
+        const itemProg = dados.find(ln => normalizar(ln.Processo).includes("META MENSAL (PROGRESSO)"));
+
+        if(itemHH) document.getElementById('val-hh').innerText = limparNumero(itemHH['Valor Real'] || itemHH.Qtd).toLocaleString('pt-BR') + " h";
+        if(itemProg) document.getElementById('val-progresso').innerText = limparNumero(itemProg['Valor Real'] || itemProg.Qtd) + "%";
+    }
+
     function criarCardsStatus(dados) {
         const container = document.getElementById('kpi-cards');
         container.innerHTML = "";
@@ -103,7 +136,7 @@
                 <div class="kpi-card ${atingiu ? 'status-ok' : 'status-alert'}">
                     <h3>${kpi.titulo}</h3>
                     <div class="value">${valor}%</div>
-                    <div style="font-size: 0.7rem;">Meta: ${meta}% (${ultimo.mes})</div>
+                    <div style="font-size: 0.7rem;">Status em ${ultimo.mes}</div>
                     <span class="status-icon">${atingiu ? '✓' : '⚠'}</span>
                 </div>`;
         });
@@ -114,8 +147,6 @@
         const idUnique = Math.random().toString(36).substr(2, 9);
         const labelsExibicao = anoAtual === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoAtual));
         const dadosFiltrados = dadosGerais.filter(ln => normalizar(ln.Processo).includes(normalizar(itemConfig.chave)));
-
-        const exibirPorcentagem = itemConfig.chave.includes("ABSENTEISMO") || itemConfig.chave.includes("TURNOVER PA") || itemConfig.chave.includes("UNIVERSAL") || itemConfig.chave.includes("APROVADOS EM TREINAMENTO");
 
         container.innerHTML += `
             <div class="card">
@@ -133,7 +164,7 @@
 
             labelsExibicao.forEach((mes, idx) => {
                 const r = dadosFiltrados.find(ln => ln.mes === mes);
-                if (!r) { dMeta.push(null); dFora.push(null); return; }
+                if(!r) { dMeta.push(null); dFora.push(null); return; }
                 const v = limparNumero(r['Valor Real'] || r.Qtd);
                 const ok = itemConfig.tipo === "MENOR_MELHOR" ? v <= metas[idx] : v >= metas[idx];
                 if(ok) { dMeta.push(v); dFora.push(null); } else { dMeta.push(null); dFora.push(v); }
@@ -149,16 +180,7 @@
                         { label: 'Meta', data: metas, type: 'line', borderColor: '#f97316', borderWidth: 2, pointRadius: 3, datalabels: { display: false } }
                     ]
                 },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: {
-                        datalabels: {
-                            anchor: 'end', align: 'top', offset: 5, rotation: -90, font: { weight: 'bold' },
-                            formatter: (v) => v ? v + (exibirPorcentagem ? '%' : '') : ''
-                        }
-                    },
-                    scales: { y: { beginAtZero: true, grace: '20%' } }
-                }
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
             });
         }, 150);
     }
@@ -173,7 +195,7 @@
                 <h2>${titulo}</h2>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box"><b>DETALHAMENTO</b> Comparativo entre MOD e MOI.</div>
+                    <div class="info-box"><b>DETALHAMENTO</b> Comparativo Mão de Obra Direta vs Indireta.</div>
                 </div>
             </div>`;
         
@@ -203,20 +225,20 @@
 
     function processarDashboard(dados) {
         document.getElementById('container-graficos').innerHTML = "";
-        criarCardsStatus(dados);
         
-        // GRÁFICOS INDIVIDUAIS
+        atualizarDadosTreinamento(dados); 
+        criarCardsStatus(dados); 
+        
+        // PERFORMANCE
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "% Horas Ausentes vs Horas Programadas." }, dados);
         criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "Desligados > 180 Dias vs Total Ativos." }, dados);
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER - CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "Média (Admissões + Desligamentos) vs Total." }, dados);
 
-        // GRÁFICOS CONSOLIDADOS (MOD/MOI)
+        // CONSOLIDADOS (MOD/MOI)
         const consolidados = [
-            { termo: "SOLICITACAO DE DESLIGAMENTO 16 A 30", titulo: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS (CONSOLIDADO)" },
-            { termo: "SOLICITACAO DE DESLIGAMENTO 31 A 90", titulo: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS (CONSOLIDADO)" },
-            { termo: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", titulo: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS (CONSOLIDADO)" },
-            { termo: "PEDIDOS DE DESLIGAMENTO MES", titulo: "TURNOVER - SOLICITAÇÃO GERAL NO MÊS (CONSOLIDADO)" },
-            { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", titulo: "TURNOVER - INICIATIVA EMPRESA GERAL (CONSOLIDADO)" }
+            { termo: "SOLICITACAO DE DESLIGAMENTO 16 A 30", titulo: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
+            { termo: "PEDIDOS DE DESLIGAMENTO MES", titulo: "TURNOVER - SOLICITAÇÃO GERAL NO MÊS" },
+            { termo: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", titulo: "TURNOVER - INICIATIVA EMPRESA GERAL" }
         ];
 
         consolidados.forEach(p => {
@@ -225,10 +247,9 @@
             if (dMOD.length || dMOI.length) criarGraficoConsolidado(p.titulo, dMOD, dMOI);
         });
 
-        // INDICADORES DE TREINAMENTO E VALORIZAÇÃO
-        criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas realizadas." }, dados);
-        criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aprovação técnica." }, dados);
-        criarGraficoPerformance({ chave: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", titulo: "PLANO DE VALORIZAÇÃO INTERNA", tipo: "MAIOR_MELHOR", nota: "Acompanhamento de promoções internas." }, dados);
+        // OUTROS
+        criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento técnico." }, dados);
+        criarGraficoPerformance({ chave: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", titulo: "VALORIZAÇÃO INTERNA", tipo: "MAIOR_MELHOR", nota: "Acompanhamento de promoções e planos de carreira." }, dados);
     }
 
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {

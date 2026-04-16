@@ -96,9 +96,9 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'Dentro da meta', data: dadosDentroMeta, backgroundColor: '#22c55e', borderRadius: 4, stack: 's', barPercentage: 0.7 },
-                        { label: 'Fora da meta', data: dadosForaMeta, backgroundColor: '#ef4444', borderRadius: 4, stack: 's', barPercentage: 0.7 },
-                        { label: 'Meta', data: metas, type: 'line', borderColor: '#475569', borderWidth: 2, fill: false, pointRadius: 3, datalabels: { display: false } }
+                        { label: 'Dentro da meta', data: dadosDentroMeta, backgroundColor: '#22c55e', borderRadius: 4, stack: 's', barPercentage: 0.75 },
+                        { label: 'Fora da meta', data: dadosForaMeta, backgroundColor: '#ef4444', borderRadius: 4, stack: 's', barPercentage: 0.75 },
+                        { label: 'Meta', data: metas, type: 'line', borderColor: '#f97316', borderWidth: 3, fill: false, pointRadius: 4, pointBackgroundColor: '#f97316', datalabels: { display: false } }
                     ]
                 },
                 options: {
@@ -106,12 +106,12 @@
                     plugins: {
                         legend: { position: 'top' },
                         datalabels: {
-                            color: '#1e293b',
-                            font: { weight: 'bold', size: 11 },
+                            color: '#0f172a', // Cor mais escura para o texto
+                            font: { weight: 'bold', size: 13 }, // Maior e em Negrito
                             anchor: 'end',
                             align: 'top',
-                            offset: 5,
-                            rotation: -90, // Gira o texto para não encavalar
+                            offset: 8, // Afasta o número da barra para não bater na linha
+                            rotation: -90,
                             formatter: (val) => (val !== null && val !== 0) ? val.toLocaleString('pt-BR') + (exibirPorcentagem ? '%' : '') : ''
                         }
                     },
@@ -119,7 +119,7 @@
                         x: { ticks: { rotation: -45, font: { size: 10 } } },
                         y: { 
                             beginAtZero: true, 
-                            grace: '20%', // Aumenta o espaço no topo do gráfico
+                            grace: '25%', // Mais espaço no topo
                             ticks: {
                                 callback: function(value) { return value + (exibirPorcentagem ? '%' : ''); }
                             }
@@ -159,16 +159,16 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'MOI', data: vMOI, backgroundColor: '#cbd5e1', stack: 's1', barPercentage: 0.7 },
-                        { label: 'MOD', data: vMOD, backgroundColor: '#475569', stack: 's1', barPercentage: 0.7 },
-                        { label: 'Meta', data: meta, type: 'line', borderColor: '#000', borderWidth: 2, pointRadius: 4, datalabels: { display: false } }
+                        { label: 'MOI', data: vMOI, backgroundColor: '#cbd5e1', stack: 's1', barPercentage: 0.75 },
+                        { label: 'MOD', data: vMOD, backgroundColor: '#475569', stack: 's1', barPercentage: 0.75 },
+                        { label: 'Meta', data: meta, type: 'line', borderColor: '#f97316', borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#f97316', datalabels: { display: false } }
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: {
                         datalabels: {
-                            color: '#fff', font: { weight: 'bold', size: 10 },
+                            color: '#fff', font: { weight: 'bold', size: 11 },
                             formatter: (val) => val > 0 ? val : '',
                             anchor: 'center', align: 'center', display: true
                         }

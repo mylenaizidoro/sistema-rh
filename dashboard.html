@@ -7,13 +7,13 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
-        body { background-color: #f1f5f9; color: #1e293b; font-family: 'Segoe UI', system-ui, sans-serif; padding: 20px; }
+        body { background-color: #f8fafc; color: #1e293b; font-family: 'Segoe UI', system-ui, sans-serif; padding: 20px; }
         
         .header-container { max-width: 1100px; margin: auto; }
         h1 { color: #0f172a; font-weight: 800; text-align: center; margin-bottom: 20px; text-transform: uppercase; letter-spacing: -0.5px; }
         
         .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
-        .kpi-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .kpi-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .kpi-card small { color: #64748b; font-size: 0.75rem; text-transform: uppercase; font-weight: 600; }
         .kpi-card div { font-size: 1.8rem; font-weight: 700; color: #0284c7; margin-top: 5px; }
 
@@ -30,7 +30,7 @@
 
         .controls { text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; align-items: center; }
         .btn { padding: 10px 24px; border: 1px solid #e2e8f0; background: white; color: #475569; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
-        .btn:hover { background: #f8fafc; }
+        .btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
         .btn.active { background: #0284c7; color: white; border-color: #0284c7; }
         
         .select-turno { padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; font-weight: 600; color: #475569; cursor: pointer; }
@@ -189,14 +189,14 @@
                 data: {
                     labels: labelsExibicao,
                     datasets: [
-                        { label: 'Dentro da Meta', data: dDentro, backgroundColor: '#10b981', borderRadius: 6 },
-                        { label: 'Fora da Meta', data: dFora, backgroundColor: '#f43f5e', borderRadius: 6 },
+                        { label: 'Dentro da Meta', data: dDentro, backgroundColor: '#34d399', borderRadius: 6 },
+                        { label: 'Fora da Meta', data: dFora, backgroundColor: '#fb7185', borderRadius: 6 },
                         { label: 'Meta', data: metas, type: 'line', borderColor: '#f59e0b', borderWidth: 3, fill: false, datalabels: { display: false } }
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { datalabels: { anchor: 'end', align: 'top', formatter: (v) => v ? v + (exibirPct ? '%' : '') : '', font: { weight: 'bold' }, rotation: -90 } }
+                    plugins: { datalabels: { anchor: 'end', align: 'top', formatter: (v) => v ? v + (exibirPct ? '%' : '') : '', font: { weight: 'bold', size: 10 }, rotation: -45 } }
                 }
             });
         }, 150);
@@ -204,37 +204,73 @@
 
     function criarGraficoConsolidado(titulo, termo) {
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-        const dMOD = dadosGlobais.filter(ln => normalizar(ln.Processo).includes(normalizar(termo)) && normalizar(ln.Indicador).includes("MOD") && (anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado)));
-        const dMOI = dadosGlobais.filter(ln => normalizar(ln.Processo).includes(normalizar(termo)) && normalizar(ln.Indicador).includes("MOI") && (anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado)));
+        
+        // MAPA DE CORES CLARAS E BONITAS (Tons Pastel Profissionais)
+        const coresTurnos = {
+            "1º TURNO": { mod: "#60a5fa", moi: "#bfdbfe" }, // Azuis
+            "2º TURNO": { mod: "#f87171", moi: "#fecaca" }, // Vermelhos/Rosados
+            "3º TURNO": { mod: "#4ade80", moi: "#bbf7d0" }, // Verdes
+            "GERAL":    { mod: "#94a3b8", moi: "#e2e8f0" }  // Cinzas
+        };
 
-        if (dMOD.length === 0 && dMOI.length === 0) return;
         const idUnique = Math.random().toString(36).substr(2, 9);
-
         document.getElementById('container-graficos').innerHTML += `
             <div class="card">
                 <h2>${titulo}</h2>
-                <p class="sub">Grupo Coplac | Unificado</p>
+                <p class="sub">Grupo Coplac | Unificado por Turno</p>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box"><b>DETALHAMENTO</b> Comparativo MOD vs MOI.</div>
+                    <div class="info-box"><b>DETALHAMENTO</b> Comparativo por Turnos e Categorias MOD/MOI.</div>
                 </div>
             </div>`;
         
         setTimeout(() => {
-            const vMOD = labelsExibicao.map(m => limparNumero(dMOD.find(ln => ln.mes === m)?.['Valor Real'] || dMOD.find(ln => ln.mes === m)?.Qtd));
-            const vMOI = labelsExibicao.map(m => limparNumero(dMOI.find(ln => ln.mes === m)?.['Valor Real'] || dMOI.find(ln => ln.mes === m)?.Qtd));
+            const datasets = [];
+            const turnosParaProcessar = ["1º TURNO", "2º TURNO", "3º TURNO"];
+
+            turnosParaProcessar.forEach(turno => {
+                const cor = coresTurnos[turno];
+                
+                // Filtra dados de MOD para este turno
+                const dMOD = dadosGlobais.filter(ln => 
+                    normalizar(ln.Processo).includes(normalizar(termo)) && 
+                    normalizar(ln.Indicador).includes("MOD") && 
+                    normalizar(ln.Indicador).includes(normalizar(turno)) &&
+                    (anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado))
+                );
+
+                // Filtra dados de MOI para este turno
+                const dMOI = dadosGlobais.filter(ln => 
+                    normalizar(ln.Processo).includes(normalizar(termo)) && 
+                    normalizar(ln.Indicador).includes("MOI") && 
+                    normalizar(ln.Indicador).includes(normalizar(turno)) &&
+                    (anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado))
+                );
+
+                const vMOD = labelsExibicao.map(m => limparNumero(dMOD.find(ln => ln.mes === m)?.['Valor Real'] || dMOD.find(ln => ln.mes === m)?.Qtd));
+                const vMOI = labelsExibicao.map(m => limparNumero(dMOI.find(ln => ln.mes === m)?.['Valor Real'] || dMOI.find(ln => ln.mes === m)?.Qtd));
+
+                if (vMOD.some(v => v > 0)) datasets.push({ label: `${turno} - MOD`, data: vMOD, backgroundColor: cor.mod, stack: 's1' });
+                if (vMOI.some(v => v > 0)) datasets.push({ label: `${turno} - MOI`, data: vMOI, backgroundColor: cor.moi, stack: 's1' });
+            });
+
+            // Caso seja um indicador que não separa por turno na planilha (ex: geral)
+            if (datasets.length === 0) {
+                 const dMOD_Geral = dadosGlobais.filter(ln => normalizar(ln.Processo).includes(normalizar(termo)) && normalizar(ln.Indicador).includes("MOD") && (anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado)));
+                 const dMOI_Geral = dadosGlobais.filter(ln => normalizar(ln.Processo).includes(normalizar(termo)) && normalizar(ln.Indicador).includes("MOI") && (anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado)));
+                 datasets.push({ label: 'MOD', data: labelsExibicao.map(m => limparNumero(dMOD_Geral.find(ln => ln.mes === m)?.Qtd)), backgroundColor: coresTurnos.GERAL.mod, stack: 's1' });
+                 datasets.push({ label: 'MOI', data: labelsExibicao.map(m => limparNumero(dMOI_Geral.find(ln => ln.mes === m)?.Qtd)), backgroundColor: coresTurnos.GERAL.moi, stack: 's1' });
+            }
+
             new Chart(document.getElementById(`chart-${idUnique}`), {
                 type: 'bar',
-                data: {
-                    labels: labelsExibicao,
-                    datasets: [
-                        { label: 'MOI', data: vMOI, backgroundColor: '#94a3b8', stack: 's1' },
-                        { label: 'MOD', data: vMOD, backgroundColor: '#334155', stack: 's1' }
-                    ]
-                },
+                data: { labels: labelsExibicao, datasets: datasets },
                 options: { 
                     responsive: true, maintainAspectRatio: false, 
-                    plugins: { datalabels: { color: '#fff', formatter: (v) => v > 0 ? v : '' } },
+                    plugins: { 
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                        datalabels: { color: '#475569', font: { size: 9, weight: 'bold' }, formatter: (v) => v > 0 ? v : '' } 
+                    },
                     scales: { x: { stacked: true }, y: { stacked: true } } 
                 }
             });
@@ -245,12 +281,12 @@
         document.getElementById('container-graficos').innerHTML = "";
         calcularResumo();
 
-        // Indicadores de Performance iniciais
+        // 1. Performance de Topo
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
         criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "Desligados > 180 Dias / Ativos." });
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
 
-        // O novo indicador solicitado posicionado aqui (Depois do Turnover Universal)
+        // 2. Turnover Solicitação (Incluindo o novo indicador de 15 dias)
         const itensSolicitacao = [
             { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
@@ -260,7 +296,7 @@
         ];
         itensSolicitacao.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
-        // Indicadores de iniciativa da empresa
+        // 3. Turnover Iniciativa Empresa
         const itensIniciativa = [
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
@@ -269,7 +305,7 @@
         ];
         itensIniciativa.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
-        // Finalizando com Treinamentos e Valorização
+        // 4. Treinamento e Valorização
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
         criarGraficoPerformance({ chave: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", titulo: "VALORIZAÇÃO INTERNA", tipo: "MAIOR_MELHOR", nota: "Índice de promoções." });

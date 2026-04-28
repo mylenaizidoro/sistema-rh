@@ -146,7 +146,6 @@
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
         const exibirPct = itemConfig.chave.includes("ABSENTEISMO") || itemConfig.chave.includes("TURNOVER") || itemConfig.chave.includes("UNIVERSAL") || itemConfig.chave.includes("APROVADOS") || itemConfig.chave.includes("RETENÇÃO");
 
-        // LÓGICA DE ALERTA CORRIGIDA: Ignora meses futuros e ajusta para Maior/Menor melhor
         const dadosComValor = dados.filter(d => limparNumero(d['Valor Real'] || d.Qtd) > 0);
         const ultimoDadoValido = dadosComValor[dadosComValor.length - 1];
         let emAlerta = false;
@@ -205,8 +204,8 @@
 
     function criarGraficoConsolidado(titulo, termo) {
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-        const dMOD = dadosGlobais.filter(ln => normalizar(ln.Processo).includes(normalizar(termo)) && normalizar(ln.Indicador) === "MOD" && (anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado)));
-        const dMOI = dadosGlobais.filter(ln => normalizar(ln.Processo).includes(normalizar(termo)) && normalizar(ln.Indicador) === "MOI" && (anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado)));
+        const dMOD = dadosGlobais.filter(ln => normalizar(ln.Processo).includes(normalizar(termo)) && normalizar(ln.Indicador).includes("MOD") && (anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado)));
+        const dMOI = dadosGlobais.filter(ln => normalizar(ln.Processo).includes(normalizar(termo)) && normalizar(ln.Indicador).includes("MOI") && (anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado)));
 
         if (dMOD.length === 0 && dMOI.length === 0) return;
         const idUnique = Math.random().toString(36).substr(2, 9);
@@ -246,22 +245,31 @@
         document.getElementById('container-graficos').innerHTML = "";
         calcularResumo();
 
+        // Indicadores de Performance iniciais
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
         criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "Desligados > 180 Dias / Ativos." });
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
 
-        const itens = [
+        // O novo indicador solicitado posicionado aqui (Depois do Turnover Universal)
+        const itensSolicitacao = [
+            { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
-            { t: "PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - SOLICITAÇÃO GERAL NO MÊS" },
+            { t: "PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - SOLICITAÇÃO GERAL NO MÊS" }
+        ];
+        itensSolicitacao.forEach(i => criarGraficoConsolidado(i.h, i.t));
+
+        // Indicadores de iniciativa da empresa
+        const itensIniciativa = [
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", h: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS" },
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS" }
         ];
-        itens.forEach(i => criarGraficoConsolidado(i.h, i.t));
+        itensIniciativa.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
+        // Finalizando com Treinamentos e Valorização
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
         criarGraficoPerformance({ chave: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", titulo: "VALORIZAÇÃO INTERNA", tipo: "MAIOR_MELHOR", nota: "Índice de promoções." });

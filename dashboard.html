@@ -8,46 +8,27 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         body { background-color: #f1f5f9; color: #1e293b; font-family: 'Segoe UI', system-ui, sans-serif; padding: 20px; }
-        
         .header-container { max-width: 1100px; margin: auto; }
         h1 { color: #0f172a; font-weight: 800; text-align: center; margin-bottom: 20px; text-transform: uppercase; letter-spacing: -0.5px; }
-        
         .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
         .kpi-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .kpi-card small { color: #64748b; font-size: 0.75rem; text-transform: uppercase; font-weight: 600; }
         .kpi-card div { font-size: 1.8rem; font-weight: 700; color: #0284c7; margin-top: 5px; }
-
-        .card { background: #ffffff; border-radius: 16px; padding: 30px; max-width: 1000px; margin: 25px auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); page-break-inside: avoid; transition: 0.3s; }
+        .card { background: #ffffff; border-radius: 16px; padding: 30px; max-width: 1000px; margin: 25px auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); page-break-inside: avoid; }
         .grid-info { display: grid; grid-template-columns: 1fr 280px; gap: 25px; align-items: center; }
-        .info-box { background: #f8fafc; padding: 20px; border-radius: 12px; border-left: 5px solid #0284c7; font-size: 0.9rem; line-height: 1.6; color: #475569; position: relative; }
-        .info-box.alert { border-left-color: #f43f5e; background: #fff1f2; }
+        .info-box { background: #f8fafc; padding: 20px; border-radius: 12px; border-left: 5px solid #0284c7; font-size: 0.9rem; line-height: 1.6; color: #475569; }
         .info-box b { color: #0284c7; display: block; margin-bottom: 8px; text-transform: uppercase; font-size: 0.8rem; }
-        .info-box.alert b { color: #f43f5e; }
-        
-        h2 { color: #0f172a; margin: 0; font-size: 1.2rem; text-transform: uppercase; font-weight: 700; }
-        .sub { color: #64748b; font-size: 0.85rem; margin-bottom: 25px; }
         .chart-container { position: relative; height: 420px; width: 100%; }
-
         .controls { text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; align-items: center; }
-        .btn { padding: 10px 24px; border: 1px solid #e2e8f0; background: white; color: #475569; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
-        .btn:hover { background: #f8fafc; }
+        .btn { padding: 10px 24px; border: 1px solid #e2e8f0; background: white; color: #475569; border-radius: 8px; cursor: pointer; font-weight: 600; }
         .btn.active { background: #0284c7; color: white; border-color: #0284c7; }
-        
-        .select-turno { padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; font-weight: 600; color: #475569; cursor: pointer; }
-        .btn-pdf { background: #0f172a; color: white; border-color: #0f172a; margin-left: 20px; }
-        .back-btn { color: #64748b; text-decoration: none; font-size: 0.9rem; display: inline-block; margin-bottom: 20px; }
-
-        @media print {
-            .controls, .back-btn, .btn { display: none !important; }
-            body { background: white; padding: 0; }
-            .card { box-shadow: none; border: 1px solid #eee; margin: 10px auto; width: 100%; }
-        }
+        .select-turno { padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; font-weight: 600; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div class="header-container">
-        <a href="index.html" class="back-btn">← Voltar para perfis</a>
+        <a href="index.html" style="color: #64748b; text-decoration: none; font-size: 0.9rem;">← Voltar para perfis</a>
         <h1>GESTÃO DE INDICADORES - DHO CURITIBA</h1>
         
         <div class="controls">
@@ -56,13 +37,13 @@
             <button class="btn" onclick="filtrarAno('2026', this)">2026</button>
 
             <select id="selectTurno" class="select-turno" onchange="filtrarTurno()">
-                <option value="TODOS">Todos os Turnos</option>
+                <option value="TODOS">Geral (Soma Turnos)</option>
                 <option value="1º TURNO">1º Turno</option>
                 <option value="2º TURNO">2º Turno</option>
                 <option value="3º TURNO">3º Turno</option>
             </select>
 
-            <button class="btn btn-pdf" onclick="window.print()">Exportar PDF</button>
+            <button class="btn" style="background: #0f172a; color: white;" onclick="window.print()">Exportar PDF</button>
         </div>
 
         <div id="kpi-summary" class="kpi-row"></div>
@@ -105,16 +86,17 @@
         renderizarDashboard();
     }
 
+    // Filtro para os indicadores de linha única (Absenteísmo, etc)
     function obterDadosFiltrados(chaveProcesso) {
         return dadosGlobais.filter(ln => {
             const nomeProc = normalizar(ln.Processo);
             const nomeInd = normalizar(ln.Indicador);
             const matchProcesso = nomeProc.includes(normalizar(chaveProcesso));
             const matchAno = anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado);
+            
             let matchTurno = true;
             if (turnoSelecionado !== 'TODOS') {
-                const termo = normalizar(turnoSelecionado);
-                matchTurno = nomeInd.includes(termo) || nomeProc.includes(termo);
+                matchTurno = nomeInd.includes(normalizar(turnoSelecionado));
             }
             return matchProcesso && matchAno && matchTurno;
         });
@@ -144,33 +126,23 @@
 
         const idUnique = Math.random().toString(36).substr(2, 9);
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-        const exibirPct = itemConfig.chave.includes("ABSENTEISMO") || itemConfig.chave.includes("TURNOVER") || itemConfig.chave.includes("UNIVERSAL") || itemConfig.chave.includes("APROVADOS") || itemConfig.chave.includes("RETENÇÃO");
-
-        const dadosComValor = dados.filter(d => limparNumero(d['Valor Real'] || d.Qtd) > 0);
-        const ultimoDadoValido = dadosComValor[dadosComValor.length - 1];
-        let emAlerta = false;
-
-        if (ultimoDadoValido) {
-            const v = limparNumero(ultimoDadoValido['Valor Real'] || ultimoDadoValido.Qtd);
-            const m = limparNumero(ultimoDadoValido.Objetivo);
-            emAlerta = (itemConfig.tipo === "MENOR_MELHOR") ? (v > m) : (v < m);
-        }
+        const exibirPct = itemConfig.chave.includes("ABSENTEISMO") || itemConfig.chave.includes("TURNOVER") || itemConfig.chave.includes("UNIVERSAL") || itemConfig.chave.includes("APROVADOS");
 
         container.innerHTML += `
             <div class="card">
                 <h2>${itemConfig.titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
-                <p class="sub">Grupo Coplac | Performance</p>
+                <p class="sub">Performance Operacional</p>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box ${emAlerta ? 'alert' : ''}">
-                        <b>${emAlerta ? '⚠️ ATENÇÃO - FORA DA META' : '✅ PERFORMANCE ADEQUADA'}</b> 
-                        ${itemConfig.nota}
-                    </div>
+                    <div class="info-box"><b>DETALHAMENTO</b> ${itemConfig.nota}</div>
                 </div>
             </div>`;
         
         setTimeout(() => {
-            const metas = labelsExibicao.map(m => limparNumero(dados.find(ln => ln.mes === m)?.Objetivo));
+            const metas = labelsExibicao.map(m => {
+                const r = dados.find(ln => ln.mes === m);
+                return r ? limparNumero(r.Objetivo) : null;
+            });
             const dDentro = [], dFora = [];
 
             labelsExibicao.forEach((mes, idx) => {
@@ -202,17 +174,39 @@
         }, 150);
     }
 
+    // FUNÇÃO QUE RESOLVE O PROBLEMA DAS IMAGENS (MOD/MOI)
     function criarGraficoConsolidado(titulo, termo) {
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-        const dMOD = dadosGlobais.filter(ln => normalizar(ln.Processo).includes(normalizar(termo)) && normalizar(ln.Indicador).includes("MOD") && (anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado)));
-        const dMOI = dadosGlobais.filter(ln => normalizar(ln.Processo).includes(normalizar(termo)) && normalizar(ln.Indicador).includes("MOI") && (anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado)));
+        
+        const filtrarSetor = (setor) => {
+            return dadosGlobais.filter(ln => {
+                const matchProc = normalizar(ln.Processo).includes(normalizar(termo));
+                const matchAno = (anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado));
+                const nomeInd = normalizar(ln.Indicador);
+                
+                // Filtro rigoroso: Deve ter o setor (MOD ou MOI)
+                const possuiSetor = nomeInd.includes(setor);
+                
+                // Se um turno estiver selecionado, deve conter o turno. 
+                // Se "TODOS" estiver selecionado, o gráfico vai SOMAR os turnos para aquele mês.
+                let matchTurno = true;
+                if (turnoSelecionado !== 'TODOS') {
+                    matchTurno = nomeInd.includes(normalizar(turnoSelecionado));
+                }
+                
+                return matchProc && matchAno && possuiSetor && matchTurno;
+            });
+        };
+
+        const dMOD = filtrarSetor("MOD");
+        const dMOI = filtrarSetor("MOI");
 
         if (dMOD.length === 0 && dMOI.length === 0) return;
         const idUnique = Math.random().toString(36).substr(2, 9);
 
         document.getElementById('container-graficos').innerHTML += `
             <div class="card">
-                <h2>${titulo}</h2>
+                <h2>${titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
                 <p class="sub">Grupo Coplac | Unificado</p>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
@@ -221,8 +215,15 @@
             </div>`;
         
         setTimeout(() => {
-            const vMOD = labelsExibicao.map(m => limparNumero(dMOD.find(ln => ln.mes === m)?.['Valor Real'] || dMOD.find(ln => ln.mes === m)?.Qtd));
-            const vMOI = labelsExibicao.map(m => limparNumero(dMOI.find(ln => ln.mes === m)?.['Valor Real'] || dMOI.find(ln => ln.mes === m)?.Qtd));
+            // Agrupar valores por mês (Soma turnos se for "TODOS")
+            const somarPorMes = (baseDados) => labelsExibicao.map(m => {
+                const itensMes = baseDados.filter(ln => ln.mes === m);
+                return itensMes.reduce((acc, curr) => acc + limparNumero(curr['Valor Real'] || curr.Qtd), 0);
+            });
+
+            const vMOD = somarPorMes(dMOD);
+            const vMOI = somarPorMes(dMOI);
+            
             new Chart(document.getElementById(`chart-${idUnique}`), {
                 type: 'bar',
                 data: {
@@ -245,22 +246,18 @@
         document.getElementById('container-graficos').innerHTML = "";
         calcularResumo();
 
-        // Indicadores de Performance iniciais
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
         criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "Desligados > 180 Dias / Ativos." });
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
 
-        // O novo indicador solicitado posicionado aqui (Depois do Turnover Universal)
         const itensSolicitacao = [
             { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
-            { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
             { t: "PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - SOLICITAÇÃO GERAL NO MÊS" }
         ];
         itensSolicitacao.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
-        // Indicadores de iniciativa da empresa
         const itensIniciativa = [
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
@@ -269,10 +266,8 @@
         ];
         itensIniciativa.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
-        // Finalizando com Treinamentos e Valorização
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
-        criarGraficoPerformance({ chave: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", titulo: "VALORIZAÇÃO INTERNA", tipo: "MAIOR_MELHOR", nota: "Índice de promoções." });
     }
 
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {

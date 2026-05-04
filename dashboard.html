@@ -91,9 +91,21 @@
             const nomeInd = normalizar(ln.Indicador);
             const matchProcesso = nomeProc.includes(normalizar(chaveProcesso));
             const matchAno = anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado);
-            let matchTurno = turnoSelecionado === 'TODOS' || nomeInd.includes(normalizar(turnoSelecionado)) || nomeProc.includes(normalizar(turnoSelecionado));
+            
+            // Lógica refinada para filtrar turno tanto no Processo quanto no Indicador (MOI 1º Turno etc)
+            let matchTurno = turnoSelecionado === 'TODOS' || 
+                             nomeInd.includes(normalizar(turnoSelecionado)) || 
+                             nomeProc.includes(normalizar(turnoSelecionado));
+            
             return matchProcesso && matchAno && matchTurno;
         });
+    }
+
+    function definirCorBarra(valor, meta, itemTipo) {
+        if (turnoSelecionado === '1º TURNO') return '#0284c7'; 
+        if (turnoSelecionado === '3º TURNO') return '#f59e0b'; 
+        let atingiu = (itemTipo === "MENOR_MELHOR") ? (valor <= meta) : (valor >= meta);
+        return atingiu ? '#10b981' : '#f43f5e';
     }
 
     function calcularResumo() {
@@ -108,16 +120,6 @@
             <div class="kpi-card"><small>Média Turnover Universal</small><div>${getMedia("UNIVERSAL")}%</div></div>
             <div class="kpi-card"><small>Total Horas Treinamento</small><div>${getMedia("HORAS DE TREINAMENTO")}h</div></div>
             <div class="kpi-card"><small>Aprovação Média</small><div>${getMedia("APROVADOS EM TREINAMENTO")}%</div></div>`;
-    }
-
-    // Função para definir a cor baseada no turno selecionado
-    function definirCorBarra(valor, meta, itemTipo) {
-        if (turnoSelecionado === '1º TURNO') return '#0284c7'; // Azul
-        if (turnoSelecionado === '3º TURNO') return '#f59e0b'; // Amarelo/Âmbar
-        
-        // Se for "Todos" ou outro, usa lógica de meta
-        let atingiu = (itemTipo === "MENOR_MELHOR") ? (valor <= meta) : (valor >= meta);
-        return atingiu ? '#10b981' : '#f43f5e';
     }
 
     function criarGraficoPerformance(itemConfig) {
@@ -168,8 +170,14 @@
 
     function criarGraficoConsolidado(titulo, termo) {
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-        const dMOD = obterDadosFiltrados(termo).filter(ln => normalizar(ln.Indicador).includes("MOD"));
-        const dMOI = obterDadosFiltrados(termo).filter(ln => normalizar(ln.Indicador).includes("MOI"));
+        
+        // Busca dados filtrados pelo termo e ano
+        const dadosBase = obterDadosFiltrados(termo);
+        
+        // Separa MOD e MOI (considerando a nova estrutura de texto na coluna Indicador)
+        const dMOD = dadosBase.filter(ln => normalizar(ln.Indicador).includes("MOD"));
+        const dMOI = dadosBase.filter(ln => normalizar(ln.Indicador).includes("MOI"));
+        
         if (dMOD.length === 0 && dMOI.length === 0) return;
 
         const idUnique = Math.random().toString(36).substr(2, 9);
@@ -179,7 +187,7 @@
                 <p class="sub">Grupo Coplac | MOD vs MOI</p>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box"><b>DETALHAMENTO</b> Comparativo de mão de obra direta vs indireta.</div>
+                    <div class="info-box"><b>DETALHAMENTO</b> Comparativo de mão de obra direta vs indireta para o período selecionado.</div>
                 </div>
             </div>`;
         
@@ -187,9 +195,8 @@
             const vMOD = labelsExibicao.map(m => limparNumero(dMOD.find(ln => ln.mes === m)?.['Valor Real'] || dMOD.find(ln => ln.mes === m)?.Qtd));
             const vMOI = labelsExibicao.map(m => limparNumero(dMOI.find(ln => ln.mes === m)?.['Valor Real'] || dMOI.find(ln => ln.mes === m)?.Qtd));
             
-            // Lógica de Cores para o Consolidado
-            let corMOD = '#334155'; // Padrão Cinza Escuro
-            let corMOI = '#94a3b8'; // Padrão Cinza Claro
+            let corMOD = '#334155'; 
+            let corMOI = '#94a3b8'; 
 
             if (turnoSelecionado === '1º TURNO') corMOD = '#0284c7';
             if (turnoSelecionado === '3º TURNO') corMOD = '#f59e0b';
@@ -215,27 +222,26 @@
     function renderizarDashboard() {
         document.getElementById('container-graficos').innerHTML = "";
         calcularResumo();
+        
+        // Performance
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
         criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "Desligados > 180 Dias / Ativos." });
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
 
+        // MOD vs MOI Consolidados
         const itensSolicitacao = [
             { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
-            { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
-            { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
-            { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
             { t: "PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - SOLICITAÇÃO GERAL NO MÊS" }
         ];
         itensSolicitacao.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
         const itensIniciativa = [
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", h: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS" },
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS" }
         ];
         itensIniciativa.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
+        // Treinamento e Valorização
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
         criarGraficoPerformance({ chave: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", titulo: "VALORIZAÇÃO INTERNA", tipo: "MAIOR_MELHOR", nota: "Índice de promoções." });

@@ -110,6 +110,16 @@
             <div class="kpi-card"><small>Aprovação Média</small><div>${getMedia("APROVADOS EM TREINAMENTO")}%</div></div>`;
     }
 
+    // Função para definir a cor baseada no turno selecionado
+    function definirCorBarra(valor, meta, itemTipo) {
+        if (turnoSelecionado === '1º TURNO') return '#0284c7'; // Azul
+        if (turnoSelecionado === '3º TURNO') return '#f59e0b'; // Amarelo/Âmbar
+        
+        // Se for "Todos" ou outro, usa lógica de meta
+        let atingiu = (itemTipo === "MENOR_MELHOR") ? (valor <= meta) : (valor >= meta);
+        return atingiu ? '#10b981' : '#f43f5e';
+    }
+
     function criarGraficoPerformance(itemConfig) {
         const container = document.getElementById('container-graficos');
         const dados = obterDadosFiltrados(itemConfig.chave);
@@ -119,25 +129,13 @@
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
         const exibirPct = ["ABSENTEISMO", "TURNOVER", "UNIVERSAL", "APROVADOS", "RETENÇÃO"].some(t => itemConfig.chave.includes(t));
 
-        const dadosComValor = dados.filter(d => limparNumero(d['Valor Real'] || d.Qtd) > 0);
-        const ultimoDadoValido = dadosComValor[dadosComValor.length - 1];
-        let emAlerta = false;
-        if (ultimoDadoValido) {
-            const v = limparNumero(ultimoDadoValido['Valor Real'] || ultimoDadoValido.Qtd);
-            const m = limparNumero(ultimoDadoValido.Objetivo);
-            emAlerta = (itemConfig.tipo === "MENOR_MELHOR") ? (v > m) : (v < m);
-        }
-
         container.innerHTML += `
             <div class="card">
                 <h2>${itemConfig.titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
                 <p class="sub">Grupo Coplac | Performance</p>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box ${emAlerta ? 'alert' : ''}">
-                        <b>${emAlerta ? '⚠️ ATENÇÃO - FORA DA META' : '✅ PERFORMANCE ADEQUADA'}</b> 
-                        ${itemConfig.nota}
-                    </div>
+                    <div class="info-box"><b>DETALHAMENTO</b> ${itemConfig.nota}</div>
                 </div>
             </div>`;
         
@@ -149,12 +147,7 @@
                 return valor === 0 ? null : valor;
             });
 
-            const corBarras = dFinal.map((valor, idx) => {
-                if (turnoSelecionado === '1º TURNO') return '#0284c7'; // Azul Coplac
-                const meta = metas[idx];
-                let atingiu = (itemConfig.tipo === "MENOR_MELHOR") ? (valor <= meta) : (valor >= meta);
-                return atingiu ? '#10b981' : '#f43f5e';
-            });
+            const corBarras = dFinal.map((valor, idx) => definirCorBarra(valor, metas[idx], itemConfig.tipo));
 
             new Chart(document.getElementById(`chart-${idUnique}`), {
                 type: 'bar',
@@ -162,7 +155,7 @@
                     labels: labelsExibicao,
                     datasets: [
                         { label: 'Realizado', data: dFinal, backgroundColor: corBarras, borderRadius: 6 },
-                        { label: 'Meta', data: metas, type: 'line', borderColor: '#f59e0b', borderWidth: 3, fill: false, datalabels: { display: false } }
+                        { label: 'Meta', data: metas, type: 'line', borderColor: '#475569', borderWidth: 2, borderDash: [5, 5], fill: false, datalabels: { display: false } }
                     ]
                 },
                 options: {
@@ -194,9 +187,12 @@
             const vMOD = labelsExibicao.map(m => limparNumero(dMOD.find(ln => ln.mes === m)?.['Valor Real'] || dMOD.find(ln => ln.mes === m)?.Qtd));
             const vMOI = labelsExibicao.map(m => limparNumero(dMOI.find(ln => ln.mes === m)?.['Valor Real'] || dMOI.find(ln => ln.mes === m)?.Qtd));
             
-            // Define cor Azul para MOD se o 1º Turno estiver selecionado, senão mantém Cinza Escuro
-            const corMOD = (turnoSelecionado === '1º TURNO') ? '#0284c7' : '#334155';
-            const corMOI = (turnoSelecionado === '1º TURNO') ? '#94a3b8' : '#94a3b8'; // Mantém MOI mais claro para contraste
+            // Lógica de Cores para o Consolidado
+            let corMOD = '#334155'; // Padrão Cinza Escuro
+            let corMOI = '#94a3b8'; // Padrão Cinza Claro
+
+            if (turnoSelecionado === '1º TURNO') corMOD = '#0284c7';
+            if (turnoSelecionado === '3º TURNO') corMOD = '#f59e0b';
 
             new Chart(document.getElementById(`chart-${idUnique}`), {
                 type: 'bar',

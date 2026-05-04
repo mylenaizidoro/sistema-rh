@@ -150,7 +150,7 @@
             });
 
             const corBarras = dFinal.map((valor, idx) => {
-                if (turnoSelecionado === '1º TURNO') return '#0284c7'; // Azul quando 1º Turno selecionado
+                if (turnoSelecionado === '1º TURNO') return '#0284c7'; // Azul Coplac
                 const meta = metas[idx];
                 let atingiu = (itemConfig.tipo === "MENOR_MELHOR") ? (valor <= meta) : (valor >= meta);
                 return atingiu ? '#10b981' : '#f43f5e';
@@ -193,13 +193,18 @@
         setTimeout(() => {
             const vMOD = labelsExibicao.map(m => limparNumero(dMOD.find(ln => ln.mes === m)?.['Valor Real'] || dMOD.find(ln => ln.mes === m)?.Qtd));
             const vMOI = labelsExibicao.map(m => limparNumero(dMOI.find(ln => ln.mes === m)?.['Valor Real'] || dMOI.find(ln => ln.mes === m)?.Qtd));
+            
+            // Define cor Azul para MOD se o 1º Turno estiver selecionado, senão mantém Cinza Escuro
+            const corMOD = (turnoSelecionado === '1º TURNO') ? '#0284c7' : '#334155';
+            const corMOI = (turnoSelecionado === '1º TURNO') ? '#94a3b8' : '#94a3b8'; // Mantém MOI mais claro para contraste
+
             new Chart(document.getElementById(`chart-${idUnique}`), {
                 type: 'bar',
                 data: {
                     labels: labelsExibicao,
                     datasets: [
-                        { label: 'MOI', data: vMOI, backgroundColor: '#94a3b8', stack: 's1' },
-                        { label: 'MOD', data: vMOD, backgroundColor: '#334155', stack: 's1' }
+                        { label: 'MOI', data: vMOI, backgroundColor: corMOI, stack: 's1' },
+                        { label: 'MOD', data: vMOD, backgroundColor: corMOD, stack: 's1' }
                     ]
                 },
                 options: { 

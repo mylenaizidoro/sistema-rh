@@ -62,7 +62,8 @@
 
     function limparNumero(v) {
         if (!v || v.toString().trim() === "") return 0;
-        return parseFloat(v.toString().replace(/\s/g, '').replace(',', '.').replace('%', '')) || 0;
+        let num = v.toString().replace(/\s/g, '').replace(',', '.').replace('%', '');
+        return parseFloat(num) || 0;
     }
 
     function normalizar(txt) {
@@ -81,33 +82,47 @@
         renderizarDashboard();
     }
 
-    function obterDadosFiltrados(chaveProcesso) {
+    // Função de busca que ignora o turno se solicitado (usada nas médias do topo)
+    function obterDadosBase(chaveProcesso, aplicarTurno = true) {
         return dadosGlobais.filter(ln => {
             const nomeProc = normalizar(ln.Processo);
             const nomeInd = normalizar(ln.Indicador);
             const matchProcesso = nomeProc.includes(normalizar(chaveProcesso));
             const matchAno = anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado);
-            let matchTurno = turnoSelecionado === 'TODOS' || 
-                             nomeInd.includes(normalizar(turnoSelecionado)) || 
+            
+            let matchTurno = true;
+            if (aplicarTurno && turnoSelecionado !== 'TODOS') {
+                matchTurno = nomeInd.includes(normalizar(turnoSelecionado)) || 
                              nomeProc.includes(normalizar(turnoSelecionado));
+            }
+            
             return matchProcesso && matchAno && matchTurno;
         });
     }
 
     function definirCorBarra(valor, meta, itemTipo) {
-        if (turnoSelecionado === '1º TURNO') return '#0284c7'; // Azul
-        if (turnoSelecionado === '3º TURNO') return '#f59e0b'; // Amarelo
+        if (turnoSelecionado === '1º TURNO') return '#0284c7'; 
+        if (turnoSelecionado === '3º TURNO') return '#f59e0b'; 
         let atingiu = (itemTipo === "MENOR_MELHOR") ? (valor <= meta) : (valor >= meta);
         return atingiu ? '#10b981' : '#f43f5e';
     }
 
     function calcularResumo() {
         const getMedia = (chave) => {
-            const filtrados = obterDadosFiltrados(chave);
+            // Primeiro tenta buscar com o filtro de turno
+            let filtrados = obterDadosBase(chave, true);
+            
+            // Se não achar nada para o turno (ex: Absenteísmo é geral), busca o geral da planta
+            if (filtrados.length === 0) {
+                filtrados = obterDadosBase(chave, false);
+            }
+
             if (!filtrados.length) return "0";
+            
             const soma = filtrados.reduce((acc, curr) => acc + limparNumero(curr['Valor Real'] || curr.Qtd), 0);
             return (soma / filtrados.length).toFixed(1);
         };
+
         document.getElementById('kpi-summary').innerHTML = `
             <div class="kpi-card"><small>Média Absenteísmo</small><div>${getMedia("ABSENTEISMO")}%</div></div>
             <div class="kpi-card"><small>Média Turnover Universal</small><div>${getMedia("UNIVERSAL")}%</div></div>
@@ -117,7 +132,7 @@
 
     function criarGraficoPerformance(itemConfig) {
         const container = document.getElementById('container-graficos');
-        const dados = obterDadosFiltrados(itemConfig.chave);
+        const dados = obterDadosBase(itemConfig.chave, true);
         if (dados.length === 0) return;
 
         const idUnique = Math.random().toString(36).substr(2, 9);
@@ -163,7 +178,7 @@
 
     function criarGraficoConsolidado(titulo, termo) {
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-        const dadosBase = obterDadosFiltrados(termo);
+        const dadosBase = obterDadosBase(termo, true);
         const dMOD = dadosBase.filter(ln => normalizar(ln.Indicador).includes("MOD"));
         const dMOI = dadosBase.filter(ln => normalizar(ln.Indicador).includes("MOI"));
         
@@ -209,12 +224,12 @@
         document.getElementById('container-graficos').innerHTML = "";
         calcularResumo();
         
-        // Performance
+        // Performance Geral
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
         criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "Desligados > 180 Dias / Ativos." });
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
 
-        // Turnover MOD vs MOI
+        // Turnover Detalhado (MOD vs MOI)
         const itensConsolidados = [
             { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
@@ -228,10 +243,10 @@
         ];
         itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
-        // Desenvolvimento
+        // Treinamento
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
-        criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Índice de promoções internas." });
+        criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Índice de promoções." });
     }
 
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {

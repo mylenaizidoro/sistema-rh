@@ -17,11 +17,7 @@
         .card { background: #ffffff; border-radius: 16px; padding: 30px; max-width: 1000px; margin: 25px auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); page-break-inside: avoid; }
         .grid-info { display: grid; grid-template-columns: 1fr 280px; gap: 25px; align-items: center; }
         .info-box { background: #f8fafc; padding: 20px; border-radius: 12px; border-left: 5px solid #0284c7; font-size: 0.9rem; color: #475569; }
-        .info-box.alert { border-left-color: #f43f5e; background: #fff1f2; }
         .info-box b { color: #0284c7; display: block; margin-bottom: 8px; text-transform: uppercase; font-size: 0.8rem; }
-        .info-box.alert b { color: #f43f5e; }
-        h2 { color: #0f172a; margin: 0; font-size: 1.2rem; text-transform: uppercase; font-weight: 700; }
-        .sub { color: #64748b; font-size: 0.85rem; margin-bottom: 25px; }
         .chart-container { position: relative; height: 420px; width: 100%; }
         .controls { text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; align-items: center; }
         .btn { padding: 10px 24px; border: 1px solid #e2e8f0; background: white; color: #475569; border-radius: 8px; cursor: pointer; font-weight: 600; }
@@ -91,19 +87,16 @@
             const nomeInd = normalizar(ln.Indicador);
             const matchProcesso = nomeProc.includes(normalizar(chaveProcesso));
             const matchAno = anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado);
-            
-            // Lógica refinada para filtrar turno tanto no Processo quanto no Indicador (MOI 1º Turno etc)
             let matchTurno = turnoSelecionado === 'TODOS' || 
                              nomeInd.includes(normalizar(turnoSelecionado)) || 
                              nomeProc.includes(normalizar(turnoSelecionado));
-            
             return matchProcesso && matchAno && matchTurno;
         });
     }
 
     function definirCorBarra(valor, meta, itemTipo) {
-        if (turnoSelecionado === '1º TURNO') return '#0284c7'; 
-        if (turnoSelecionado === '3º TURNO') return '#f59e0b'; 
+        if (turnoSelecionado === '1º TURNO') return '#0284c7'; // Azul
+        if (turnoSelecionado === '3º TURNO') return '#f59e0b'; // Amarelo
         let atingiu = (itemTipo === "MENOR_MELHOR") ? (valor <= meta) : (valor >= meta);
         return atingiu ? '#10b981' : '#f43f5e';
     }
@@ -170,11 +163,7 @@
 
     function criarGraficoConsolidado(titulo, termo) {
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-        
-        // Busca dados filtrados pelo termo e ano
         const dadosBase = obterDadosFiltrados(termo);
-        
-        // Separa MOD e MOI (considerando a nova estrutura de texto na coluna Indicador)
         const dMOD = dadosBase.filter(ln => normalizar(ln.Indicador).includes("MOD"));
         const dMOI = dadosBase.filter(ln => normalizar(ln.Indicador).includes("MOI"));
         
@@ -187,7 +176,7 @@
                 <p class="sub">Grupo Coplac | MOD vs MOI</p>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box"><b>DETALHAMENTO</b> Comparativo de mão de obra direta vs indireta para o período selecionado.</div>
+                    <div class="info-box"><b>DETALHAMENTO</b> Comparativo MOD/MOI baseado na planilha.</div>
                 </div>
             </div>`;
         
@@ -195,11 +184,8 @@
             const vMOD = labelsExibicao.map(m => limparNumero(dMOD.find(ln => ln.mes === m)?.['Valor Real'] || dMOD.find(ln => ln.mes === m)?.Qtd));
             const vMOI = labelsExibicao.map(m => limparNumero(dMOI.find(ln => ln.mes === m)?.['Valor Real'] || dMOI.find(ln => ln.mes === m)?.Qtd));
             
-            let corMOD = '#334155'; 
-            let corMOI = '#94a3b8'; 
-
-            if (turnoSelecionado === '1º TURNO') corMOD = '#0284c7';
-            if (turnoSelecionado === '3º TURNO') corMOD = '#f59e0b';
+            let corMOD = (turnoSelecionado === '1º TURNO') ? '#0284c7' : (turnoSelecionado === '3º TURNO' ? '#f59e0b' : '#334155');
+            let corMOI = '#94a3b8';
 
             new Chart(document.getElementById(`chart-${idUnique}`), {
                 type: 'bar',
@@ -228,23 +214,24 @@
         criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "Desligados > 180 Dias / Ativos." });
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
 
-        // MOD vs MOI Consolidados
-        const itensSolicitacao = [
+        // Turnover MOD vs MOI
+        const itensConsolidados = [
             { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
-            { t: "PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - SOLICITAÇÃO GERAL NO MÊS" }
-        ];
-        itensSolicitacao.forEach(i => criarGraficoConsolidado(i.h, i.t));
-
-        const itensIniciativa = [
+            { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
+            { t: "PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - SOLICITAÇÃO GERAL NO MÊS" },
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", h: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS" },
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS" }
         ];
-        itensIniciativa.forEach(i => criarGraficoConsolidado(i.h, i.t));
+        itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
-        // Treinamento e Valorização
+        // Desenvolvimento
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
-        criarGraficoPerformance({ chave: "RETENÇÃO PLANO DE VALORIZAÇÃO INTERNA", titulo: "VALORIZAÇÃO INTERNA", tipo: "MAIOR_MELHOR", nota: "Índice de promoções." });
+        criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Índice de promoções internas." });
     }
 
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {

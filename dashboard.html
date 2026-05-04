@@ -2,51 +2,76 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard RH - Grupo Coplac</title>
+    <title>DHO Dashboard - Coplac</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
-        body { background-color: #f1f5f9; color: #1e293b; font-family: 'Segoe UI', system-ui, sans-serif; padding: 20px; }
-        .header-container { max-width: 1100px; margin: auto; }
-        h1 { color: #0f172a; font-weight: 800; text-align: center; margin-bottom: 20px; text-transform: uppercase; letter-spacing: -0.5px; }
-        .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
-        .kpi-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .kpi-card small { color: #64748b; font-size: 0.75rem; text-transform: uppercase; font-weight: 600; }
-        .kpi-card div { font-size: 1.8rem; font-weight: 700; color: #0284c7; margin-top: 5px; }
-        .card { background: #ffffff; border-radius: 16px; padding: 30px; max-width: 1000px; margin: 25px auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); page-break-inside: avoid; }
-        .grid-info { display: grid; grid-template-columns: 1fr 280px; gap: 25px; align-items: center; }
-        .info-box { background: #f8fafc; padding: 20px; border-radius: 12px; border-left: 5px solid #0284c7; font-size: 0.9rem; color: #475569; }
-        .info-box b { color: #0284c7; display: block; margin-bottom: 8px; text-transform: uppercase; font-size: 0.8rem; }
-        .chart-container { position: relative; height: 420px; width: 100%; }
-        .controls { text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; align-items: center; }
-        .btn { padding: 10px 24px; border: 1px solid #e2e8f0; background: white; color: #475569; border-radius: 8px; cursor: pointer; font-weight: 600; }
-        .btn.active { background: #0284c7; color: white; border-color: #0284c7; }
-        .select-turno { padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; font-weight: 600; color: #475569; cursor: pointer; }
-        .btn-pdf { background: #0f172a; color: white; }
-        @media print { .controls, .btn, .select-turno { display: none !important; } }
+        :root {
+            --primary: #0284c7;
+            --secondary: #0f172a;
+            --success: #10b981;
+            --danger: #f43f5e;
+            --warning: #f59e0b;
+            --bg: #f8fafc;
+        }
+        body { background-color: var(--bg); color: #1e293b; font-family: 'Inter', system-ui, -apple-system, sans-serif; padding: 20px; margin: 0; }
+        .header-container { max-width: 1200px; margin: auto; padding: 20px 0; }
+        h1 { color: var(--secondary); font-weight: 800; text-align: center; margin-bottom: 30px; text-transform: uppercase; font-size: 1.8rem; }
+        
+        /* KPI Cards */
+        .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 40px; }
+        .kpi-card { background: white; padding: 25px; border-radius: 16px; border: 1px solid #e2e8f0; text-align: center; transition: transform 0.2s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .kpi-card:hover { transform: translateY(-5px); }
+        .kpi-card small { color: #64748b; font-size: 0.8rem; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 10px; }
+        .kpi-card div { font-size: 2.2rem; font-weight: 800; color: var(--primary); }
+
+        /* Section Titles */
+        .section-title { max-width: 1100px; margin: 40px auto 10px; padding-left: 10px; border-left: 4px solid var(--primary); color: var(--secondary); text-transform: uppercase; font-size: 1rem; font-weight: 800; }
+
+        /* Charts */
+        .card { background: #ffffff; border-radius: 20px; padding: 30px; max-width: 1100px; margin: 20px auto; border: 1px solid #e2e8f0; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); }
+        .grid-info { display: grid; grid-template-columns: 1fr 300px; gap: 30px; }
+        .info-box { background: #f1f5f9; padding: 20px; border-radius: 12px; font-size: 0.9rem; line-height: 1.6; color: #475569; align-self: center; }
+        .info-box b { color: var(--secondary); display: block; margin-bottom: 5px; }
+        .chart-container { position: relative; height: 380px; width: 100%; }
+
+        /* Controls */
+        .controls { background: white; padding: 15px; border-radius: 50px; display: inline-flex; gap: 10px; margin-bottom: 30px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+        .btn { padding: 8px 20px; border: none; background: transparent; color: #64748b; border-radius: 40px; cursor: pointer; font-weight: 600; transition: 0.3s; }
+        .btn.active { background: var(--primary); color: white; }
+        .select-turno { padding: 8px 15px; border-radius: 40px; border: 1px solid #e2e8f0; font-weight: 600; color: #475569; outline: none; }
+        .btn-pdf { background: var(--secondary); color: white; margin-left: 10px; }
+
+        @media (max-width: 900px) { .grid-info { grid-template-columns: 1fr; } .controls { border-radius: 15px; width: 100%; justify-content: center; } }
+        @media print { .controls, .btn-pdf { display: none !important; } .card { box-shadow: none; border: 1px solid #eee; } }
     </style>
 </head>
 <body>
 
-    <div class="header-container">
-        <h1>GESTÃO DE INDICADORES - DHO CURITIBA</h1>
+    <div class="header-container" style="text-align: center;">
+        <h1>Dashboard Estratégico DHO - Curitiba</h1>
+        
         <div class="controls">
-            <button class="btn active" onclick="filtrarAno('TODOS', this)">Ver Todos</button>
+            <button class="btn active" onclick="filtrarAno('TODOS', this)">Todos</button>
             <button class="btn" onclick="filtrarAno('2025', this)">2025</button>
             <button class="btn" onclick="filtrarAno('2026', this)">2026</button>
+            <div style="width: 1px; background: #e2e8f0; height: 25px; margin: 0 5px;"></div>
             <select id="selectTurno" class="select-turno" onchange="filtrarTurno()">
-                <option value="TODOS">Todos os Turnos</option>
+                <option value="TODOS">Geral Planta</option>
                 <option value="1º TURNO">1º Turno</option>
                 <option value="2º TURNO">2º Turno</option>
                 <option value="3º TURNO">3º Turno</option>
             </select>
-            <button class="btn btn-pdf" onclick="window.print()">Exportar PDF</button>
+            <button class="btn btn-pdf" onclick="window.print()">Gerar PDF</button>
         </div>
+
         <div id="kpi-summary" class="kpi-row"></div>
     </div>
 
-    <div id="container-graficos"></div>
+    <div id="main-content">
+        <!-- Os gráficos serão injetados aqui -->
+    </div>
 
 <script>
     Chart.register(ChartDataLabels);
@@ -62,8 +87,7 @@
 
     function limparNumero(v) {
         if (!v || v.toString().trim() === "") return 0;
-        let num = v.toString().replace(/\s/g, '').replace(',', '.').replace('%', '');
-        return parseFloat(num) || 0;
+        return parseFloat(v.toString().replace(/\s/g, '').replace(',', '.').replace('%', '')) || 0;
     }
 
     function normalizar(txt) {
@@ -82,171 +106,133 @@
         renderizarDashboard();
     }
 
-    // Função de busca que ignora o turno se solicitado (usada nas médias do topo)
-    function obterDadosBase(chaveProcesso, aplicarTurno = true) {
+    function obterDadosBase(chave, aplicarTurno = true) {
         return dadosGlobais.filter(ln => {
-            const nomeProc = normalizar(ln.Processo);
-            const nomeInd = normalizar(ln.Indicador);
-            const matchProcesso = nomeProc.includes(normalizar(chaveProcesso));
+            const nProc = normalizar(ln.Processo);
+            const nInd = normalizar(ln.Indicador);
+            const matchChave = nProc.includes(normalizar(chave));
             const matchAno = anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado);
-            
-            let matchTurno = true;
+            let matchT = true;
             if (aplicarTurno && turnoSelecionado !== 'TODOS') {
-                matchTurno = nomeInd.includes(normalizar(turnoSelecionado)) || 
-                             nomeProc.includes(normalizar(turnoSelecionado));
+                matchT = nInd.includes(normalizar(turnoSelecionado)) || nProc.includes(normalizar(turnoSelecionado));
             }
-            
-            return matchProcesso && matchAno && matchTurno;
+            return matchChave && matchAno && matchT;
         });
-    }
-
-    function definirCorBarra(valor, meta, itemTipo) {
-        if (turnoSelecionado === '1º TURNO') return '#0284c7'; 
-        if (turnoSelecionado === '3º TURNO') return '#f59e0b'; 
-        let atingiu = (itemTipo === "MENOR_MELHOR") ? (valor <= meta) : (valor >= meta);
-        return atingiu ? '#10b981' : '#f43f5e';
     }
 
     function calcularResumo() {
         const getMedia = (chave) => {
-            // Primeiro tenta buscar com o filtro de turno
             let filtrados = obterDadosBase(chave, true);
-            
-            // Se não achar nada para o turno (ex: Absenteísmo é geral), busca o geral da planta
-            if (filtrados.length === 0) {
-                filtrados = obterDadosBase(chave, false);
-            }
-
-            if (!filtrados.length) return "0";
-            
+            if (filtrados.length === 0) filtrados = obterDadosBase(chave, false);
+            if (!filtrados.length) return "0.0";
             const soma = filtrados.reduce((acc, curr) => acc + limparNumero(curr['Valor Real'] || curr.Qtd), 0);
             return (soma / filtrados.length).toFixed(1);
         };
-
         document.getElementById('kpi-summary').innerHTML = `
-            <div class="kpi-card"><small>Média Absenteísmo</small><div>${getMedia("ABSENTEISMO")}%</div></div>
-            <div class="kpi-card"><small>Média Turnover Universal</small><div>${getMedia("UNIVERSAL")}%</div></div>
-            <div class="kpi-card"><small>Total Horas Treinamento</small><div>${getMedia("HORAS DE TREINAMENTO")}h</div></div>
+            <div class="kpi-card"><small>Absenteísmo Médio</small><div>${getMedia("ABSENTEISMO")}%</div></div>
+            <div class="kpi-card"><small>Turnover Universal</small><div>${getMedia("UNIVERSAL")}%</div></div>
+            <div class="kpi-card"><small>Horas Treinamento</small><div>${getMedia("HORAS DE TREINAMENTO")}h</div></div>
             <div class="kpi-card"><small>Aprovação Média</small><div>${getMedia("APROVADOS EM TREINAMENTO")}%</div></div>`;
     }
 
-    function criarGraficoPerformance(itemConfig) {
-        const container = document.getElementById('container-graficos');
-        const dados = obterDadosBase(itemConfig.chave, true);
+    function criarGrafico(item) {
+        const dados = obterDadosBase(item.chave, true);
         if (dados.length === 0) return;
 
-        const idUnique = Math.random().toString(36).substr(2, 9);
+        const id = 'chart-' + Math.random().toString(36).substr(2, 9);
+        const container = document.getElementById('main-content');
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-        const exibirPct = ["ABSENTEISMO", "TURNOVER", "UNIVERSAL", "APROVADOS", "RETENÇÃO"].some(t => itemConfig.chave.includes(t));
-
+        
         container.innerHTML += `
             <div class="card">
-                <h2>${itemConfig.titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
-                <p class="sub">Grupo Coplac | Performance</p>
+                <div style="margin-bottom: 20px;">
+                    <h2 style="margin:0; font-size: 1.2rem; color: #0f172a;">${item.titulo}</h2>
+                    <small style="color: #64748b;">Turno: ${turnoSelecionado}</small>
+                </div>
                 <div class="grid-info">
-                    <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box"><b>DETALHAMENTO</b> ${itemConfig.nota}</div>
+                    <div class="chart-container"><canvas id="${id}"></canvas></div>
+                    <div class="info-box"><b>ANÁLISE</b> ${item.nota}</div>
                 </div>
             </div>`;
         
         setTimeout(() => {
+            const ctx = document.getElementById(id).getContext('2d');
             const metas = labelsExibicao.map(m => limparNumero(dados.find(ln => ln.mes === m)?.Objetivo));
-            const dFinal = labelsExibicao.map(mes => {
-                const r = dados.find(ln => ln.mes === mes);
-                const valor = r ? limparNumero(r['Valor Real'] || r.Qtd) : null;
-                return valor === 0 ? null : valor;
+            const realizados = labelsExibicao.map(m => {
+                const r = dados.find(ln => ln.mes === m);
+                return r ? limparNumero(r['Valor Real'] || r.Qtd) : null;
             });
 
-            const corBarras = dFinal.map((valor, idx) => definirCorBarra(valor, metas[idx], itemConfig.tipo));
-
-            new Chart(document.getElementById(`chart-${idUnique}`), {
+            new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labelsExibicao,
                     datasets: [
-                        { label: 'Realizado', data: dFinal, backgroundColor: corBarras, borderRadius: 6 },
-                        { label: 'Meta', data: metas, type: 'line', borderColor: '#475569', borderWidth: 2, borderDash: [5, 5], fill: false, datalabels: { display: false } }
+                        { label: 'Realizado', data: realizados, backgroundColor: turnoSelecionado === '3º TURNO' ? '#f59e0b' : '#0284c7', borderRadius: 8 },
+                        { label: 'Meta', data: metas, type: 'line', borderColor: '#ef4444', borderDash: [5, 5], fill: false, datalabels: { display: false } }
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { datalabels: { anchor: 'end', align: 'top', formatter: (v) => v ? v + (exibirPct ? '%' : '') : '', font: { weight: 'bold' }, rotation: -90 } }
+                    plugins: { datalabels: { anchor: 'end', align: 'top', font: { weight: 'bold' } } },
+                    scales: { y: { beginAtZero: true, grid: { display: false } } }
                 }
             });
-        }, 150);
+        }, 100);
     }
 
-    function criarGraficoConsolidado(titulo, termo) {
-        const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
+    function criarGraficoMODMOI(titulo, termo) {
         const dadosBase = obterDadosBase(termo, true);
+        const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
         const dMOD = dadosBase.filter(ln => normalizar(ln.Indicador).includes("MOD"));
         const dMOI = dadosBase.filter(ln => normalizar(ln.Indicador).includes("MOI"));
-        
         if (dMOD.length === 0 && dMOI.length === 0) return;
 
-        const idUnique = Math.random().toString(36).substr(2, 9);
-        document.getElementById('container-graficos').innerHTML += `
+        const id = 'chart-' + Math.random().toString(36).substr(2, 9);
+        document.getElementById('main-content').innerHTML += `
             <div class="card">
-                <h2>${titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
-                <p class="sub">Grupo Coplac | MOD vs MOI</p>
-                <div class="grid-info">
-                    <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box"><b>DETALHAMENTO</b> Comparativo MOD/MOI baseado na planilha.</div>
-                </div>
+                <h2 style="margin:0 0 20px; font-size: 1.2rem;">${titulo} (MOD vs MOI)</h2>
+                <div class="chart-container"><canvas id="${id}"></canvas></div>
             </div>`;
-        
-        setTimeout(() => {
-            const vMOD = labelsExibicao.map(m => limparNumero(dMOD.find(ln => ln.mes === m)?.['Valor Real'] || dMOD.find(ln => ln.mes === m)?.Qtd));
-            const vMOI = labelsExibicao.map(m => limparNumero(dMOI.find(ln => ln.mes === m)?.['Valor Real'] || dMOI.find(ln => ln.mes === m)?.Qtd));
-            
-            let corMOD = (turnoSelecionado === '1º TURNO') ? '#0284c7' : (turnoSelecionado === '3º TURNO' ? '#f59e0b' : '#334155');
-            let corMOI = '#94a3b8';
 
-            new Chart(document.getElementById(`chart-${idUnique}`), {
+        setTimeout(() => {
+            const vMOD = labelsExibicao.map(m => limparNumero(dMOD.find(ln => ln.mes === m)?.Qtd || dMOD.find(ln => ln.mes === m)?.['Valor Real']));
+            const vMOI = labelsExibicao.map(m => limparNumero(dMOI.find(ln => ln.mes === m)?.Qtd || dMOI.find(ln => ln.mes === m)?.['Valor Real']));
+            new Chart(document.getElementById(id), {
                 type: 'bar',
                 data: {
                     labels: labelsExibicao,
                     datasets: [
-                        { label: 'MOI', data: vMOI, backgroundColor: corMOI, stack: 's1' },
-                        { label: 'MOD', data: vMOD, backgroundColor: corMOD, stack: 's1' }
+                        { label: 'Indireto (MOI)', data: vMOI, backgroundColor: '#94a3b8' },
+                        { label: 'Direto (MOD)', data: vMOD, backgroundColor: '#334155' }
                     ]
                 },
-                options: { 
-                    responsive: true, maintainAspectRatio: false, 
-                    plugins: { datalabels: { color: '#fff', formatter: (v) => v > 0 ? v : '' } },
-                    scales: { x: { stacked: true }, y: { stacked: true } } 
-                }
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
             });
-        }, 150);
+        }, 100);
     }
 
     function renderizarDashboard() {
-        document.getElementById('container-graficos').innerHTML = "";
+        document.getElementById('main-content').innerHTML = "";
         calcularResumo();
         
-        // Performance Geral
-        criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
-        criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "Desligados > 180 Dias / Ativos." });
-        criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
+        // Seção Performance
+        document.getElementById('main-content').innerHTML += `<div class="section-title">Indicadores de Absenteísmo e Turnover</div>`;
+        criarGrafico({ chave: "ABSENTEISMO", titulo: "Absenteísmo PA-03", nota: "Acompanhamento de faltas e atrasos programados." });
+        criarGrafico({ chave: "TURNOVER PA", titulo: "Turnover > 180 Dias", nota: "Índice de rotatividade de colaboradores estáveis." });
+        criarGrafico({ chave: "UNIVERSAL", titulo: "Turnover Cálculo Universal", nota: "Média entre admissões e desligamentos sobre o total de ativos." });
 
-        // Turnover Detalhado (MOD vs MOI)
-        const itensConsolidados = [
-            { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
-            { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
-            { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
-            { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
-            { t: "PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - SOLICITAÇÃO GERAL NO MÊS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", h: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS" }
-        ];
-        itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
+        // Seção Movimentação
+        document.getElementById('main-content').innerHTML += `<div class="section-title">Movimentação de Pessoal (Desligamentos)</div>`;
+        criarGraficoMODMOI("Solicitação de Desligamento < 15 Dias", "SOLICITACAO DE DESLIGAMENTO ATE 15");
+        criarGraficoMODMOI("Pedidos de Desligamento no Mês", "PEDIDOS DE DESLIGAMENTO MES");
+        criarGraficoMODMOI("Iniciativa Empresa no Mês", "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes");
 
-        // Treinamento
-        criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
-        criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
-        criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Índice de promoções." });
+        // Seção Desenvolvimento
+        document.getElementById('main-content').innerHTML += `<div class="section-title">Desenvolvimento e Retenção</div>`;
+        criarGrafico({ chave: "HORAS DE TREINAMENTO", titulo: "Horas de Treinamento", nota: "Foco no desenvolvimento de competências técnicas." });
+        criarGrafico({ chave: "APROVADOS EM TREINAMENTO", titulo: "Taxa de Aprovação", nota: "Qualidade e aproveitamento das capacitações." });
+        criarGrafico({ chave: "RETENÇÃO", titulo: "Retenção / Valorização Interna", nota: "Métricas de crescimento e promoções internas." });
     }
 
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {

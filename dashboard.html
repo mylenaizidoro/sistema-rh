@@ -15,38 +15,69 @@
         .kpi-card small { color: #64748b; font-size: 0.75rem; text-transform: uppercase; font-weight: 600; }
         .kpi-card div { font-size: 1.8rem; font-weight: 700; color: #0284c7; margin-top: 5px; }
         .card { background: #ffffff; border-radius: 16px; padding: 30px; max-width: 1000px; margin: 25px auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); page-break-inside: avoid; }
+        
+        /* Ajustes para o cabeçalho do card com botão */
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        .card-header h2 { margin: 0; padding: 0; }
+        .sub { color: #64748b; font-size: 0.85rem; margin-top: 4px; }
+
         .grid-info { display: grid; grid-template-columns: 1fr 280px; gap: 25px; align-items: center; }
         .info-box { background: #f8fafc; padding: 20px; border-radius: 12px; border-left: 5px solid #0284c7; font-size: 0.9rem; color: #475569; }
         .info-box b { color: #0284c7; display: block; margin-bottom: 8px; text-transform: uppercase; font-size: 0.8rem; }
         .chart-container { position: relative; height: 420px; width: 100%; }
+        
         .controls { text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; align-items: center; }
         .btn { padding: 10px 24px; border: 1px solid #e2e8f0; background: white; color: #475569; border-radius: 8px; cursor: pointer; font-weight: 600; }
         .btn.active { background: #0284c7; color: white; border-color: #0284c7; }
+        
+        /* Botão Plano de Ação */
+        .btn-acao { background: transparent; color: #0284c7; border: 2px solid #0284c7; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; transition: 0.2s; }
+        .btn-acao:hover { background: #0284c7; color: white; }
+        
         .select-turno { padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; font-weight: 600; color: #475569; cursor: pointer; }
         .btn-pdf { background: #0f172a; color: white; }
-        @media print { .controls, .btn, .select-turno { display: none !important; } }
+        
+        .hidden { display: none !important; }
+
+        @media print { .controls, .btn, .select-turno, .btn-acao { display: none !important; } }
     </style>
 </head>
 <body>
 
-    <div class="header-container">
-        <h1>GESTÃO DE INDICADORES - DHO CURITIBA</h1>
-        <div class="controls">
-            <button class="btn active" onclick="filtrarAno('TODOS', this)">Ver Todos</button>
-            <button class="btn" onclick="filtrarAno('2025', this)">2025</button>
-            <button class="btn" onclick="filtrarAno('2026', this)">2026</button>
-            <select id="selectTurno" class="select-turno" onchange="filtrarTurno()">
-                <option value="TODOS">Todos os Turnos</option>
-                <option value="1º TURNO">1º Turno</option>
-                <option value="2º TURNO">2º Turno</option>
-                <option value="3º TURNO">3º Turno</option>
-            </select>
-            <button class="btn btn-pdf" onclick="window.print()">Exportar PDF</button>
+    <!-- TELA PRINCIPAL (DASHBOARD) -->
+    <div id="tela-dashboard">
+        <div class="header-container">
+            <h1>GESTÃO DE INDICADORES - DHO CURITIBA</h1>
+            <div class="controls">
+                <button class="btn active" onclick="filtrarAno('TODOS', this)">Ver Todos</button>
+                <button class="btn" onclick="filtrarAno('2025', this)">2025</button>
+                <button class="btn" onclick="filtrarAno('2026', this)">2026</button>
+                <select id="selectTurno" class="select-turno" onchange="filtrarTurno()">
+                    <option value="TODOS">Todos os Turnos</option>
+                    <option value="1º TURNO">1º Turno</option>
+                    <option value="2º TURNO">2º Turno</option>
+                    <option value="3º TURNO">3º Turno</option>
+                </select>
+                <button class="btn btn-pdf" onclick="window.print()">Exportar PDF</button>
+            </div>
+            <div id="kpi-summary" class="kpi-row"></div>
         </div>
-        <div id="kpi-summary" class="kpi-row"></div>
+        <div id="container-graficos"></div>
     </div>
 
-    <div id="container-graficos"></div>
+    <!-- TELA PLANO DE AÇÃO -->
+    <div id="tela-plano-acao" class="hidden">
+        <div class="header-container">
+            <button class="btn" onclick="voltarDashboard()" style="margin-top: 20px;">← Voltar ao Dashboard</button>
+            <div class="card" style="margin-top: 20px;">
+                <h1 id="titulo-plano" style="text-align: left;">PLANO DE AÇÃO</h1>
+                <p>Detalhamento de causas e contramedidas para a melhoria do indicador.</p>
+                <div style="margin-top: 30px; padding: 50px; border: 2px dashed #cbd5e1; border-radius: 12px; text-align: center; color: #64748b;">
+                    Área reservada para o formulário de Plano de Ação (5W2H) ou link de integração.
+                </div>
+            </div>
+        </div>
+    </div>
 
 <script>
     Chart.register(ChartDataLabels);
@@ -70,6 +101,19 @@
         return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
     }
 
+    // Funções de Navegação
+    function irParaPlanoAcao(titulo) {
+        document.getElementById('tela-dashboard').classList.add('hidden');
+        document.getElementById('tela-plano-acao').classList.remove('hidden');
+        document.getElementById('titulo-plano').innerText = "PLANO DE AÇÃO - " + titulo;
+        window.scrollTo(0, 0);
+    }
+
+    function voltarDashboard() {
+        document.getElementById('tela-plano-acao').classList.add('hidden');
+        document.getElementById('tela-dashboard').classList.remove('hidden');
+    }
+
     function filtrarAno(ano, btn) {
         anoSelecionado = ano;
         document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
@@ -82,7 +126,6 @@
         renderizarDashboard();
     }
 
-    // Função de busca que ignora o turno se solicitado (usada nas médias do topo)
     function obterDadosBase(chaveProcesso, aplicarTurno = true) {
         return dadosGlobais.filter(ln => {
             const nomeProc = normalizar(ln.Processo);
@@ -95,7 +138,6 @@
                 matchTurno = nomeInd.includes(normalizar(turnoSelecionado)) || 
                              nomeProc.includes(normalizar(turnoSelecionado));
             }
-            
             return matchProcesso && matchAno && matchTurno;
         });
     }
@@ -109,16 +151,9 @@
 
     function calcularResumo() {
         const getMedia = (chave) => {
-            // Primeiro tenta buscar com o filtro de turno
             let filtrados = obterDadosBase(chave, true);
-            
-            // Se não achar nada para o turno (ex: Absenteísmo é geral), busca o geral da planta
-            if (filtrados.length === 0) {
-                filtrados = obterDadosBase(chave, false);
-            }
-
+            if (filtrados.length === 0) filtrados = obterDadosBase(chave, false);
             if (!filtrados.length) return "0";
-            
             const soma = filtrados.reduce((acc, curr) => acc + limparNumero(curr['Valor Real'] || curr.Qtd), 0);
             return (soma / filtrados.length).toFixed(1);
         };
@@ -141,8 +176,13 @@
 
         container.innerHTML += `
             <div class="card">
-                <h2>${itemConfig.titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
-                <p class="sub">Grupo Coplac | Performance</p>
+                <div class="card-header">
+                    <div>
+                        <h2>${itemConfig.titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
+                        <p class="sub">Grupo Coplac | Performance</p>
+                    </div>
+                    <button class="btn-acao" onclick="irParaPlanoAcao('${itemConfig.titulo}')">Plano de Ação</button>
+                </div>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
                     <div class="info-box"><b>DETALHAMENTO</b> ${itemConfig.nota}</div>
@@ -156,7 +196,6 @@
                 const valor = r ? limparNumero(r['Valor Real'] || r.Qtd) : null;
                 return valor === 0 ? null : valor;
             });
-
             const corBarras = dFinal.map((valor, idx) => definirCorBarra(valor, metas[idx], itemConfig.tipo));
 
             new Chart(document.getElementById(`chart-${idUnique}`), {
@@ -187,8 +226,13 @@
         const idUnique = Math.random().toString(36).substr(2, 9);
         document.getElementById('container-graficos').innerHTML += `
             <div class="card">
-                <h2>${titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
-                <p class="sub">Grupo Coplac | MOD vs MOI</p>
+                <div class="card-header">
+                    <div>
+                        <h2>${titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
+                        <p class="sub">Grupo Coplac | MOD vs MOI</p>
+                    </div>
+                    <button class="btn-acao" onclick="irParaPlanoAcao('${titulo}')">Plano de Ação</button>
+                </div>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
                     <div class="info-box"><b>DETALHAMENTO</b> Comparativo MOD/MOI baseado na planilha.</div>
@@ -198,7 +242,6 @@
         setTimeout(() => {
             const vMOD = labelsExibicao.map(m => limparNumero(dMOD.find(ln => ln.mes === m)?.['Valor Real'] || dMOD.find(ln => ln.mes === m)?.Qtd));
             const vMOI = labelsExibicao.map(m => limparNumero(dMOI.find(ln => ln.mes === m)?.['Valor Real'] || dMOI.find(ln => ln.mes === m)?.Qtd));
-            
             let corMOD = (turnoSelecionado === '1º TURNO') ? '#0284c7' : (turnoSelecionado === '3º TURNO' ? '#f59e0b' : '#334155');
             let corMOI = '#94a3b8';
 
@@ -224,12 +267,10 @@
         document.getElementById('container-graficos').innerHTML = "";
         calcularResumo();
         
-        // Performance Geral
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
         criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "Desligados > 180 Dias / Ativos." });
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
 
-        // Turnover Detalhado (MOD vs MOI)
         const itensConsolidados = [
             { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
@@ -243,7 +284,6 @@
         ];
         itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
-        // Treinamento
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
         criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Índice de promoções." });

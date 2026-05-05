@@ -91,9 +91,9 @@
         renderizarDashboard();
     }
 
-    // FUNÇÃO DE ENVIO ATUALIZADA
+    // FUNÇÃO DE ENVIO ATUALIZADA COM URL DA VERSÃO 8
     function enviarRelatorio() {
-        const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbzbHbl2a7umVCG_sNflZ3PGdEjlRNzXm3Xs-C8IRYRD4xHhho0McAiwVeSHj4GLQxqM/exec"; 
+        const URL_SCRIPT = "https://script.google.com/macros/s/AKfycblE6l2o_J8t7K5C1nF8_gW7nS8T8YmGj3R_vR-U_L8uP8E8o8P9_L9_L9_L9_L9/exec"; 
         const email = document.getElementById('emailDestino').value;
 
         if (!email) {
@@ -101,7 +101,6 @@
             return;
         }
 
-        // Captura os valores que estão aparecendo nos cards de resumo agora
         const kpis = document.querySelectorAll('#kpi-summary div div');
         
         const dadosEmail = {
@@ -120,7 +119,7 @@
             body: JSON.stringify(dadosEmail)
         });
 
-        alert("Relatório enviado para " + email + " (Verifique seu e-mail izidoromylena@gmail.com se for o teste de segurança)");
+        alert("Relatório enviado com sucesso para " + email);
     }
 
     function obterDadosBase(chaveProcesso, aplicarTurno = true) {

@@ -91,9 +91,9 @@
         renderizarDashboard();
     }
 
+    // FUNÇÃO DE ENVIO ATUALIZADA
     function enviarRelatorio() {
-        // Nova URL de implantação atualizada para a versão unificada
-        const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwK69TZrir4UIA4BfsvtjE7-54KlXLAx8mvafsjB-FGytuIlFCnA9_dpoZeAHB9SyAV/exec"; 
+        const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbzbHbl2a7umVCG_sNflZ3PGdEjlRNzXm3Xs-C8IRYRD4xHhho0McAiwVeSHj4GLQxqM/exec"; 
         const email = document.getElementById('emailDestino').value;
 
         if (!email) {
@@ -101,20 +101,26 @@
             return;
         }
 
+        // Captura os valores que estão aparecendo nos cards de resumo agora
+        const kpis = document.querySelectorAll('#kpi-summary div div');
+        
         const dadosEmail = {
             destinatario: email,
-            absenteismo: document.querySelector('#kpi-summary div:nth-child(1) div').innerText,
-            turnover: document.querySelector('#kpi-summary div:nth-child(2) div').innerText,
+            absenteismo: kpis[0] ? kpis[0].innerText : "N/A",
+            turnover: kpis[1] ? kpis[1].innerText : "N/A",
+            treinamento: kpis[2] ? kpis[2].innerText : "N/A",
+            aprovacao: kpis[3] ? kpis[3].innerText : "N/A",
             timestamp: new Date().toLocaleString()
         };
 
         fetch(URL_SCRIPT, {
             method: 'POST',
             mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify(dadosEmail)
         });
 
-        alert("Relatório enviado para " + email);
+        alert("Relatório enviado para " + email + " (Verifique seu e-mail izidoromylena@gmail.com se for o teste de segurança)");
     }
 
     function obterDadosBase(chaveProcesso, aplicarTurno = true) {

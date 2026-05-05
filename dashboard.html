@@ -91,8 +91,9 @@
         renderizarDashboard();
     }
 
-    // FUNÇÃO DE ENVIO ATUALIZADA COM URL DA VERSÃO 8
+    // FUNÇÃO DE ENVIO ATUALIZADA
     function enviarRelatorio() {
+        // Importante: Substitua pela sua URL final do Apps Script após a nova implantação
         const URL_SCRIPT = "https://script.google.com/macros/s/AKfycblE6l2o_J8t7K5C1nF8_gW7nS8T8YmGj3R_vR-U_L8uP8E8o8P9_L9_L9_L9_L9/exec"; 
         const email = document.getElementById('emailDestino').value;
 
@@ -101,7 +102,7 @@
             return;
         }
 
-        const kpis = document.querySelectorAll('#kpi-summary div div');
+        const kpis = document.querySelectorAll('#kpi-summary .kpi-card div');
         
         const dadosEmail = {
             destinatario: email,
@@ -114,12 +115,12 @@
 
         fetch(URL_SCRIPT, {
             method: 'POST',
-            mode: 'no-cors',
+            mode: 'no-cors', 
             headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify(dadosEmail)
         });
 
-        alert("Relatório enviado com sucesso para " + email);
+        alert("Solicitação de envio disparada para: " + email);
     }
 
     function obterDadosBase(chaveProcesso, aplicarTurno = true) {

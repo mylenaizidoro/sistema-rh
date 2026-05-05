@@ -16,28 +16,26 @@
         .kpi-card div { font-size: 1.8rem; font-weight: 700; color: #0284c7; margin-top: 5px; }
         .card { background: #ffffff; border-radius: 16px; padding: 30px; max-width: 1000px; margin: 25px auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); page-break-inside: avoid; }
         
-        /* Melhoria de Layout para Título e Botão */
-        .title-wrapper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-        .title-wrapper h2 { margin: 0; font-size: 1.4rem; }
+        .title-wrapper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .title-wrapper h2 { margin: 0; font-size: 1.3rem; color: #0f172a; }
         
         .btn-acao { 
-            background: #ffffff; color: #0284c7; border: 1px solid #0284c7; 
-            padding: 8px 16px; border-radius: 8px; text-decoration: none; 
-            font-size: 0.7rem; font-weight: 700; transition: all 0.3s;
-            text-transform: uppercase;
+            background: #0284c7; color: white; border: none; 
+            padding: 8px 16px; border-radius: 8px; cursor: pointer;
+            font-size: 0.75rem; font-weight: 700; transition: background 0.3s;
+            text-transform: uppercase; text-decoration: none;
         }
-        .btn-acao:hover { background: #0284c7; color: white; }
+        .btn-acao:hover { background: #0369a1; }
 
         .grid-info { display: grid; grid-template-columns: 1fr 280px; gap: 25px; align-items: center; }
         .info-box { background: #f8fafc; padding: 20px; border-radius: 12px; border-left: 5px solid #0284c7; font-size: 0.9rem; color: #475569; }
         .info-box b { color: #0284c7; display: block; margin-bottom: 8px; text-transform: uppercase; font-size: 0.8rem; }
-        .chart-container { position: relative; height: 420px; width: 100%; }
-        .controls { text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .chart-container { position: relative; height: 400px; width: 100%; }
+        .controls { text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
         .btn { padding: 10px 24px; border: 1px solid #e2e8f0; background: white; color: #475569; border-radius: 8px; cursor: pointer; font-weight: 600; }
         .btn.active { background: #0284c7; color: white; border-color: #0284c7; }
-        .select-turno { padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; font-weight: 600; color: #475569; cursor: pointer; }
-        .btn-pdf { background: #0f172a; color: white; }
-        @media print { .controls, .btn, .select-turno, .btn-acao { display: none !important; } }
+        .select-turno { padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; font-weight: 600; color: #475569; }
+        @media print { .controls, .btn-acao { display: none !important; } }
     </style>
 </head>
 <body>
@@ -54,7 +52,7 @@
                 <option value="2º TURNO">2º Turno</option>
                 <option value="3º TURNO">3º Turno</option>
             </select>
-            <button class="btn btn-pdf" onclick="window.print()">Exportar PDF</button>
+            <button class="btn" style="background:#0f172a; color:white" onclick="window.print()">Exportar PDF</button>
         </div>
         <div id="kpi-summary" class="kpi-row"></div>
     </div>
@@ -65,13 +63,9 @@
     Chart.register(ChartDataLabels);
     const planilhaDrive = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
     
-    // Altere para o link real da sua página de Plano de Ação
-    const urlPlanoAcao = "#"; 
-
     let dadosGlobais = [];
     let anoSelecionado = 'TODOS';
     let turnoSelecionado = 'TODOS';
-
     const labelsTodos = [];
     for(let m=1; m<=12; m++) labelsTodos.push(`${m.toString().padStart(2,'0')}/2025`);
     for(let m=1; m<=12; m++) labelsTodos.push(`${m.toString().padStart(2,'0')}/2026`);
@@ -84,6 +78,37 @@
 
     function normalizar(txt) {
         return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
+    }
+
+    // FUNÇÃO QUE ABRE A PÁGINA DE PLANO DE AÇÃO
+    function abrirPlanoAcao(indicador) {
+        const novaJanela = window.open("", "_blank");
+        novaJanela.document.write(`
+            <html>
+            <head>
+                <title>Plano de Ação - ${indicador}</title>
+                <style>
+                    body { font-family: sans-serif; padding: 40px; background: #f8fafc; }
+                    .box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: auto; }
+                    h2 { color: #0284c7; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+                    label { display: block; margin-top: 15px; font-weight: bold; color: #475569; }
+                    input, textarea, select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #cbd5e1; border-radius: 6px; }
+                    button { margin-top: 20px; background: #10b981; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+                </style>
+            </head>
+            <body>
+                <div class="box">
+                    <h2>Plano de Ação: ${indicador}</h2>
+                    <p>Preencha as ações para correção ou melhoria deste indicador.</p>
+                    <label>O que será feito? (Ação)</label><textarea rows="3"></textarea>
+                    <label>Por que será feito? (Causa Raiz)</label><textarea rows="2"></textarea>
+                    <label>Quem será o responsável?</label><input type="text">
+                    <label>Prazo Final</label><input type="date">
+                    <button onclick="alert('Plano salvo localmente (Simulação)!'); window.close();">Salvar Plano de Ação</button>
+                </div>
+            </body>
+            </html>
+        `);
     }
 
     function filtrarAno(ano, btn) {
@@ -103,12 +128,10 @@
             const nomeProc = normalizar(ln.Processo);
             const nomeInd = normalizar(ln.Indicador);
             const matchProcesso = nomeProc.includes(normalizar(chaveProcesso));
-            const matchAno = anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado);
-            
+            const matchAno = (anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado));
             let matchTurno = true;
             if (aplicarTurno && turnoSelecionado !== 'TODOS') {
-                matchTurno = nomeInd.includes(normalizar(turnoSelecionado)) || 
-                             nomeProc.includes(normalizar(turnoSelecionado));
+                matchTurno = nomeInd.includes(normalizar(turnoSelecionado)) || nomeProc.includes(normalizar(turnoSelecionado));
             }
             return matchProcesso && matchAno && matchTurno;
         });
@@ -129,7 +152,6 @@
             const soma = filtrados.reduce((acc, curr) => acc + limparNumero(curr['Valor Real'] || curr.Qtd), 0);
             return (soma / filtrados.length).toFixed(1);
         };
-
         document.getElementById('kpi-summary').innerHTML = `
             <div class="kpi-card"><small>Média Absenteísmo</small><div>${getMedia("ABSENTEISMO")}%</div></div>
             <div class="kpi-card"><small>Média Turnover Universal</small><div>${getMedia("UNIVERSAL")}%</div></div>
@@ -141,7 +163,6 @@
         const container = document.getElementById('container-graficos');
         const dados = obterDadosBase(itemConfig.chave, true);
         if (dados.length === 0) return;
-
         const idUnique = Math.random().toString(36).substr(2, 9);
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
         const exibirPct = ["ABSENTEISMO", "TURNOVER", "UNIVERSAL", "APROVADOS", "RETENÇÃO"].some(t => itemConfig.chave.includes(t));
@@ -149,10 +170,10 @@
         container.innerHTML += `
             <div class="card">
                 <div class="title-wrapper">
-                    <h2>${itemConfig.titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
-                    <a href="${urlPlanoAcao}" target="_blank" class="btn-acao">Plano de Ação +</a>
+                    <h2>${itemConfig.titulo}</h2>
+                    <button class="btn-acao" onclick="abrirPlanoAcao('${itemConfig.titulo}')">Plano de Ação +</button>
                 </div>
-                <p class="sub">Grupo Coplac | Performance</p>
+                <p class="sub">Performance Operacional</p>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
                     <div class="info-box"><b>DETALHAMENTO</b> ${itemConfig.nota}</div>
@@ -160,20 +181,18 @@
             </div>`;
         
         setTimeout(() => {
+            const canvas = document.getElementById(`chart-${idUnique}`);
             const metas = labelsExibicao.map(m => limparNumero(dados.find(ln => ln.mes === m)?.Objetivo));
             const dFinal = labelsExibicao.map(mes => {
                 const r = dados.find(ln => ln.mes === mes);
-                const valor = r ? limparNumero(r['Valor Real'] || r.Qtd) : null;
-                return valor === 0 ? null : valor;
+                return r ? limparNumero(r['Valor Real'] || r.Qtd) : null;
             });
-            const corBarras = dFinal.map((valor, idx) => definirCorBarra(valor, metas[idx], itemConfig.tipo));
-
-            new Chart(document.getElementById(`chart-${idUnique}`), {
+            new Chart(canvas, {
                 type: 'bar',
                 data: {
                     labels: labelsExibicao,
                     datasets: [
-                        { label: 'Realizado', data: dFinal, backgroundColor: corBarras, borderRadius: 6 },
+                        { label: 'Realizado', data: dFinal, backgroundColor: dFinal.map((v, i) => definirCorBarra(v, metas[i], itemConfig.tipo)), borderRadius: 6 },
                         { label: 'Meta', data: metas, type: 'line', borderColor: '#475569', borderWidth: 2, borderDash: [5, 5], fill: false, datalabels: { display: false } }
                     ]
                 },
@@ -188,45 +207,33 @@
     function criarGraficoConsolidado(titulo, termo) {
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
         const dadosBase = obterDadosBase(termo, true);
-        const dMOD = dadosBase.filter(ln => normalizar(ln.Indicador).includes("MOD"));
-        const dMOI = dadosBase.filter(ln => normalizar(ln.Indicador).includes("MOI"));
-        
-        if (dMOD.length === 0 && dMOI.length === 0) return;
-
+        if (dadosBase.length === 0) return;
         const idUnique = Math.random().toString(36).substr(2, 9);
         document.getElementById('container-graficos').innerHTML += `
             <div class="card">
                 <div class="title-wrapper">
-                    <h2>${titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
-                    <a href="${urlPlanoAcao}" target="_blank" class="btn-acao">Plano de Ação +</a>
+                    <h2>${titulo}</h2>
+                    <button class="btn-acao" onclick="abrirPlanoAcao('${titulo}')">Plano de Ação +</button>
                 </div>
-                <p class="sub">Grupo Coplac | MOD vs MOI</p>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box"><b>DETALHAMENTO</b> Comparativo MOD/MOI baseado na planilha.</div>
+                    <div class="info-box"><b>DETALHAMENTO</b> Comparativo MOD/MOI.</div>
                 </div>
             </div>`;
         
         setTimeout(() => {
-            const vMOD = labelsExibicao.map(m => limparNumero(dMOD.find(ln => ln.mes === m)?.['Valor Real'] || dMOD.find(ln => ln.mes === m)?.Qtd));
-            const vMOI = labelsExibicao.map(m => limparNumero(dMOI.find(ln => ln.mes === m)?.['Valor Real'] || dMOI.find(ln => ln.mes === m)?.Qtd));
-            let corMOD = (turnoSelecionado === '1º TURNO') ? '#0284c7' : (turnoSelecionado === '3º TURNO' ? '#f59e0b' : '#334155');
-            let corMOI = '#94a3b8';
-
+            const dMOD = dadosBase.filter(ln => normalizar(ln.Indicador).includes("MOD"));
+            const dMOI = dadosBase.filter(ln => normalizar(ln.Indicador).includes("MOI"));
             new Chart(document.getElementById(`chart-${idUnique}`), {
                 type: 'bar',
                 data: {
                     labels: labelsExibicao,
                     datasets: [
-                        { label: 'MOI', data: vMOI, backgroundColor: corMOI, stack: 's1' },
-                        { label: 'MOD', data: vMOD, backgroundColor: corMOD, stack: 's1' }
+                        { label: 'MOI', data: labelsExibicao.map(m => limparNumero(dMOI.find(ln => ln.mes === m)?.Qtd)), backgroundColor: '#94a3b8', stack: 's1' },
+                        { label: 'MOD', data: labelsExibicao.map(m => limparNumero(dMOD.find(ln => ln.mes === m)?.Qtd)), backgroundColor: '#0284c7', stack: 's1' }
                     ]
                 },
-                options: { 
-                    responsive: true, maintainAspectRatio: false, 
-                    plugins: { datalabels: { color: '#fff', formatter: (v) => v > 0 ? v : '' } },
-                    scales: { x: { stacked: true }, y: { stacked: true } } 
-                }
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
             });
         }, 150);
     }
@@ -234,27 +241,18 @@
     function renderizarDashboard() {
         document.getElementById('container-graficos').innerHTML = "";
         calcularResumo();
-        
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
         criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "Desligados > 180 Dias / Ativos." });
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
-
+        
         const itensConsolidados = [
-            { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
-            { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
-            { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
-            { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
             { t: "PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - SOLICITAÇÃO GERAL NO MÊS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", h: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS" },
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS" }
         ];
         itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
-
+        
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
-        criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Índice de promoções." });
     }
 
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {

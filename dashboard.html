@@ -21,7 +21,6 @@
         .chart-container { position: relative; height: 420px; width: 100%; }
         .controls { text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; align-items: center; }
         
-        /* Estilos dos inputs e botões novos */
         .btn { padding: 10px 24px; border: 1px solid #e2e8f0; background: white; color: #475569; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .btn.active { background: #0284c7; color: white; border-color: #0284c7; }
         .select-turno, .input-email { padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; font-weight: 600; color: #475569; }
@@ -48,7 +47,6 @@
                 <option value="3º TURNO">3º Turno</option>
             </select>
 
-            <!-- Novos campos para envio de e-mail -->
             <input type="email" id="emailDestino" class="input-email" placeholder="Digite o e-mail de destino">
             <button class="btn btn-email" onclick="enviarRelatorio()">📧 Enviar Indicadores</button>
             
@@ -94,8 +92,8 @@
     }
 
     function enviarRelatorio() {
-        // Mylena, sua URL de automação foi inserida abaixo:
-        const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwl08b86i_qs94A-x6qnVAbYMQ1QXFTrh7vTzjg0m-wwL8KMxuN-ThG8gzqx4wKunIC/exec"; 
+        // Nova URL de implantação atualizada para a versão unificada
+        const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwK69TZrir4UIA4BfsvtjE7-54KlXLAx8mvafsjB-FGytuIlFCnA9_dpoZeAHB9SyAV/exec"; 
         const email = document.getElementById('emailDestino').value;
 
         if (!email) {

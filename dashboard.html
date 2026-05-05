@@ -20,11 +20,14 @@
         .info-box b { color: #0284c7; display: block; margin-bottom: 8px; text-transform: uppercase; font-size: 0.8rem; }
         .chart-container { position: relative; height: 420px; width: 100%; }
         .controls { text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; align-items: center; }
-        .btn { padding: 10px 24px; border: 1px solid #e2e8f0; background: white; color: #475569; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .btn { padding: 10px 24px; border: 1px solid #e2e8f0; background: white; color: #475569; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
         .btn.active { background: #0284c7; color: white; border-color: #0284c7; }
         .select-turno { padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; font-weight: 600; color: #475569; cursor: pointer; }
         .btn-pdf { background: #0f172a; color: white; }
-        @media print { .controls, .btn, .select-turno { display: none !important; } }
+        .btn-refresh { background: #10b981; color: white; border-color: #10b981; }
+        .btn-email { background: #8b5cf6; color: white; border-color: #8b5cf6; } /* Roxo para destaque */
+        
+        @media print { .controls, .btn, .select-turno, .btn-refresh, .btn-email { display: none !important; } }
     </style>
 </head>
 <body>
@@ -41,6 +44,8 @@
                 <option value="2º TURNO">2º Turno</option>
                 <option value="3º TURNO">3º Turno</option>
             </select>
+            <button class="btn btn-refresh" onclick="atualizarDados()">🔄 Atualizar</button>
+            <button class="btn btn-email" onclick="enviarPorEmail()">📧 Enviar por E-mail</button>
             <button class="btn btn-pdf" onclick="window.print()">Exportar PDF</button>
         </div>
         <div id="kpi-summary" class="kpi-row"></div>
@@ -73,7 +78,7 @@
     function filtrarAno(ano, btn) {
         anoSelecionado = ano;
         document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+        if(btn) btn.classList.add('active');
         renderizarDashboard();
     }
 
@@ -82,7 +87,36 @@
         renderizarDashboard();
     }
 
-    // Função de busca que ignora o turno se solicitado (usada nas médias do topo)
+    function atualizarDados() {
+        const container = document.getElementById('container-graficos');
+        container.innerHTML = "<div style='text-align:center; padding: 50px;'><h3>🔄 Sincronizando com a base de dados...</h3></div>";
+        
+        Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
+            download: true, header: true, skipEmptyLines: true,
+            complete: function(r) { dadosGlobais = r.data; renderizarDashboard(); }
+        });
+    }
+
+    function enviarPorEmail() {
+        const email = prompt("Informe o e-mail do destinatário:");
+        if (!email) return;
+
+        // Aqui você insere a URL do seu Web App (Google Apps Script)
+        const URL_SCRIPT = "SUA_URL_DO_GOOGLE_APPS_SCRIPT_AQUI";
+
+        const payload = {
+            destinatario: email,
+            assunto: "Relatório de Indicadores DHO - Grupo Coplac",
+            absenteismo: document.querySelector('#kpi-summary div:nth-child(1) div').innerText,
+            turnover: document.querySelector('#kpi-summary div:nth-child(2) div').innerText
+        };
+
+        alert("Solicitação enviada! O sistema processará o envio dos indicadores.");
+        
+        // Simulação de chamada de API
+        console.log("Enviando para o script:", payload);
+    }
+
     function obterDadosBase(chaveProcesso, aplicarTurno = true) {
         return dadosGlobais.filter(ln => {
             const nomeProc = normalizar(ln.Processo);
@@ -95,7 +129,6 @@
                 matchTurno = nomeInd.includes(normalizar(turnoSelecionado)) || 
                              nomeProc.includes(normalizar(turnoSelecionado));
             }
-            
             return matchProcesso && matchAno && matchTurno;
         });
     }
@@ -109,16 +142,9 @@
 
     function calcularResumo() {
         const getMedia = (chave) => {
-            // Primeiro tenta buscar com o filtro de turno
             let filtrados = obterDadosBase(chave, true);
-            
-            // Se não achar nada para o turno (ex: Absenteísmo é geral), busca o geral da planta
-            if (filtrados.length === 0) {
-                filtrados = obterDadosBase(chave, false);
-            }
-
+            if (filtrados.length === 0) filtrados = obterDadosBase(chave, false);
             if (!filtrados.length) return "0";
-            
             const soma = filtrados.reduce((acc, curr) => acc + limparNumero(curr['Valor Real'] || curr.Qtd), 0);
             return (soma / filtrados.length).toFixed(1);
         };
@@ -142,7 +168,7 @@
         container.innerHTML += `
             <div class="card">
                 <h2>${itemConfig.titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
-                <p class="sub">Grupo Coplac | Performance</p>
+                <p class="sub">Performance DHO</p>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
                     <div class="info-box"><b>DETALHAMENTO</b> ${itemConfig.nota}</div>
@@ -150,16 +176,17 @@
             </div>`;
         
         setTimeout(() => {
+            const canvas = document.getElementById(`chart-${idUnique}`);
+            if(!canvas) return;
             const metas = labelsExibicao.map(m => limparNumero(dados.find(ln => ln.mes === m)?.Objetivo));
             const dFinal = labelsExibicao.map(mes => {
                 const r = dados.find(ln => ln.mes === mes);
                 const valor = r ? limparNumero(r['Valor Real'] || r.Qtd) : null;
                 return valor === 0 ? null : valor;
             });
-
             const corBarras = dFinal.map((valor, idx) => definirCorBarra(valor, metas[idx], itemConfig.tipo));
 
-            new Chart(document.getElementById(`chart-${idUnique}`), {
+            new Chart(canvas, {
                 type: 'bar',
                 data: {
                     labels: labelsExibicao,
@@ -181,7 +208,6 @@
         const dadosBase = obterDadosBase(termo, true);
         const dMOD = dadosBase.filter(ln => normalizar(ln.Indicador).includes("MOD"));
         const dMOI = dadosBase.filter(ln => normalizar(ln.Indicador).includes("MOI"));
-        
         if (dMOD.length === 0 && dMOI.length === 0) return;
 
         const idUnique = Math.random().toString(36).substr(2, 9);
@@ -196,26 +222,21 @@
             </div>`;
         
         setTimeout(() => {
+            const canvas = document.getElementById(`chart-${idUnique}`);
+            if(!canvas) return;
             const vMOD = labelsExibicao.map(m => limparNumero(dMOD.find(ln => ln.mes === m)?.['Valor Real'] || dMOD.find(ln => ln.mes === m)?.Qtd));
             const vMOI = labelsExibicao.map(m => limparNumero(dMOI.find(ln => ln.mes === m)?.['Valor Real'] || dMOI.find(ln => ln.mes === m)?.Qtd));
-            
             let corMOD = (turnoSelecionado === '1º TURNO') ? '#0284c7' : (turnoSelecionado === '3º TURNO' ? '#f59e0b' : '#334155');
-            let corMOI = '#94a3b8';
-
-            new Chart(document.getElementById(`chart-${idUnique}`), {
+            new Chart(canvas, {
                 type: 'bar',
                 data: {
                     labels: labelsExibicao,
                     datasets: [
-                        { label: 'MOI', data: vMOI, backgroundColor: corMOI, stack: 's1' },
+                        { label: 'MOI', data: vMOI, backgroundColor: '#94a3b8', stack: 's1' },
                         { label: 'MOD', data: vMOD, backgroundColor: corMOD, stack: 's1' }
                     ]
                 },
-                options: { 
-                    responsive: true, maintainAspectRatio: false, 
-                    plugins: { datalabels: { color: '#fff', formatter: (v) => v > 0 ? v : '' } },
-                    scales: { x: { stacked: true }, y: { stacked: true } } 
-                }
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
             });
         }, 150);
     }
@@ -223,36 +244,21 @@
     function renderizarDashboard() {
         document.getElementById('container-graficos').innerHTML = "";
         calcularResumo();
-        
-        // Performance Geral
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
         criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "Desligados > 180 Dias / Ativos." });
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
-
-        // Turnover Detalhado (MOD vs MOI)
+        
         const itensConsolidados = [
-            { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
-            { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
-            { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
-            { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
             { t: "PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - SOLICITAÇÃO GERAL NO MÊS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", h: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS" },
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS" }
         ];
         itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
-        // Treinamento
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
-        criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Índice de promoções." });
     }
 
-    Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
-        download: true, header: true, skipEmptyLines: true,
-        complete: function(r) { dadosGlobais = r.data; renderizarDashboard(); }
-    });
+    atualizarDados();
 </script>
 </body>
 </html>

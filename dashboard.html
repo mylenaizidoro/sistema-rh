@@ -92,7 +92,7 @@
     }
 
     function enviarRelatorio() {
-        const URL_SCRIPT = "SUA_URL_DO_APP_SCRIPT_AQUI"; // Mylena, insira a URL aqui
+        const URL_SCRIPT = "SUA_URL_DO_APP_SCRIPT_AQUI"; // Mylena, insira a URL que você gerou no Apps Script
         const email = document.getElementById('emailDestino').value;
         if (!email) { alert("Digite um e-mail válido!"); return; }
 
@@ -108,8 +108,9 @@
     }
 
     function definirCorBarra(valor, meta, itemTipo) {
-        if (turnoSelecionado === '1º TURNO') return '#0284c7';
-        if (turnoSelecionado === '3º TURNO') return '#f59e0b';
+        if (turnoSelecionado === '1º TURNO') return '#0284c7'; // Azul
+        if (turnoSelecionado === '3º TURNO') return '#f59e0b'; // Laranja
+        if (turnoSelecionado === '2º TURNO') return '#6366f1'; // Indigo
         let atingiu = (itemTipo === "MENOR_MELHOR") ? (valor <= meta) : (valor >= meta);
         return atingiu ? '#10b981' : '#f43f5e';
     }
@@ -128,7 +129,22 @@
         });
     }
 
-    function criarGraficoPerformance(item) {
+    function calcularResumo() {
+        const getMedia = (chave) => {
+            let filtrados = obterDadosBase(chave, true);
+            if (filtrados.length === 0) filtrados = obterDadosBase(chave, false);
+            if (!filtrados.length) return "0";
+            const soma = filtrados.reduce((acc, curr) => acc + limparNumero(curr['Valor Real'] || curr.Qtd), 0);
+            return (soma / filtrados.length).toFixed(1);
+        };
+        document.getElementById('kpi-summary').innerHTML = `
+            <div class="kpi-card"><small>Média Absenteísmo</small><div>${getMedia("ABSENTEISMO")}%</div></div>
+            <div class="kpi-card"><small>Turnover Universal</small><div>${getMedia("UNIVERSAL")}%</div></div>
+            <div class="kpi-card"><small>Horas Treinamento</small><div>${getMedia("HORAS DE TREINAMENTO")}h</div></div>
+            <div class="kpi-card"><small>Aprovação Média</small><div>${getMedia("APROVADOS EM TREINAMENTO")}%</div></div>`;
+    }
+
+    function criarGrafico(item) {
         const dados = obterDadosBase(item.chave, true);
         if (dados.length === 0) return;
         const id = "chart-" + Math.random().toString(36).substr(2, 9);
@@ -136,7 +152,7 @@
         
         document.getElementById('container-graficos').innerHTML += `
             <div class="card">
-                <h2>${item.titulo}</h2>
+                <h2>${item.titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="${id}"></canvas></div>
                     <div class="info-box"><b>DETALHAMENTO</b> ${item.nota}</div>
@@ -156,32 +172,46 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: 'Realizado', data: reais, backgroundColor: reais.map((v, i) => definirCorBarra(v, metas[i], item.tipo)) },
-                        { label: 'Meta', data: metas, type: 'line', borderColor: '#475569', fill: false }
+                        { label: 'Realizado', data: reais, backgroundColor: reais.map((v, i) => definirCorBarra(v, metas[i], item.tipo)), borderRadius: 6 },
+                        { label: 'Meta', data: metas, type: 'line', borderColor: '#475569', borderWidth: 2, fill: false, datalabels: { display: false } }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: { datalabels: { anchor: 'end', align: 'top', font: { weight: 'bold' }, rotation: -90 } }
+                }
             });
-        }, 100);
+        }, 150);
     }
 
     function renderizarDashboard() {
         document.getElementById('container-graficos').innerHTML = "";
+        calcularResumo();
         
-        // Performance
-        criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Programadas" });
-        criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "Filtro > 180 dias" });
-        
-        // Restaurando indicadores de Turnover Detalhado
-        const turnovers = [
-            { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - ATÉ 15 DIAS" },
-            { t: "PEDIDOS DE DESLIGAMENTO MES", h: "PEDIDOS GERAL MÊS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "INICIATIVA EMPRESA GERAL" }
-        ];
-        turnovers.forEach(i => criarGraficoPerformance({ chave: i.t, titulo: i.h, tipo: "MENOR_MELHOR", nota: "Desligamentos detalhados" }));
+        // 1. Performance Geral
+        criarGrafico({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
+        criarGrafico({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "Filtro de desligados com mais de 180 dias." });
+        criarGrafico({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Ativos." });
 
-        // Retenção
-        criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Índice de promoções" });
+        // 2. Turnover Detalhado (RESTAURADO)
+        const detalhados = [
+            { c: "SOLICITACAO DE DESLIGAMENTO ATE 15", t: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
+            { c: "SOLICITACAO DE DESLIGAMENTO 16 A 30", t: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
+            { c: "SOLICITACAO DE DESLIGAMENTO 31 A 90", t: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
+            { c: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", t: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
+            { c: "PEDIDOS DE DESLIGAMENTO MES", t: "TURNOVER - SOLICITAÇÃO GERAL NO MÊS" },
+            { c: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", t: "INICIATIVA EMPRESA ATÉ 15 DIAS" },
+            { c: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", t: "INICIATIVA EMPRESA ATÉ 30 DIAS" },
+            { c: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", t: "INICIATIVA EMPRESA 31 A 90 DIAS" },
+            { c: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", t: "INICIATIVA EMPRESA GERAL" }
+        ];
+        detalhados.forEach(item => criarGrafico({ chave: item.c, titulo: item.t, tipo: "MENOR_MELHOR", nota: "Análise detalhada por tempo de casa." }));
+
+        // 3. Treinamento e Retenção (RESTAURADO)
+        criarGrafico({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total acumulado de horas." });
+        criarGrafico({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de sucesso nos testes." });
+        criarGrafico({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Índice de retenção e promoções." });
     }
 
     atualizarDados();

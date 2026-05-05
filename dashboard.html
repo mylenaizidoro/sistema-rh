@@ -16,9 +16,7 @@
         .kpi-card div { font-size: 1.8rem; font-weight: 700; color: #0284c7; margin-top: 5px; }
         .card { background: #ffffff; border-radius: 16px; padding: 30px; max-width: 1000px; margin: 25px auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); page-break-inside: avoid; }
         
-        /* Ajuste para o botão de Plano de Ação no Header do Card */
         .card-header-flex { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
-        
         .grid-info { display: grid; grid-template-columns: 1fr 280px; gap: 25px; align-items: center; }
         .info-box { background: #f8fafc; padding: 20px; border-radius: 12px; border-left: 5px solid #0284c7; font-size: 0.9rem; color: #475569; }
         .info-box b { color: #0284c7; display: block; margin-bottom: 8px; text-transform: uppercase; font-size: 0.8rem; }
@@ -26,26 +24,18 @@
         .controls { text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; align-items: center; }
         .btn { padding: 10px 24px; border: 1px solid #e2e8f0; background: white; color: #475569; border-radius: 8px; cursor: pointer; font-weight: 600; }
         .btn.active { background: #0284c7; color: white; border-color: #0284c7; }
-        .select-turno { padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; font-weight: 600; color: #475569; cursor: pointer; }
-        .btn-pdf { background: #0f172a; color: white; }
-
         .btn-acao { background: transparent; color: #0284c7; border: 2px solid #0284c7; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.7rem; }
-        .btn-acao:hover { background: #0284c7; color: white; }
-        
-        /* Tabela Plano de Ação */
-        .table-plano { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .table-plano th, .table-plano td { border: 1px solid #e2e8f0; padding: 10px; font-size: 0.85rem; }
-        .table-plano th { background: #f8fafc; color: #64748b; }
-        .input-plano { width: 100%; border: 1px solid #cbd5e1; padding: 5px; border-radius: 4px; }
         
         .hidden { display: none !important; }
 
-        @media print { .controls, .btn, .select-turno, .btn-acao { display: none !important; } }
+        /* Estilos Plano de Ação */
+        .table-plano { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .table-plano th, .table-plano td { border: 1px solid #e2e8f0; padding: 10px; font-size: 0.85rem; text-align: left; }
+        .input-plano { width: 100%; border: 1px solid #cbd5e1; padding: 5px; border-radius: 4px; }
     </style>
 </head>
 <body>
 
-    <!-- DASHBOARD PRINCIPAL -->
     <div id="dashboard-view">
         <div class="header-container">
             <h1>GESTÃO DE INDICADORES - DHO CURITIBA</h1>
@@ -53,7 +43,7 @@
                 <button class="btn active" onclick="filtrarAno('TODOS', this)">Ver Todos</button>
                 <button class="btn" onclick="filtrarAno('2025', this)">2025</button>
                 <button class="btn" onclick="filtrarAno('2026', this)">2026</button>
-                <select id="selectTurno" class="select-turno" onchange="filtrarTurno()">
+                <select id="selectTurno" class="btn" style="padding: 10px;" onchange="filtrarTurno()">
                     <option value="TODOS">Todos os Turnos</option>
                     <option value="1º TURNO">1º Turno</option>
                     <option value="2º TURNO">2º Turno</option>
@@ -66,26 +56,15 @@
         <div id="container-graficos"></div>
     </div>
 
-    <!-- TELA PLANO DE AÇÃO -->
     <div id="plano-view" class="hidden header-container">
         <button class="btn" onclick="voltarDash()" style="margin-bottom: 20px;">← Voltar</button>
         <div class="card">
-            <div class="card-header-flex">
-                <h2 id="plano-titulo">Plano de Ação</h2>
-                <button class="btn" onclick="addLinha()" style="background:#10b981; color:white;">+ Nova Ação</button>
-            </div>
+            <h2 id="plano-titulo">Plano de Ação</h2>
             <table class="table-plano">
-                <thead>
-                    <tr>
-                        <th>Ação</th>
-                        <th>Responsável</th>
-                        <th>Prazo</th>
-                        <th>Status</th>
-                        <th>Excluir</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Ação</th><th>Resp.</th><th>Prazo</th><th>Status</th></tr></thead>
                 <tbody id="plano-corpo"></tbody>
             </table>
+            <button class="btn" onclick="addLinha()" style="margin-top:10px; background:#10b981; color:white;">+ Nova Linha</button>
         </div>
     </div>
 
@@ -96,7 +75,7 @@
     let dadosGlobais = [];
     let anoSelecionado = 'TODOS';
     let turnoSelecionado = 'TODOS';
-    let idPlanoAtual = "";
+    let idPlanoAtivo = "";
 
     const labelsTodos = [];
     for(let m=1; m<=12; m++) labelsTodos.push(`${m.toString().padStart(2,'0')}/2025`);
@@ -104,20 +83,19 @@
 
     function limparNumero(v) {
         if (!v || v.toString().trim() === "") return 0;
-        let num = v.toString().replace(/\s/g, '').replace(',', '.').replace('%', '');
-        return parseFloat(num) || 0;
+        return parseFloat(v.toString().replace(/\s/g, '').replace(',', '.').replace('%', '')) || 0;
     }
 
     function normalizar(txt) {
         return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
     }
 
-    // Funções de Navegação e Persistência
-    function abrirPlano(titulo) {
-        idPlanoAtual = titulo;
+    // Navegação Planos
+    function abrirPlano(tit) {
+        idPlanoAtivo = tit;
         document.getElementById('dashboard-view').classList.add('hidden');
         document.getElementById('plano-view').classList.remove('hidden');
-        document.getElementById('plano-titulo').innerText = "PLANO DE AÇÃO: " + titulo;
+        document.getElementById('plano-titulo').innerText = "Plano: " + tit;
         carregarPlano();
     }
 
@@ -126,41 +104,31 @@
         document.getElementById('dashboard-view').classList.remove('hidden');
     }
 
-    function addLinha(acao="", resp="", prazo="", status="Pendente") {
-        const corpo = document.getElementById('plano-corpo');
+    function addLinha(a="", r="", p="", s="Pendente") {
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><input class="input-plano" value="${acao}" onchange="salvarPlano()"></td>
-            <td><input class="input-plano" value="${resp}" onchange="salvarPlano()"></td>
-            <td><input type="date" class="input-plano" value="${prazo}" onchange="salvarPlano()"></td>
-            <td>
-                <select class="input-plano" onchange="salvarPlano()">
-                    <option ${status=='Pendente'?'selected':''}>Pendente</option>
-                    <option ${status=='Em Andamento'?'selected':''}>Em Andamento</option>
-                    <option ${status=='Concluído'?'selected':''}>Concluído</option>
-                </select>
-            </td>
-            <td><button onclick="this.closest('tr').remove(); salvarPlano();" style="border:none; background:none; cursor:pointer;">❌</button></td>
-        `;
-        corpo.appendChild(tr);
+        tr.innerHTML = `<td><input class="input-plano" value="${a}" onchange="salvarPlano()"></td>
+                        <td><input class="input-plano" value="${r}" onchange="salvarPlano()"></td>
+                        <td><input type="date" class="input-plano" value="${p}" onchange="salvarPlano()"></td>
+                        <td><select class="input-plano" onchange="salvarPlano()"><option ${s=='Pendente'?'selected':''}>Pendente</option><option ${s=='Concluído'?'selected':''}>Concluído</option></select></td>`;
+        document.getElementById('plano-corpo').appendChild(tr);
     }
 
     function salvarPlano() {
-        const linhas = [];
+        const rows = [];
         document.querySelectorAll('#plano-corpo tr').forEach(tr => {
-            const inputs = tr.querySelectorAll('input, select');
-            linhas.push({ acao: inputs[0].value, resp: inputs[1].value, prazo: inputs[2].value, status: inputs[3].value });
+            const i = tr.querySelectorAll('input, select');
+            rows.push({a: i[0].value, r: i[1].value, p: i[2].value, s: i[3].value});
         });
-        localStorage.setItem('coplac_plano_' + idPlanoAtual, JSON.stringify(linhas));
+        localStorage.setItem('plano_'+idPlanoAtivo, JSON.stringify(rows));
     }
 
     function carregarPlano() {
         document.getElementById('plano-corpo').innerHTML = "";
-        const dados = JSON.parse(localStorage.getItem('coplac_plano_' + idPlanoAtual) || "[]");
-        dados.forEach(d => addLinha(d.acao, d.resp, d.prazo, d.status));
+        const storage = JSON.parse(localStorage.getItem('plano_'+idPlanoAtivo) || "[]");
+        storage.forEach(x => addLinha(x.a, x.r, x.p, x.s));
     }
 
-    // Logica do Dashboard
+    // Dashboard
     function filtrarAno(ano, btn) {
         anoSelecionado = ano;
         document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
@@ -173,169 +141,74 @@
         renderizarDashboard();
     }
 
-    function obterDadosBase(chaveProcesso, aplicarTurno = true) {
+    function obterDadosBase(chave) {
         return dadosGlobais.filter(ln => {
-            // Mapeamento manual para garantir que o código ache as colunas independente de maiúsculas/acentos
-            const colunaProcesso = ln.Processo || ln.PROCESSO || "";
-            const colunaIndicador = ln.Indicador || ln.INDICADOR || "";
-            const colunaMes = ln.mes || ln.MES || ln.Mês || "";
-            
-            const nomeProc = normalizar(colunaProcesso);
-            const nomeInd = normalizar(colunaIndicador);
-            const matchProcesso = nomeProc.includes(normalizar(chaveProcesso));
-            const matchAno = anoSelecionado === 'TODOS' || colunaMes.includes(anoSelecionado);
-            
+            const p = normalizar(ln.Processo || ln.PROCESSO || "");
+            const i = normalizar(ln.Indicador || ln.INDICADOR || "");
+            const m = ln.mes || ln.MES || ln.Mês || "";
+            const matchProc = p.includes(normalizar(chave));
+            const matchAno = anoSelecionado === 'TODOS' || m.includes(anoSelecionado);
             let matchTurno = true;
-            if (aplicarTurno && turnoSelecionado !== 'TODOS') {
-                matchTurno = nomeInd.includes(normalizar(turnoSelecionado)) || nomeProc.includes(normalizar(turnoSelecionado));
-            }
-            return matchProcesso && matchAno && matchTurno;
+            if (turnoSelecionado !== 'TODOS') matchTurno = i.includes(normalizar(turnoSelecionado)) || p.includes(normalizar(turnoSelecionado));
+            return matchProc && matchAno && matchTurno;
         });
     }
 
-    function calcularResumo() {
-        const getMedia = (chave) => {
-            let filtrados = obterDadosBase(chave, true);
-            if (filtrados.length === 0) filtrados = obterDadosBase(chave, false);
-            if (!filtrados.length) return "0";
-            const soma = filtrados.reduce((acc, curr) => acc + limparNumero(curr['Valor Real'] || curr.Qtd || curr.VALOR_REAL), 0);
-            return (soma / filtrados.length).toFixed(1);
-        };
-
-        document.getElementById('kpi-summary').innerHTML = `
-            <div class="kpi-card"><small>Média Absenteísmo</small><div>${getMedia("ABSENTEISMO")}%</div></div>
-            <div class="kpi-card"><small>Média Turnover Universal</small><div>${getMedia("UNIVERSAL")}%</div></div>
-            <div class="kpi-card"><small>Total Horas Treinamento</small><div>${getMedia("HORAS DE TREINAMENTO")}h</div></div>
-            <div class="kpi-card"><small>Aprovação Média</small><div>${getMedia("APROVADOS EM TREINAMENTO")}%</div></div>`;
-    }
-
-    function criarGraficoPerformance(itemConfig) {
-        const container = document.getElementById('container-graficos');
-        const dados = obterDadosBase(itemConfig.chave, true);
-        if (dados.length === 0) return;
-
-        const idUnique = Math.random().toString(36).substr(2, 9);
-        const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-        
-        container.innerHTML += `
-            <div class="card">
-                <div class="card-header-flex">
-                    <div>
-                        <h2 style="margin:0">${itemConfig.titulo}</h2>
-                        <p style="color:#64748b; font-size:0.8rem; margin:4px 0">Grupo Coplac | Performance</p>
-                    </div>
-                    <button class="btn-acao" onclick="abrirPlano('${itemConfig.titulo}')">Plano de Ação</button>
-                </div>
-                <div class="grid-info">
-                    <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box"><b>DETALHAMENTO</b> ${itemConfig.nota}</div>
-                </div>
-            </div>`;
-        
-        setTimeout(() => {
-            const metas = labelsExibicao.map(m => {
-                const r = dados.find(ln => (ln.mes || ln.MES || ln.Mês) === m);
-                return limparNumero(r ? (r.Objetivo || r.OBJETIVO) : 0);
-            });
-            const dFinal = labelsExibicao.map(m => {
-                const r = dados.find(ln => (ln.mes || ln.MES || ln.Mês) === m);
-                const v = r ? limparNumero(r['Valor Real'] || r.Qtd || r.VALOR_REAL) : null;
-                return v === 0 ? null : v;
-            });
-
-            new Chart(document.getElementById(`chart-${idUnique}`), {
-                type: 'bar',
-                data: {
-                    labels: labelsExibicao,
-                    datasets: [
-                        { label: 'Realizado', data: dFinal, backgroundColor: '#0284c7', borderRadius: 6 },
-                        { label: 'Meta', data: metas, type: 'line', borderColor: '#f43f5e', borderWidth: 2, fill: false, datalabels: { display: false } }
-                    ]
-                },
-                options: { 
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { datalabels: { anchor: 'end', align: 'top', font: { weight: 'bold' }, rotation: -90 } }
-                }
-            });
-        }, 150);
-    }
-
-    function criarGraficoConsolidado(titulo, termo) {
-        const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-        const dadosBase = obterDadosBase(termo, true);
-        if (dadosBase.length === 0) return;
-
-        const idUnique = Math.random().toString(36).substr(2, 9);
-        document.getElementById('container-graficos').innerHTML += `
-            <div class="card">
-                <div class="card-header-flex">
-                    <div>
-                        <h2 style="margin:0">${titulo}</h2>
-                        <p style="color:#64748b; font-size:0.8rem; margin:4px 0">Grupo Coplac | Consolidado</p>
-                    </div>
-                    <button class="btn-acao" onclick="abrirPlano('${titulo}')">Plano de Ação</button>
-                </div>
-                <div class="grid-info">
-                    <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box"><b>DETALHAMENTO</b> Análise consolidada MOD/MOI.</div>
-                </div>
-            </div>`;
-        
-        setTimeout(() => {
-            const dMOD = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR).includes("MOD"));
-            const dMOI = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR).includes("MOI"));
-            
-            const vMOD = labelsExibicao.map(m => {
-                const r = dMOD.find(ln => (ln.mes || ln.MES || ln.Mês) === m);
-                return limparNumero(r ? (r['Valor Real'] || r.Qtd) : 0);
-            });
-            const vMOI = labelsExibicao.map(m => {
-                const r = dMOI.find(ln => (ln.mes || ln.MES || ln.Mês) === m);
-                return limparNumero(r ? (r['Valor Real'] || r.Qtd) : 0);
-            });
-
-            new Chart(document.getElementById(`chart-${idUnique}`), {
-                type: 'bar',
-                data: {
-                    labels: labelsExibicao,
-                    datasets: [
-                        { label: 'MOI', data: vMOI, backgroundColor: '#94a3b8', stack: 's1' },
-                        { label: 'MOD', data: vMOD, backgroundColor: '#0284c7', stack: 's1' }
-                    ]
-                },
-                options: { 
-                    responsive: true, maintainAspectRatio: false,
-                    scales: { x: { stacked: true }, y: { stacked: true } }
-                }
-            });
-        }, 150);
-    }
-
     function renderizarDashboard() {
-        document.getElementById('container-graficos').innerHTML = "";
-        calcularResumo();
+        const container = document.getElementById('container-graficos');
+        container.innerHTML = "";
         
-        criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
-        criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "Desligados > 180 Dias / Ativos." });
-        criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "Fórmula universal de Turnover." });
+        // Atualiza Médias do Topo
+        const kpis = ["ABSENTEISMO", "UNIVERSAL", "HORAS DE TREINAMENTO", "APROVADOS"];
+        const kpiHtml = kpis.map(k => {
+            const d = obterDadosBase(k);
+            const media = d.length ? (d.reduce((a,b) => a + limparNumero(b['Valor Real'] || b.Qtd || b.VALOR_REAL), 0) / d.length).toFixed(1) : 0;
+            return `<div class="kpi-card"><small>${k}</small><div>${media}${k.includes('HORAS')?'h':'%'}</div></div>`;
+        }).join('');
+        document.getElementById('kpi-summary').innerHTML = kpiHtml;
 
-        const itens = [
-            { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - ATÉ 15 DIAS" },
-            { t: "PEDIDOS DE DESLIGAMENTO MES", h: "PEDIDOS DE DESLIGAMENTO MÊS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "INICIATIVA EMPRESA GERAL" }
+        // Gráficos Principais
+        const graficos = [
+            {id: "ABSENTEISMO", tit: "ABSENTEÍSMO PA - 03", nota: "Horas Ausentes / Programadas"},
+            {id: "TURNOVER PA", tit: "TURNOVER PA - 03", nota: "Desligados > 180 dias"},
+            {id: "HORAS DE TREINAMENTO", tit: "HORAS DE TREINAMENTO", nota: "Volume total de horas"}
         ];
-        itens.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
-        criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Horas totais." });
-        criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% aprovados." });
+        graficos.forEach(g => {
+            const dados = obterDadosBase(g.id);
+            if(dados.length === 0) return;
+            
+            const idDiv = "chart_" + Math.random().toString(36).substr(2,5);
+            container.innerHTML += `<div class="card">
+                <div class="card-header-flex">
+                    <h2>${g.tit}</h2>
+                    <button class="btn-acao" onclick="abrirPlano('${g.tit}')">Plano de Ação</button>
+                </div>
+                <div class="grid-info">
+                    <div class="chart-container"><canvas id="${idDiv}"></canvas></div>
+                    <div class="info-box"><b>INFO</b> ${g.nota}</div>
+                </div>
+            </div>`;
+
+            setTimeout(() => {
+                const labels = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
+                const valores = labels.map(l => {
+                    const r = dados.find(x => (x.mes || x.MES || x.Mês) === l);
+                    return r ? limparNumero(r['Valor Real'] || r.Qtd || r.VALOR_REAL) : null;
+                });
+
+                new Chart(document.getElementById(idDiv), {
+                    type: 'bar',
+                    data: { labels: labels, datasets: [{ label: 'Real', data: valores, backgroundColor: '#0284c7' }] },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }, 100);
+        });
     }
 
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
         download: true, header: true, skipEmptyLines: true,
-        complete: function(r) { 
-            dadosGlobais = r.data; 
-            renderizarDashboard(); 
-        }
+        complete: function(r) { dadosGlobais = r.data; renderizarDashboard(); }
     });
 </script>
 </body>

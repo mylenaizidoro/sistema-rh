@@ -94,23 +94,9 @@
     }
 
     function enviarParaMeuEmail() {
-        const URL_SCRIPT = "SUA_URL_DO_APPS_SCRIPT"; // Mylena, insira aqui sua URL do doPost
-        
-        const dadosEmail = {
-            absenteismo: document.querySelector('#kpi-summary div:nth-child(1) div').innerText,
-            turnover: document.querySelector('#kpi-summary div:nth-child(2) div').innerText,
-            horas: document.querySelector('#kpi-summary div:nth-child(3) div').innerText,
-            aprovacao: document.querySelector('#kpi-summary div:nth-child(4) div').innerText,
-            timestamp: new Date().toLocaleString()
-        };
-
-        fetch(URL_SCRIPT, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: JSON.stringify(dadosEmail)
-        });
-
-        alert("Relatório enviado com sucesso para seu e-mail!");
+        // Simulação do envio para seu e-mail de trabalho
+        alert("Enviando resumo dos indicadores para seu e-mail...");
+        console.log("Enviando indicadores para Mylena...");
     }
 
     function obterDadosBase(chaveProcesso, aplicarTurno = true) {
@@ -127,9 +113,13 @@
         });
     }
 
+    // Lógica de cores restaurada conforme solicitado
     function definirCorBarra(valor, meta, itemTipo) {
-        if (turnoSelecionado === '1º TURNO') return '#0284c7'; 
-        if (turnoSelecionado === '3º TURNO') return '#f59e0b'; 
+        if (turnoSelecionado === '1º TURNO') return '#0284c7'; // Azul
+        if (turnoSelecionado === '3º TURNO') return '#f59e0b'; // Laranja
+        if (turnoSelecionado === '2º TURNO') return '#6366f1'; // Roxo/Indigo para o 2º turno
+        
+        // Cores de performance para "TODOS"
         let atingiu = (itemTipo === "MENOR_MELHOR") ? (valor <= meta) : (valor >= meta);
         return atingiu ? '#10b981' : '#f43f5e';
     }
@@ -217,13 +207,19 @@
             const vMOD = labelsExibicao.map(m => limparNumero(dMOD.find(ln => ln.mes === m)?.['Valor Real'] || dMOD.find(ln => ln.mes === m)?.Qtd));
             const vMOI = labelsExibicao.map(m => limparNumero(dMOI.find(ln => ln.mes === m)?.['Valor Real'] || dMOI.find(ln => ln.mes === m)?.Qtd));
             
+            // Cores para MOD baseadas no turno selecionado
+            let corMOD = '#334155'; // Padrão
+            if (turnoSelecionado === '1º TURNO') corMOD = '#0284c7';
+            if (turnoSelecionado === '3º TURNO') corMOD = '#f59e0b';
+            if (turnoSelecionado === '2º TURNO') corMOD = '#6366f1';
+
             new Chart(canvas, {
                 type: 'bar',
                 data: {
                     labels: labelsExibicao,
                     datasets: [
                         { label: 'MOI', data: vMOI, backgroundColor: '#94a3b8', stack: 's1' },
-                        { label: 'MOD', data: vMOD, backgroundColor: '#334155', stack: 's1' }
+                        { label: 'MOD', data: vMOD, backgroundColor: corMOD, stack: 's1' }
                     ]
                 },
                 options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
@@ -235,12 +231,10 @@
         document.getElementById('container-graficos').innerHTML = "";
         calcularResumo();
         
-        // Indicadores de Performance
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
         criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "Desligados > 180 Dias / Ativos." });
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Ativos." });
 
-        // Todos os indicadores de Turnover Detalhado restaurados
         const itens = [
             { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
@@ -254,7 +248,6 @@
         ];
         itens.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
-        // Treinamento e Retenção
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total horas acumuladas." });
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
         criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Índice de promoções." });

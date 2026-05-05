@@ -16,7 +16,6 @@
         .kpi-card div { font-size: 1.8rem; font-weight: 700; color: #0284c7; margin-top: 5px; }
         .card { background: #ffffff; border-radius: 16px; padding: 30px; max-width: 1000px; margin: 25px auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); page-break-inside: avoid; }
         
-        /* Ajustes para o cabeçalho do card com botão */
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
         .card-header h2 { margin: 0; padding: 0; }
         .sub { color: #64748b; font-size: 0.85rem; margin-top: 4px; }
@@ -30,16 +29,22 @@
         .btn { padding: 10px 24px; border: 1px solid #e2e8f0; background: white; color: #475569; border-radius: 8px; cursor: pointer; font-weight: 600; }
         .btn.active { background: #0284c7; color: white; border-color: #0284c7; }
         
-        /* Botão Plano de Ação */
         .btn-acao { background: transparent; color: #0284c7; border: 2px solid #0284c7; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; transition: 0.2s; }
         .btn-acao:hover { background: #0284c7; color: white; }
         
+        /* Estilos da Tabela de Plano de Ação */
+        .table-plano { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9rem; }
+        .table-plano th, .table-plano td { border: 1px solid #e2e8f0; padding: 12px; text-align: left; }
+        .table-plano th { background: #f8fafc; color: #64748b; text-transform: uppercase; font-size: 0.75rem; }
+        .input-plano { width: 100%; border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px; box-sizing: border-box; }
+        .btn-add { background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
+        .btn-del { background: #f43f5e; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; }
+
         .select-turno { padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; font-weight: 600; color: #475569; cursor: pointer; }
         .btn-pdf { background: #0f172a; color: white; }
-        
         .hidden { display: none !important; }
 
-        @media print { .controls, .btn, .select-turno, .btn-acao { display: none !important; } }
+        @media print { .controls, .btn, .select-turno, .btn-acao, .btn-add, .btn-del { display: none !important; } }
     </style>
 </head>
 <body>
@@ -70,11 +75,28 @@
         <div class="header-container">
             <button class="btn" onclick="voltarDashboard()" style="margin-top: 20px;">← Voltar ao Dashboard</button>
             <div class="card" style="margin-top: 20px;">
-                <h1 id="titulo-plano" style="text-align: left;">PLANO DE AÇÃO</h1>
-                <p>Detalhamento de causas e contramedidas para a melhoria do indicador.</p>
-                <div style="margin-top: 30px; padding: 50px; border: 2px dashed #cbd5e1; border-radius: 12px; text-align: center; color: #64748b;">
-                    Área reservada para o formulário de Plano de Ação (5W2H) ou link de integração.
+                <div class="card-header">
+                    <div>
+                        <h1 id="titulo-plano" style="text-align: left; margin-bottom: 5px;">PLANO DE AÇÃO</h1>
+                        <p>Detalhamento de causas e contramedidas para a melhoria do indicador.</p>
+                    </div>
+                    <button class="btn-add" onclick="adicionarLinhaPlano()">+ Novo Item</button>
                 </div>
+                
+                <table class="table-plano" id="tabela-itens-plano">
+                    <thead>
+                        <tr>
+                            <th>O quê (Ação)</th>
+                            <th>Quem (Resp.)</th>
+                            <th>Quando (Prazo)</th>
+                            <th>Status</th>
+                            <th style="width: 50px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpo-plano">
+                        <!-- Linhas inseridas dinamicamente -->
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -86,10 +108,7 @@
     let dadosGlobais = [];
     let anoSelecionado = 'TODOS';
     let turnoSelecionado = 'TODOS';
-
-    const labelsTodos = [];
-    for(let m=1; m<=12; m++) labelsTodos.push(`${m.toString().padStart(2,'0')}/2025`);
-    for(let m=1; m<=12; m++) labelsTodos.push(`${m.toString().padStart(2,'0')}/2026`);
+    let indicadorAtualPlano = "";
 
     function limparNumero(v) {
         if (!v || v.toString().trim() === "") return 0;
@@ -101,11 +120,13 @@
         return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
     }
 
-    // Funções de Navegação
+    // --- LÓGICA DE PERSISTÊNCIA DO PLANO DE AÇÃO ---
     function irParaPlanoAcao(titulo) {
+        indicadorAtualPlano = titulo;
         document.getElementById('tela-dashboard').classList.add('hidden');
         document.getElementById('tela-plano-acao').classList.remove('hidden');
         document.getElementById('titulo-plano').innerText = "PLANO DE AÇÃO - " + titulo;
+        carregarPlanoLocal();
         window.scrollTo(0, 0);
     }
 
@@ -114,6 +135,70 @@
         document.getElementById('tela-dashboard').classList.remove('hidden');
     }
 
+    function adicionarLinhaPlano() {
+        const corpo = document.getElementById('corpo-plano');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><input type="text" class="input-plano" onchange="salvarPlanoLocal()"></td>
+            <td><input type="text" class="input-plano" onchange="salvarPlanoLocal()"></td>
+            <td><input type="date" class="input-plano" onchange="salvarPlanoLocal()"></td>
+            <td>
+                <select class="input-plano" onchange="salvarPlanoLocal()">
+                    <option>Pendente</option>
+                    <option>Em Andamento</option>
+                    <option>Concluído</option>
+                </select>
+            </td>
+            <td><button class="btn-del" onclick="removerLinha(this)">Apagar</button></td>
+        `;
+        corpo.appendChild(tr);
+        salvarPlanoLocal();
+    }
+
+    function removerLinha(btn) {
+        btn.closest('tr').remove();
+        salvarPlanoLocal();
+    }
+
+    function salvarPlanoLocal() {
+        const linhas = [];
+        document.querySelectorAll('#corpo-plano tr').forEach(tr => {
+            const inputs = tr.querySelectorAll('input, select');
+            linhas.push({
+                acao: inputs[0].value,
+                quem: inputs[1].value,
+                quando: inputs[2].value,
+                status: inputs[3].value
+            });
+        });
+        localStorage.setItem('plano_' + indicadorAtualPlano, JSON.stringify(linhas));
+    }
+
+    function carregarPlanoLocal() {
+        const corpo = document.getElementById('corpo-plano');
+        corpo.innerHTML = "";
+        const dados = JSON.parse(localStorage.getItem('plano_' + indicadorAtualPlano) || "[]");
+        
+        dados.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="text" class="input-plano" value="${item.acao}" onchange="salvarPlanoLocal()"></td>
+                <td><input type="text" class="input-plano" value="${item.quem}" onchange="salvarPlanoLocal()"></td>
+                <td><input type="date" class="input-plano" value="${item.quando}" onchange="salvarPlanoLocal()"></td>
+                <td>
+                    <select class="input-plano" onchange="salvarPlanoLocal()">
+                        <option ${item.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
+                        <option ${item.status === 'Em Andamento' ? 'selected' : ''}>Em Andamento</option>
+                        <option ${item.status === 'Concluído' ? 'selected' : ''}>Concluído</option>
+                    </select>
+                </td>
+                <td><button class="btn-del" onclick="removerLinha(this)">Apagar</button></td>
+            `;
+            corpo.appendChild(tr);
+        });
+    }
+
+    // --- LÓGICA DO DASHBOARD ---
     function filtrarAno(ano, btn) {
         anoSelecionado = ano;
         document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
@@ -132,7 +217,6 @@
             const nomeInd = normalizar(ln.Indicador);
             const matchProcesso = nomeProc.includes(normalizar(chaveProcesso));
             const matchAno = anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado);
-            
             let matchTurno = true;
             if (aplicarTurno && turnoSelecionado !== 'TODOS') {
                 matchTurno = nomeInd.includes(normalizar(turnoSelecionado)) || 

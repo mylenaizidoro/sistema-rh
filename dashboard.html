@@ -15,6 +15,19 @@
         .kpi-card small { color: #64748b; font-size: 0.75rem; text-transform: uppercase; font-weight: 600; }
         .kpi-card div { font-size: 1.8rem; font-weight: 700; color: #0284c7; margin-top: 5px; }
         .card { background: #ffffff; border-radius: 16px; padding: 30px; max-width: 1000px; margin: 25px auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); page-break-inside: avoid; }
+        
+        /* Melhoria de Layout para Título e Botão */
+        .title-wrapper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .title-wrapper h2 { margin: 0; font-size: 1.4rem; }
+        
+        .btn-acao { 
+            background: #ffffff; color: #0284c7; border: 1px solid #0284c7; 
+            padding: 8px 16px; border-radius: 8px; text-decoration: none; 
+            font-size: 0.7rem; font-weight: 700; transition: all 0.3s;
+            text-transform: uppercase;
+        }
+        .btn-acao:hover { background: #0284c7; color: white; }
+
         .grid-info { display: grid; grid-template-columns: 1fr 280px; gap: 25px; align-items: center; }
         .info-box { background: #f8fafc; padding: 20px; border-radius: 12px; border-left: 5px solid #0284c7; font-size: 0.9rem; color: #475569; }
         .info-box b { color: #0284c7; display: block; margin-bottom: 8px; text-transform: uppercase; font-size: 0.8rem; }
@@ -24,7 +37,7 @@
         .btn.active { background: #0284c7; color: white; border-color: #0284c7; }
         .select-turno { padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; font-weight: 600; color: #475569; cursor: pointer; }
         .btn-pdf { background: #0f172a; color: white; }
-        @media print { .controls, .btn, .select-turno { display: none !important; } }
+        @media print { .controls, .btn, .select-turno, .btn-acao { display: none !important; } }
     </style>
 </head>
 <body>
@@ -52,6 +65,9 @@
     Chart.register(ChartDataLabels);
     const planilhaDrive = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
     
+    // Altere para o link real da sua página de Plano de Ação
+    const urlPlanoAcao = "#"; 
+
     let dadosGlobais = [];
     let anoSelecionado = 'TODOS';
     let turnoSelecionado = 'TODOS';
@@ -82,7 +98,6 @@
         renderizarDashboard();
     }
 
-    // Função de busca que ignora o turno se solicitado (usada nas médias do topo)
     function obterDadosBase(chaveProcesso, aplicarTurno = true) {
         return dadosGlobais.filter(ln => {
             const nomeProc = normalizar(ln.Processo);
@@ -95,7 +110,6 @@
                 matchTurno = nomeInd.includes(normalizar(turnoSelecionado)) || 
                              nomeProc.includes(normalizar(turnoSelecionado));
             }
-            
             return matchProcesso && matchAno && matchTurno;
         });
     }
@@ -109,16 +123,9 @@
 
     function calcularResumo() {
         const getMedia = (chave) => {
-            // Primeiro tenta buscar com o filtro de turno
             let filtrados = obterDadosBase(chave, true);
-            
-            // Se não achar nada para o turno (ex: Absenteísmo é geral), busca o geral da planta
-            if (filtrados.length === 0) {
-                filtrados = obterDadosBase(chave, false);
-            }
-
+            if (filtrados.length === 0) filtrados = obterDadosBase(chave, false);
             if (!filtrados.length) return "0";
-            
             const soma = filtrados.reduce((acc, curr) => acc + limparNumero(curr['Valor Real'] || curr.Qtd), 0);
             return (soma / filtrados.length).toFixed(1);
         };
@@ -141,7 +148,10 @@
 
         container.innerHTML += `
             <div class="card">
-                <h2>${itemConfig.titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
+                <div class="title-wrapper">
+                    <h2>${itemConfig.titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
+                    <a href="${urlPlanoAcao}" target="_blank" class="btn-acao">Plano de Ação +</a>
+                </div>
                 <p class="sub">Grupo Coplac | Performance</p>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
@@ -156,7 +166,6 @@
                 const valor = r ? limparNumero(r['Valor Real'] || r.Qtd) : null;
                 return valor === 0 ? null : valor;
             });
-
             const corBarras = dFinal.map((valor, idx) => definirCorBarra(valor, metas[idx], itemConfig.tipo));
 
             new Chart(document.getElementById(`chart-${idUnique}`), {
@@ -187,7 +196,10 @@
         const idUnique = Math.random().toString(36).substr(2, 9);
         document.getElementById('container-graficos').innerHTML += `
             <div class="card">
-                <h2>${titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
+                <div class="title-wrapper">
+                    <h2>${titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
+                    <a href="${urlPlanoAcao}" target="_blank" class="btn-acao">Plano de Ação +</a>
+                </div>
                 <p class="sub">Grupo Coplac | MOD vs MOI</p>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
@@ -198,7 +210,6 @@
         setTimeout(() => {
             const vMOD = labelsExibicao.map(m => limparNumero(dMOD.find(ln => ln.mes === m)?.['Valor Real'] || dMOD.find(ln => ln.mes === m)?.Qtd));
             const vMOI = labelsExibicao.map(m => limparNumero(dMOI.find(ln => ln.mes === m)?.['Valor Real'] || dMOI.find(ln => ln.mes === m)?.Qtd));
-            
             let corMOD = (turnoSelecionado === '1º TURNO') ? '#0284c7' : (turnoSelecionado === '3º TURNO' ? '#f59e0b' : '#334155');
             let corMOI = '#94a3b8';
 
@@ -224,12 +235,10 @@
         document.getElementById('container-graficos').innerHTML = "";
         calcularResumo();
         
-        // Performance Geral
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
         criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "Desligados > 180 Dias / Ativos." });
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
 
-        // Turnover Detalhado (MOD vs MOI)
         const itensConsolidados = [
             { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
@@ -243,7 +252,6 @@
         ];
         itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
-        // Treinamento
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
         criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Índice de promoções." });

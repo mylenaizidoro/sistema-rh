@@ -59,12 +59,14 @@
 
 <script>
     Chart.register(ChartDataLabels);
+    // Link da planilha pública em formato CSV
     const planilhaDrive = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
     
     let dadosGlobais = [];
     let anoSelecionado = 'TODOS';
     let turnoSelecionado = 'TODOS';
 
+    // Gerador de labels para 2025 e 2026
     const labelsTodos = [];
     for(let m=1; m<=12; m++) labelsTodos.push(`${m.toString().padStart(2,'0')}/2025`);
     for(let m=1; m<=12; m++) labelsTodos.push(`${m.toString().padStart(2,'0')}/2026`);
@@ -91,7 +93,7 @@
         renderizarDashboard();
     }
 
-    // FUNÇÃO DE ENVIO COM A NOVA URL FORNECIDA
+    // FUNÇÃO DE ENVIO COM A URL DO APP SCRIPT
     function enviarRelatorio() {
         const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwveKNROClrWbJOYCW45GE-kNgqesZ5AhE_2bumyoogeb5NhnaALv4db6pe9NYMLxVV/exec"; 
         const email = document.getElementById('emailDestino').value;
@@ -273,6 +275,7 @@
         criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Índice de promoções." });
     }
 
+    // Início do carregamento dos dados via PapaParse
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
         download: true, header: true, skipEmptyLines: true,
         complete: function(r) { dadosGlobais = r.data; renderizarDashboard(); }

@@ -91,10 +91,9 @@
         renderizarDashboard();
     }
 
-    // FUNÇÃO DE ENVIO ATUALIZADA
+    // FUNÇÃO DE ENVIO COM A NOVA URL FORNECIDA
     function enviarRelatorio() {
-        // Importante: Substitua pela sua URL final do Apps Script após a nova implantação
-        const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxXU_mGK2fJ609ZZRYG89P1gi-Pn0ST089dvM_ofwJOdUpCQ0e1auJHtTRuYRrmOjnf/exec"; 
+        const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwveKNROClrWbJOYCW45GE-kNgqesZ5AhE_2bumyoogeb5NhnaALv4db6pe9NYMLxVV/exec"; 
         const email = document.getElementById('emailDestino').value;
 
         if (!email) {

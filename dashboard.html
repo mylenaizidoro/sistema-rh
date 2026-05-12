@@ -56,6 +56,7 @@
 
 <script>
     Chart.register(ChartDataLabels);
+    // Link da sua planilha Coplac via CSV
     const planilhaDrive = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
     
     let dadosGlobais = [];
@@ -230,19 +231,19 @@
         
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
         
-        // NOVOS INDICADORES DE TURNOVER
+        // INDICADORES DE TURNOVER POR FAIXA DE TEMPO
         criarGraficoPerformance({ 
             chave: "> 180", 
             titulo: "TURNOVER PA > 180 DIAS", 
             tipo: "MENOR_MELHOR", 
-            nota: "Desligados com mais de 180 dias de casa / Ativos." 
+            nota: "turnover PA desligados > 180 dias/ ativos" 
         });
 
         criarGraficoPerformance({ 
             chave: "< 180", 
             titulo: "TURNOVER PA < 180 DIAS", 
             tipo: "MENOR_MELHOR", 
-            nota: "Mortalidade: Desligados com menos de 180 dias / Ativos." 
+            nota: "turnover PA desligados < 180 dias/ ativos" 
         });
 
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });

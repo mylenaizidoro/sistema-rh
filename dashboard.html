@@ -20,14 +20,12 @@
         .info-box b { color: #0284c7; display: block; margin-bottom: 8px; text-transform: uppercase; font-size: 0.8rem; }
         .chart-container { position: relative; height: 420px; width: 100%; }
         .controls { text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; align-items: center; }
-        
         .btn { padding: 10px 24px; border: 1px solid #e2e8f0; background: white; color: #475569; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .btn.active { background: #0284c7; color: white; border-color: #0284c7; }
         .select-turno, .input-email { padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; font-weight: 600; color: #475569; }
         .input-email { width: 220px; font-weight: 400; }
         .btn-email { background: #8b5cf6; color: white; border-color: #8b5cf6; }
         .btn-pdf { background: #0f172a; color: white; }
-        
         @media print { .controls, .btn, .select-turno, .input-email, .btn-email { display: none !important; } }
     </style>
 </head>
@@ -49,7 +47,6 @@
 
             <input type="email" id="emailDestino" class="input-email" placeholder="Digite o e-mail de destino">
             <button class="btn btn-email" onclick="enviarRelatorio()">📧 Enviar Indicadores</button>
-            
             <button class="btn btn-pdf" onclick="window.print()">Exportar PDF</button>
         </div>
         <div id="kpi-summary" class="kpi-row"></div>
@@ -59,14 +56,12 @@
 
 <script>
     Chart.register(ChartDataLabels);
-    // Link da planilha pública em formato CSV
     const planilhaDrive = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
     
     let dadosGlobais = [];
     let anoSelecionado = 'TODOS';
     let turnoSelecionado = 'TODOS';
 
-    // Gerador de labels para 2025 e 2026
     const labelsTodos = [];
     for(let m=1; m<=12; m++) labelsTodos.push(`${m.toString().padStart(2,'0')}/2025`);
     for(let m=1; m<=12; m++) labelsTodos.push(`${m.toString().padStart(2,'0')}/2026`);
@@ -93,18 +88,11 @@
         renderizarDashboard();
     }
 
-    // FUNÇÃO DE ENVIO COM A URL DO APP SCRIPT
     function enviarRelatorio() {
         const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwveKNROClrWbJOYCW45GE-kNgqesZ5AhE_2bumyoogeb5NhnaALv4db6pe9NYMLxVV/exec"; 
         const email = document.getElementById('emailDestino').value;
-
-        if (!email) {
-            alert("Por favor, insira um e-mail válido.");
-            return;
-        }
-
+        if (!email) { alert("Por favor, insira um e-mail válido."); return; }
         const kpis = document.querySelectorAll('#kpi-summary .kpi-card div');
-        
         const dadosEmail = {
             destinatario: email,
             absenteismo: kpis[0] ? kpis[0].innerText : "N/A",
@@ -113,14 +101,7 @@
             aprovacao: kpis[3] ? kpis[3].innerText : "N/A",
             timestamp: new Date().toLocaleString()
         };
-
-        fetch(URL_SCRIPT, {
-            method: 'POST',
-            mode: 'no-cors', 
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify(dadosEmail)
-        });
-
+        fetch(URL_SCRIPT, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(dadosEmail) });
         alert("Solicitação de envio disparada para: " + email);
     }
 
@@ -132,8 +113,7 @@
             const matchAno = anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado);
             let matchTurno = true;
             if (aplicarTurno && turnoSelecionado !== 'TODOS') {
-                matchTurno = nomeInd.includes(normalizar(turnoSelecionado)) || 
-                             nomeProc.includes(normalizar(turnoSelecionado));
+                matchTurno = nomeInd.includes(normalizar(turnoSelecionado)) || nomeProc.includes(normalizar(turnoSelecionado));
             }
             return matchProcesso && matchAno && matchTurno;
         });
@@ -168,7 +148,7 @@
 
         const idUnique = Math.random().toString(36).substr(2, 9);
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-        const exibirPct = ["ABSENTEISMO", "TURNOVER", "UNIVERSAL", "APROVADOS", "RETENÇÃO"].some(t => itemConfig.chave.includes(t));
+        const exibirPct = ["ABSENTEISMO", "TURNOVER", "UNIVERSAL", "APROVADOS", "RETENÇÃO", "> 180", "< 180"].some(t => itemConfig.chave.includes(t));
 
         container.innerHTML += `
             <div class="card">
@@ -187,9 +167,7 @@
                 const valor = r ? limparNumero(r['Valor Real'] || r.Qtd) : null;
                 return valor === 0 ? null : valor;
             });
-
             const corBarras = dFinal.map((valor, idx) => definirCorBarra(valor, metas[idx], itemConfig.tipo));
-
             new Chart(document.getElementById(`chart-${idUnique}`), {
                 type: 'bar',
                 data: {
@@ -213,7 +191,6 @@
         const dMOD = dadosBase.filter(ln => normalizar(ln.Indicador).includes("MOD"));
         const dMOI = dadosBase.filter(ln => normalizar(ln.Indicador).includes("MOI"));
         if (dMOD.length === 0 && dMOI.length === 0) return;
-
         const idUnique = Math.random().toString(36).substr(2, 9);
         document.getElementById('container-graficos').innerHTML += `
             <div class="card">
@@ -224,13 +201,11 @@
                     <div class="info-box"><b>DETALHAMENTO</b> Comparativo MOD/MOI baseado na planilha.</div>
                 </div>
             </div>`;
-        
         setTimeout(() => {
             const vMOD = labelsExibicao.map(m => limparNumero(dMOD.find(ln => ln.mes === m)?.['Valor Real'] || dMOD.find(ln => ln.mes === m)?.Qtd));
             const vMOI = labelsExibicao.map(m => limparNumero(dMOI.find(ln => ln.mes === m)?.['Valor Real'] || dMOI.find(ln => ln.mes === m)?.Qtd));
             let corMOD = (turnoSelecionado === '1º TURNO') ? '#0284c7' : (turnoSelecionado === '3º TURNO' ? '#f59e0b' : '#334155');
             let corMOI = '#94a3b8';
-
             new Chart(document.getElementById(`chart-${idUnique}`), {
                 type: 'bar',
                 data: {
@@ -254,7 +229,22 @@
         calcularResumo();
         
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
-        criarGraficoPerformance({ chave: "TURNOVER PA", titulo: "TURNOVER PA - 03", tipo: "MENOR_MELHOR", nota: "Desligados > 180 Dias / Ativos." });
+        
+        // NOVOS INDICADORES DE TURNOVER
+        criarGraficoPerformance({ 
+            chave: "> 180", 
+            titulo: "TURNOVER PA > 180 DIAS", 
+            tipo: "MENOR_MELHOR", 
+            nota: "Desligados com mais de 180 dias de casa / Ativos." 
+        });
+
+        criarGraficoPerformance({ 
+            chave: "< 180", 
+            titulo: "TURNOVER PA < 180 DIAS", 
+            tipo: "MENOR_MELHOR", 
+            nota: "Mortalidade: Desligados com menos de 180 dias / Ativos." 
+        });
+
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
 
         const itensConsolidados = [
@@ -275,7 +265,6 @@
         criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Índice de promoções." });
     }
 
-    // Início do carregamento dos dados via PapaParse
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
         download: true, header: true, skipEmptyLines: true,
         complete: function(r) { dadosGlobais = r.data; renderizarDashboard(); }

@@ -15,13 +15,16 @@
         .kpi-card small { color: #64748b; font-size: 0.75rem; text-transform: uppercase; font-weight: 600; }
         .kpi-card div { font-size: 1.8rem; font-weight: 700; color: #0284c7; margin-top: 5px; }
         
-        /* Ajuste para Gráficos Maiores e Uniformes */
         .card { background: #ffffff; border-radius: 16px; padding: 30px; max-width: 1200px; margin: 25px auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); page-break-inside: avoid; }
+        
+        /* Estilos para o Gráfico em Destaque (Aprovados) */
+        .card.featured { max-width: 1400px; border: 2px solid #0284c7; }
+        .card.featured .chart-container { height: 750px; } /* Altura maior conforme solicitado */
+
         .grid-info { display: grid; grid-template-columns: 1fr 280px; gap: 25px; align-items: center; }
         .info-box { background: #f8fafc; padding: 20px; border-radius: 12px; border-left: 5px solid #0284c7; font-size: 0.9rem; color: #475569; }
         .info-box b { color: #0284c7; display: block; margin-bottom: 8px; text-transform: uppercase; font-size: 0.8rem; }
         
-        /* Aumentado de 420px para 500px para melhor visualização */
         .chart-container { position: relative; height: 500px; width: 100%; }
         
         .controls { text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; align-items: center; }
@@ -154,12 +157,15 @@
         const idUnique = Math.random().toString(36).substr(2, 9);
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
         
-        // MODIFICAÇÃO: Retenção agora é quantidade, os demais porcentagem
+        // IDENTIFICAÇÃO DO INDICADOR PARA APLICAR O TAMANHO MAIOR
+        const isAprovados = itemConfig.chave.includes("APROVADOS EM TREINAMENTO");
+        const cardClass = isAprovados ? 'card featured' : 'card';
+
         let exibirPct = ["ABSENTEISMO", "TURNOVER", "UNIVERSAL", "APROVADOS", "> 180", "< 180"].some(t => itemConfig.chave.includes(t));
         if (itemConfig.chave.includes("RETENÇÃO")) exibirPct = false;
 
         container.innerHTML += `
-            <div class="card">
+            <div class="${cardClass}">
                 <h2>${itemConfig.titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
                 <p class="sub">Grupo Coplac | Performance</p>
                 <div class="grid-info">
@@ -192,8 +198,8 @@
                             anchor: 'end', 
                             align: 'top', 
                             formatter: (v) => v ? v + (exibirPct ? '%' : '') : '', 
-                            font: { weight: 'bold' }, 
-                            rotation: -45 // Rotação para não sobrepor números
+                            font: { weight: 'bold', size: isAprovados ? 14 : 11 }, 
+                            rotation: -45 
                         } 
                     }
                 }
@@ -265,7 +271,10 @@
         itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
+        
+        // ESTE É O GRÁFICO QUE FICARÁ MAIOR
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
+        
         criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Quantidade de promoções." });
     }
 

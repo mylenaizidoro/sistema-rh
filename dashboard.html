@@ -56,7 +56,6 @@
 
 <script>
     Chart.register(ChartDataLabels);
-    // Link da sua planilha Coplac via CSV
     const planilhaDrive = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
     
     let dadosGlobais = [];
@@ -149,7 +148,12 @@
 
         const idUnique = Math.random().toString(36).substr(2, 9);
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-        const exibirPct = ["ABSENTEISMO", "TURNOVER", "UNIVERSAL", "APROVADOS", "RETENÇÃO", "> 180", "< 180"].some(t => itemConfig.chave.includes(t));
+        
+        // MODIFICAÇÃO AQUI: Se for retenção, não exibe como porcentagem
+        let exibirPct = ["ABSENTEISMO", "TURNOVER", "UNIVERSAL", "APROVADOS", "> 180", "< 180"].some(t => itemConfig.chave.includes(t));
+        if (itemConfig.chave.includes("RETENÇÃO")) {
+            exibirPct = false;
+        }
 
         container.innerHTML += `
             <div class="card">
@@ -231,7 +235,6 @@
         
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
         
-        // INDICADORES DE TURNOVER POR FAIXA DE TEMPO
         criarGraficoPerformance({ 
             chave: "> 180", 
             titulo: "TURNOVER PA > 180 DIAS", 
@@ -263,7 +266,9 @@
 
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
-        criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Índice de promoções." });
+        
+        // Este gráfico agora exibirá apenas a quantidade (sem %)
+        criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Quantidade de promoções." });
     }
 
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {

@@ -17,15 +17,17 @@
         
         .card { background: #ffffff; border-radius: 16px; padding: 30px; max-width: 1200px; margin: 25px auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); page-break-inside: avoid; }
         
-        /* Estilos para o Gráfico em Destaque (Aprovados) */
-        .card.featured { max-width: 1400px; border: 2px solid #0284c7; }
-        .card.featured .chart-container { height: 750px; } /* Altura maior conforme solicitado */
+        /* ESTILO DO CARD EM DESTAQUE */
+        .card.featured { max-width: 1300px; border: 2px solid #0284c7; background: #fff; }
+        .card.featured .grid-info { display: block; } /* Muda de grid para bloco para o gráfico ser soberano */
+        .card.featured .chart-container { height: 600px; margin-bottom: 20px; }
+        .card.featured .info-box { border-left: none; border-top: 4px solid #0284c7; margin-top: 20px; }
 
         .grid-info { display: grid; grid-template-columns: 1fr 280px; gap: 25px; align-items: center; }
         .info-box { background: #f8fafc; padding: 20px; border-radius: 12px; border-left: 5px solid #0284c7; font-size: 0.9rem; color: #475569; }
         .info-box b { color: #0284c7; display: block; margin-bottom: 8px; text-transform: uppercase; font-size: 0.8rem; }
         
-        .chart-container { position: relative; height: 500px; width: 100%; }
+        .chart-container { position: relative; height: 450px; width: 100%; }
         
         .controls { text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; align-items: center; }
         .btn { padding: 10px 24px; border: 1px solid #e2e8f0; background: white; color: #475569; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
@@ -157,7 +159,6 @@
         const idUnique = Math.random().toString(36).substr(2, 9);
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
         
-        // IDENTIFICAÇÃO DO INDICADOR PARA APLICAR O TAMANHO MAIOR
         const isAprovados = itemConfig.chave.includes("APROVADOS EM TREINAMENTO");
         const cardClass = isAprovados ? 'card featured' : 'card';
 
@@ -182,24 +183,34 @@
                 return valor === 0 ? null : valor;
             });
             const corBarras = dFinal.map((valor, idx) => definirCorBarra(valor, metas[idx], itemConfig.tipo));
+            
             new Chart(document.getElementById(`chart-${idUnique}`), {
                 type: 'bar',
                 data: {
                     labels: labelsExibicao,
                     datasets: [
-                        { label: 'Realizado', data: dFinal, backgroundColor: corBarras, borderRadius: 6 },
-                        { label: 'Meta', data: metas, type: 'line', borderColor: '#475569', borderWidth: 2, borderDash: [5, 5], fill: false, datalabels: { display: false } }
+                        { label: 'Realizado', data: dFinal, backgroundColor: corBarras, borderRadius: 6, barPercentage: 0.7 },
+                        { label: 'Meta', data: metas, type: 'line', borderColor: '#475569', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, fill: false, datalabels: { display: false } }
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        y: { 
+                            beginAtZero: isAprovados ? false : true, 
+                            min: isAprovados ? 80 : 0, // FOCO: Melhora a escala para indicadores altos
+                            max: isAprovados ? 101 : null,
+                            ticks: { stepSize: isAprovados ? 5 : null }
+                        }
+                    },
                     plugins: { 
                         datalabels: { 
                             anchor: 'end', 
                             align: 'top', 
+                            offset: 5,
                             formatter: (v) => v ? v + (exibirPct ? '%' : '') : '', 
-                            font: { weight: 'bold', size: isAprovados ? 14 : 11 }, 
-                            rotation: -45 
+                            font: { weight: 'bold', size: isAprovados ? 13 : 10 }, 
+                            rotation: isAprovados ? -90 : -45 // FOCO: Evita sobreposição vertical
                         } 
                     }
                 }
@@ -240,7 +251,7 @@
                 options: { 
                     responsive: true, maintainAspectRatio: false, 
                     plugins: { 
-                        datalabels: { color: '#fff', formatter: (v) => v > 0 ? v : '', rotation: -45 } 
+                        datalabels: { color: '#fff', formatter: (v) => v > 0 ? v : '', font: { size: 10 } } 
                     },
                     scales: { x: { stacked: true }, y: { stacked: true } } 
                 }
@@ -260,21 +271,15 @@
         const itensConsolidados = [
             { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
-            { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
-            { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
             { t: "PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - SOLICITAÇÃO GERAL NO MÊS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", h: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS" },
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS" }
         ];
         itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
+        // GRÁFICO EM DESTAQUE COM REGRAS ESPECIAIS DE ESCALA
+        criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento acumulado dos colaboradores." });
+        
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
-        
-        // ESTE É O GRÁFICO QUE FICARÁ MAIOR
-        criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
-        
         criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Quantidade de promoções." });
     }
 

@@ -1,4 +1,3 @@
-treinamento 
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -181,7 +180,21 @@ treinamento
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { datalabels: { anchor: 'end', align: 'top', formatter: (v) => v ? v + (exibirPct ? '%' : '') : '', font: { weight: 'bold' }, rotation: -90 } }
+                    plugins: { 
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            align: 'start',
+                            labels: {
+                                boxWidth: 12,
+                                useBorderRadius: true,
+                                borderRadius: 3,
+                                font: { size: 12, weight: '600', family: "'Segoe UI', sans-serif" },
+                                padding: 15
+                            }
+                        },
+                        datalabels: { anchor: 'end', align: 'top', formatter: (v) => v ? v + (exibirPct ? '%' : '') : '', font: { weight: 'bold' }, rotation: -90 } 
+                    }
                 }
             });
         }, 150);
@@ -219,7 +232,21 @@ treinamento
                 },
                 options: { 
                     responsive: true, maintainAspectRatio: false, 
-                    plugins: { datalabels: { color: '#fff', formatter: (v) => v > 0 ? v : '' } },
+                    plugins: { 
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            align: 'start',
+                            labels: {
+                                boxWidth: 12,
+                                useBorderRadius: true,
+                                borderRadius: 3,
+                                font: { size: 12, weight: '600', family: "'Segoe UI', sans-serif" },
+                                padding: 15
+                            }
+                        },
+                        datalabels: { color: '#fff', formatter: (v) => v > 0 ? v : '' } 
+                    },
                     scales: { x: { stacked: true }, y: { stacked: true } } 
                 }
             });

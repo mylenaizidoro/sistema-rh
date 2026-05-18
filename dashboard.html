@@ -1,3 +1,4 @@
+treinamento 
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -14,15 +15,11 @@
         .kpi-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .kpi-card small { color: #64748b; font-size: 0.75rem; text-transform: uppercase; font-weight: 600; }
         .kpi-card div { font-size: 1.8rem; font-weight: 700; color: #0284c7; margin-top: 5px; }
-        
-        .card { background: #ffffff; border-radius: 16px; padding: 30px; max-width: 1200px; margin: 25px auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); page-break-inside: avoid; }
+        .card { background: #ffffff; border-radius: 16px; padding: 30px; max-width: 1000px; margin: 25px auto; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); page-break-inside: avoid; }
         .grid-info { display: grid; grid-template-columns: 1fr 280px; gap: 25px; align-items: center; }
         .info-box { background: #f8fafc; padding: 20px; border-radius: 12px; border-left: 5px solid #0284c7; font-size: 0.9rem; color: #475569; }
         .info-box b { color: #0284c7; display: block; margin-bottom: 8px; text-transform: uppercase; font-size: 0.8rem; }
-        
-        /* TODOS OS GRÁFICOS COM 500PX NOVAMENTE */
-        .chart-container { position: relative; height: 500px; width: 100%; }
-        
+        .chart-container { position: relative; height: 420px; width: 100%; }
         .controls { text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; align-items: center; }
         .btn { padding: 10px 24px; border: 1px solid #e2e8f0; background: white; color: #475569; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .btn.active { background: #0284c7; color: white; border-color: #0284c7; }
@@ -60,6 +57,7 @@
 
 <script>
     Chart.register(ChartDataLabels);
+    // Link da sua planilha Coplac via CSV
     const planilhaDrive = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
     
     let dadosGlobais = [];
@@ -152,9 +150,7 @@
 
         const idUnique = Math.random().toString(36).substr(2, 9);
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-        
-        let exibirPct = ["ABSENTEISMO", "TURNOVER", "UNIVERSAL", "APROVADOS", "> 180", "< 180"].some(t => itemConfig.chave.includes(t));
-        if (itemConfig.chave.includes("RETENÇÃO")) exibirPct = false;
+        const exibirPct = ["ABSENTEISMO", "TURNOVER", "UNIVERSAL", "APROVADOS", "RETENÇÃO", "> 180", "< 180"].some(t => itemConfig.chave.includes(t));
 
         container.innerHTML += `
             <div class="card">
@@ -174,34 +170,18 @@
                 return valor === 0 ? null : valor;
             });
             const corBarras = dFinal.map((valor, idx) => definirCorBarra(valor, metas[idx], itemConfig.tipo));
-            
             new Chart(document.getElementById(`chart-${idUnique}`), {
                 type: 'bar',
                 data: {
                     labels: labelsExibicao,
                     datasets: [
                         { label: 'Realizado', data: dFinal, backgroundColor: corBarras, borderRadius: 6 },
-                        { label: 'Meta', data: metas, type: 'line', borderColor: '#475569', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, fill: false, datalabels: { display: false } }
+                        { label: 'Meta', data: metas, type: 'line', borderColor: '#475569', borderWidth: 2, borderDash: [5, 5], fill: false, datalabels: { display: false } }
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    scales: {
-                        y: { 
-                            beginAtZero: itemConfig.chave.includes("APROVADOS") ? false : true, 
-                            min: itemConfig.chave.includes("APROVADOS") ? 80 : 0, 
-                            max: itemConfig.chave.includes("APROVADOS") ? 102 : null 
-                        }
-                    },
-                    plugins: { 
-                        legend: { position: 'top', align: 'end', labels: { boxWidth: 12, padding: 20 } },
-                        datalabels: { 
-                            anchor: 'end', align: 'top', offset: 4,
-                            formatter: (v) => v ? v + (exibirPct ? '%' : '') : '', 
-                            font: { weight: 'bold', size: 10 }, 
-                            rotation: -90 
-                        } 
-                    }
+                    plugins: { datalabels: { anchor: 'end', align: 'top', formatter: (v) => v ? v + (exibirPct ? '%' : '') : '', font: { weight: 'bold' }, rotation: -90 } }
                 }
             });
         }, 150);
@@ -239,10 +219,7 @@
                 },
                 options: { 
                     responsive: true, maintainAspectRatio: false, 
-                    plugins: { 
-                        legend: { position: 'top', align: 'end' },
-                        datalabels: { color: '#fff', formatter: (v) => v > 0 ? v : '', font: { size: 9 } } 
-                    },
+                    plugins: { datalabels: { color: '#fff', formatter: (v) => v > 0 ? v : '' } },
                     scales: { x: { stacked: true }, y: { stacked: true } } 
                 }
             });
@@ -254,20 +231,40 @@
         calcularResumo();
         
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
-        criarGraficoPerformance({ chave: "> 180", titulo: "TURNOVER PA > 180 DIAS", tipo: "MENOR_MELHOR", nota: "Desligados > 180 dias / ativos." });
-        criarGraficoPerformance({ chave: "< 180", titulo: "TURNOVER PA < 180 DIAS", tipo: "MENOR_MELHOR", nota: "Desligados < 180 dias / ativos." });
+        
+        // INDICADORES DE TURNOVER POR FAIXA DE TEMPO
+        criarGraficoPerformance({ 
+            chave: "> 180", 
+            titulo: "TURNOVER PA > 180 DIAS", 
+            tipo: "MENOR_MELHOR", 
+            nota: "turnover PA desligados > 180 dias/ ativos" 
+        });
+
+        criarGraficoPerformance({ 
+            chave: "< 180", 
+            titulo: "TURNOVER PA < 180 DIAS", 
+            tipo: "MENOR_MELHOR", 
+            nota: "turnover PA desligados < 180 dias/ ativos" 
+        });
+
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
 
         const itensConsolidados = [
             { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
             { t: "PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - SOLICITAÇÃO GERAL NO MÊS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", h: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS" },
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS" }
         ];
         itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
-        criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento acumulado." });
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
-        criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Quantidade de promoções." });
+        criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
+        criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Índice de promoções." });
     }
 
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {

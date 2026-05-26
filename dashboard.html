@@ -285,6 +285,14 @@
             nota: "turnover PA desligados < 180 dias/ ativos" 
         });
 
+        // NOVO INDICADOR ADICIONADO ABAIXO DAS FAIXAS DE TEMPO
+        criarGraficoPerformance({ 
+            chave: "TURNOVER - SOLICITACAO DE DESLIGAMENTOS", 
+            titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS", 
+            tipo: "MENOR_MELHOR", 
+            nota: "Quantidade de solicitações registradas de desligamento voluntário por período." 
+        });
+
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
 
         const itensConsolidados = [

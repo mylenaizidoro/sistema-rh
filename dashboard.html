@@ -144,7 +144,14 @@
 
     function criarGraficoPerformance(itemConfig) {
         const container = document.getElementById('container-graficos');
-        const dados = obterDadosBase(itemConfig.chave, true);
+        // Alteração preventiva para buscar dados mesmo se o filtro de turno omitir os dados consolidados de pedidos gerais
+        let dados = obterDadosBase(itemConfig.chave, itemConfig.ignorarTurno ? false : true);
+        
+        // Se não achou com a chave principal, tenta uma busca flexível secundária
+        if (dados.length === 0 && itemConfig.chaveAlternativa) {
+            dados = obterDadosBase(itemConfig.chaveAlternativa, itemConfig.ignorarTurno ? false : true);
+        }
+        
         if (dados.length === 0) return;
 
         const idUnique = Math.random().toString(36).substr(2, 9);
@@ -153,7 +160,7 @@
 
         container.innerHTML += `
             <div class="card">
-                <h2>${itemConfig.titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
+                <h2>${itemConfig.titulo} ${(!itemConfig.ignorarTurno && turnoSelecionado !== 'TODOS') ? '- ' + turnoSelecionado : ''}</h2>
                 <p class="sub">Grupo Coplac | Performance</p>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
@@ -194,7 +201,7 @@
                             }
                         },
                         datalabels: { 
-                            color: '#000000', /* Valores externos em preto */
+                            color: '#000000',
                             anchor: 'end', 
                             align: 'top', 
                             formatter: (v) => v ? v + (exibirPct ? '%' : '') : '', 
@@ -253,7 +260,7 @@
                             }
                         },
                         datalabels: { 
-                            color: '#ffffff', /* Valores internos do MOD/MOI em branco para legibilidade */
+                            color: '#ffffff',
                             formatter: (v) => v > 0 ? v : '',
                             font: { weight: 'bold' }
                         } 
@@ -285,12 +292,14 @@
             nota: "turnover PA desligados < 180 dias/ ativos" 
         });
 
-        // NOVO INDICADOR ADICIONADO ABAIXO DAS FAIXAS DE TEMPO
+        // NOVO INDICADOR - Chave flexibilizada para buscar termos parciais ou gerais da planilha
         criarGraficoPerformance({ 
-            chave: "TURNOVER - SOLICITACAO DE DESLIGAMENTOS", 
+            chave: "PEDIDOS DE DESLIGAMENTO MES", 
+            chaveAlternativa: "SOLICITACAO DE DESLIGAMENTO",
             titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS", 
             tipo: "MENOR_MELHOR", 
-            nota: "Quantidade de solicitações registradas de desligamento voluntário por período." 
+            nota: "Quantidade total de solicitações de desligamento voluntário mapeadas.",
+            ignorarTurno: true 
         });
 
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });

@@ -109,7 +109,7 @@
         return dadosGlobais.filter(ln => {
             const nomeProc = normalizar(ln.Processo);
             const nomeInd = normalizar(ln.Indicador);
-            const matchProcesso = nomeProc.includes(normalizar(chaveProcesso));
+            const matchProcesso = nomeProc.includes(normalizar(chaveProcesso)) || nomeInd.includes(normalizar(chaveProcesso));
             const matchAno = anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado);
             let matchTurno = true;
             if (aplicarTurno && turnoSelecionado !== 'TODOS') {
@@ -200,72 +200,73 @@
         }, 150);
     }
 
-    // FUNÇÃO PARA GERAR OS DOIS CARDS INDEPENDENTES (UM PARA MOD E OUTRO PARA MOI) COM OS TURNOS EMPILHADOS
-    function criarGraficoTurnosEmpilhados(titulo, termoSubcesso) {
+    // NOVA FUNÇÃO: Isolador e estruturador do empilhamento de turnos reais da planilha
+    function criarGraficoTurnoSeparado(titulo, categoriaFiltro) {
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
         
-        // Puxa as linhas da planilha associadas ao termo (MOD ou MOI)
-        const dadosBase = obterDadosBase(termoSubcesso, false);
-        
-        // Aplica a separação por turnos contidos na coluna Indicador ou Processo
-        const dT1 = dadosBase.filter(ln => normalizar(ln.Indicador).includes("1º TURNO") || normalizar(ln.Processo).includes("1º TURNO"));
-        const dT2 = dadosBase.filter(ln => normalizar(ln.Indicador).includes("2º TURNO") || normalizar(ln.Processo).includes("2º TURNO"));
-        const dT3 = dadosBase.filter(ln => normalizar(ln.Indicador).includes("3º TURNO") || normalizar(ln.Processo).includes("3º TURNO"));
-        
-        if (dT1.length === 0 && dT2.length === 0 && dT3.length === 0) return;
-        
-        // Respeita o filtro seletor de turno superior do painel se o usuário isolar um turno
+        // Puxa do escopo global todas as linhas da planilha que batem com "MOD" ou "MOI"
+        const linhasCategoria = dadosGlobais.filter(ln => {
+            const indNormalizado = normalizar(ln.Indicador);
+            const procNormalizado = normalizar(ln.Processo);
+            const matchTermo = indNormalizado.includes(categoriaFiltro) || procNormalizado.includes(categoriaFiltro);
+            const matchAno = anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado);
+            return matchTermo && matchAno;
+        });
+
+        if (linhasCategoria.length === 0) return;
+
+        // Separa internamente por turnos com filtros limpos
+        const dadosT1 = linhasCategoria.filter(ln => normalizar(ln.Indicador).includes("1º TURNO") || normalizar(ln.Processo).includes("1º TURNO"));
+        const dadosT2 = linhasCategoria.filter(ln => normalizar(ln.Indicador).includes("2º TURNO") || normalizar(ln.Processo).includes("2º TURNO"));
+        const dadosT3 = linhasCategoria.filter(ln => normalizar(ln.Indicador).includes("3º TURNO") || normalizar(ln.Processo).includes("3º TURNO"));
+
+        // Se o usuário selecionou um turno específico no filtro do topo, zeramos a exibição visual dos outros
         if (turnoSelecionado !== 'TODOS') {
-            if (turnoSelecionado === '1º TURNO') { dT2.length = 0; dT3.length = 0; }
-            if (turnoSelecionado === '2º TURNO') { dT1.length = 0; dT3.length = 0; }
-            if (turnoSelecionado === '3º TURNO') { dT1.length = 0; dT2.length = 0; }
+            if (turnoSelecionado === '1º TURNO') { dadosT2.length = 0; dadosT3.length = 0; }
+            if (turnoSelecionado === '2º TURNO') { dadosT1.length = 0; dadosT3.length = 0; }
+            if (turnoSelecionado === '3º TURNO') { dadosT1.length = 0; dadosT2.length = 0; }
         }
 
         const idUnique = Math.random().toString(36).substr(2, 9);
         document.getElementById('container-graficos').innerHTML += `
             <div class="card">
                 <h2>${titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
-                <p class="sub">Grupo Coplac | Distribuição Operacional</p>
+                <p class="sub">Grupo Coplac | Visão por Turnos</p>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box"><b>DETALHAMENTO</b> Totalização mensal empilhada e distribuída proporcionalmente por turnos.</div>
+                    <div class="info-box"><b>DETALHAMENTO</b> Divisão empilhada mensal baseada no contingente ativo do setor.</div>
                 </div>
             </div>`;
-            
+
         setTimeout(() => {
-            const vT1 = labelsExibicao.map(m => limparNumero(dT1.find(ln => ln.mes === m)?.['Valor Real'] || dT1.find(ln => ln.mes === m)?.Qtd));
-            const vT2 = labelsExibicao.map(m => limparNumero(dT2.find(ln => ln.mes === m)?.['Valor Real'] || dT2.find(ln => ln.mes === m)?.Qtd));
-            const vT3 = labelsExibicao.map(m => limparNumero(dT3.find(ln => ln.mes === m)?.['Valor Real'] || dT3.find(ln => ln.mes === m)?.Qtd));
-            
-            // Definição das cores exatas solicitadas na imagem do protótipo
-            const cor1ºTurno = '#0284c7'; // Azul
-            const cor2ºTurno = '#000000'; // Preto
-            const cor3ºTurno = '#f59e0b'; // Laranja
-            
+            const vT1 = labelsExibicao.map(m => limparNumero(dadosT1.find(ln => ln.mes === m)?.['Valor Real'] || dadosT1.find(ln => ln.mes === m)?.Qtd));
+            const vT2 = labelsExibicao.map(m => limparNumero(dadosT2.find(ln => ln.mes === m)?.['Valor Real'] || dadosT2.find(ln => ln.mes === m)?.Qtd));
+            const vT3 = labelsExibicao.map(m => limparNumero(dadosT3.find(ln => ln.mes === m)?.['Valor Real'] || dadosT3.find(ln => ln.mes === m)?.Qtd));
+
             new Chart(document.getElementById(`chart-${idUnique}`), {
                 type: 'bar',
                 data: {
                     labels: labelsExibicao,
                     datasets: [
-                        { label: '3º Turno', data: vT3, backgroundColor: cor3ºTurno, stack: 'stackTurno', borderRadius: 4 },
-                        { label: '2º Turno', data: vT2, backgroundColor: cor2ºTurno, stack: 'stackTurno', borderRadius: 4 },
-                        { label: '1º Turno', data: vT1, backgroundColor: cor1ºTurno, stack: 'stackTurno', borderRadius: 4 }
+                        { label: '3º Turno', data: vT3, backgroundColor: '#f59e0b', stack: 'sTurno', borderRadius: 4 },
+                        { label: '2º Turno', data: vT2, backgroundColor: '#000000', stack: 'sTurno', borderRadius: 4 },
+                        { label: '1º Turno', data: vT1, backgroundColor: '#0284c7', stack: 'sTurno', borderRadius: 4 }
                     ]
                 },
-                options: { 
-                    responsive: true, maintainAspectRatio: false, 
-                    plugins: { 
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
                         legend: {
                             display: true, position: 'top', align: 'end',
-                            labels: { boxWidth: 12, useBorderRadius: true, borderRadius: 3, font: { size: 12, weight: '600', family: "'Segoe UI', sans-serif" }, padding: 15 }
+                            labels: { boxWidth: 12, useBorderRadius: true, borderRadius: 3, font: { size: 12, weight: '600' } }
                         },
-                        datalabels: { 
-                            color: '#ffffff', // Exibe os números internos em branco para legibilidade
+                        datalabels: {
+                            color: '#ffffff',
                             formatter: (v) => v > 0 ? v : '',
                             font: { weight: 'bold', size: 11 }
-                        } 
+                        }
                     },
-                    scales: { x: { stacked: true }, y: { stacked: true } } 
+                    scales: { x: { stacked: true }, y: { stacked: true } }
                 }
             });
         }, 150);
@@ -275,8 +276,8 @@
         document.getElementById('container-graficos').innerHTML = "";
         calcularResumo();
         
+        // 1. Indicadores de Performance padrão
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
-        
         criarGraficoPerformance({ chave: "> 180", titulo: "TURNOVER PA > 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados > 180 dias/ ativos" });
         criarGraficoPerformance({ chave: "< 180", titulo: "TURNOVER PA < 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados < 180 dias/ ativos" });
 
@@ -285,29 +286,17 @@
             chaveAlternativa: "SOLICITACAO DE DESLIGAMENTO",
             titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS", 
             tipo: "MENOR_MELHOR", 
-            nota: "Quantidade total de solicitações de desligamento voluntário mapeadas.",
+            nota: "Quantidade total de solicitações de desligamento voluntário.",
             ignorarTurno: true 
         });
 
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
 
-        // CHAMADA ISOLADA DOS DOIS GRÁFICOS QUE VOCÊ SOLICITOU SEPARADOS
-        criarGraficoTurnosEmpilhados("INDICADORES DE PESSOAL - MOD", "MOD");
-        criarGraficoTurnosEmpilhados("INDICADORES DE PESSOAL - MOI", "MOI");
+        // 2. SEUS DOIS NOVOS GRÁFICOS SEPARADOS (Substituindo a listagem antiga que conflitava)
+        criarGraficoTurnoSeparado("INDICADORES DE PESSOAL - MOD", "MOD");
+        criarGraficoTurnoSeparado("INDICADORES DE PESSOAL - MOI", "MOI");
 
-        // Outros itens analíticos e consolidados de turnover
-        const itensConsolidados = [
-            { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
-            { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
-            { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
-            { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
-            { t: "PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - SOLICITAÇÃO GERAL NO MÊS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", h: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS" }
-        ];
-
+        // 3. Indicadores Finais de Capacitação e Retenção
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
         criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Índice de promoções." });

@@ -153,7 +153,9 @@
 
         const idUnique = Math.random().toString(36).substr(2, 9);
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-        const exibirPct = ["ABSENTEISMO", "TURNOVER", "UNIVERSAL", "APROVADOS", "RETENÇÃO", "> 180", "< 180"].some(t => itemConfig.chave.includes(t));
+        
+        // CORREÇÃO: "RETENÇÃO" removido desta lista para exibir o número cru (quantidade), não porcentagem
+        const exibirPct = ["ABSENTEISMO", "TURNOVER", "UNIVERSAL", "APROVADOS", "> 180", "< 180"].some(t => itemConfig.chave.includes(t));
 
         container.innerHTML += `
             <div class="card">
@@ -200,7 +202,6 @@
         }, 150);
     }
 
-    // FUNÇÃO ATUALIZADA: Agora soma e plota o total acumulado acima da barra empilhada
     function criarGraficoConsolidado(titulo, termo) {
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
         const dadosBase = obterDadosBase(termo, false);
@@ -233,7 +234,6 @@
             const vT2 = labelsExibicao.map(m => limparNumero(dT2.find(ln => ln.mes === m)?.['Valor Real'] || dT2.find(ln => ln.mes === m)?.Qtd));
             const vT3 = labelsExibicao.map(m => limparNumero(dT3.find(ln => ln.mes === m)?.['Valor Real'] || dT3.find(ln => ln.mes === m)?.Qtd));
             
-            // Calcula a soma total por mês para alimentar as etiquetas superiores do topo
             const vTotais = labelsExibicao.map((_, idx) => vT1[idx] + vT2[idx] + vT3[idx]);
 
             new Chart(document.getElementById(`chart-${idUnique}`), {
@@ -245,16 +245,15 @@
                         { label: '2º Turno', data: vT2, backgroundColor: '#000000', stack: 's1' }, 
                         { label: '1º Turno', data: vT1, backgroundColor: '#0284c7', stack: 's1' },
                         {
-                            // DATASET INVISÍVEL APENAS PARA EXIBIR A SOMA TOTAL NO TOPO
                             label: 'Total',
                             data: vTotais,
                             type: 'bar',
-                            stack: 's2', // Stack diferente para não deformar o empilhamento s1
+                            stack: 's2',
                             backgroundColor: 'transparent',
                             borderColor: 'transparent',
-                            grouped: false, // Sobrepõe o dataset invisível em cima do original
+                            grouped: false,
                             datalabels: {
-                                color: '#1e293b', // Cor escura para o topo
+                                color: '#1e293b',
                                 anchor: 'end',
                                 align: 'top',
                                 offset: 2,
@@ -270,7 +269,7 @@
                         legend: {
                             display: true, position: 'top', align: 'end',
                             labels: { 
-                                filter: (item) => item.text !== 'Total', // Oculta a legenda "Total" para não poluir
+                                filter: (item) => item.text !== 'Total',
                                 boxWidth: 12, useBorderRadius: true, borderRadius: 3, font: { size: 12, weight: '600', family: "'Segoe UI', sans-serif" }, padding: 15 
                             }
                         },
@@ -321,7 +320,9 @@
 
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
-        criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Índice de promoções." });
+        
+        // Mantido como MAIOR_MELHOR para a lógica de cor, mas agora exibe quantidade absoluta
+        criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Quantidade total de promoções." });
     }
 
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {

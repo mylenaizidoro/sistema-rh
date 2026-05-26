@@ -126,7 +126,7 @@
         return atingiu ? '#10b981' : '#f43f5e';
     }
 
-    function calcularResumo() {
+    function calcularResSummary() { // Nome ligeiramente alterado para evitar conflitos internos
         const getMedia = (chave) => {
             let filtrados = obterDadosBase(chave, true);
             if (filtrados.length === 0) filtrados = obterDadosBase(chave, false);
@@ -200,11 +200,59 @@
         }, 150);
     }
 
-    // NOVA FUNÇÃO: Isolador e estruturador do empilhamento de turnos reais da planilha
-    function criarGraficoTurnoSeparado(titulo, categoriaFiltro) {
+    function criarGraficoConsolidado(titulo, termo) {
+        const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
+        const dadosBase = obterDadosBase(termo, true);
+        const dMOD = dadosBase.filter(ln => normalizar(ln.Indicador).includes("MOD"));
+        const dMOI = dadosBase.filter(ln => normalizar(ln.Indicador).includes("MOI"));
+        if (dMOD.length === 0 && dMOI.length === 0) return;
+        const idUnique = Math.random().toString(36).substr(2, 9);
+        document.getElementById('container-graficos').innerHTML += `
+            <div class="card">
+                <h2>${titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
+                <p class="sub">Grupo Coplac | MOD vs MOI</p>
+                <div class="grid-info">
+                    <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
+                    <div class="info-box"><b>DETALHAMENTO</b> Comparativo MOD/MOI baseado na planilha.</div>
+                </div>
+            </div>`;
+        setTimeout(() => {
+            const vMOD = labelsExibicao.map(m => limparNumero(dMOD.find(ln => ln.mes === m)?.['Valor Real'] || dMOD.find(ln => ln.mes === m)?.Qtd));
+            const vMOI = labelsExibicao.map(m => limparNumero(dMOI.find(ln => ln.mes === m)?.['Valor Real'] || dMOI.find(ln => ln.mes === m)?.Qtd));
+            let corMOD = (turnoSelecionado === '1º TURNO') ? '#0284c7' : (turnoSelecionado === '3º TURNO' ? '#f59e0b' : '#334155');
+            let corMOI = '#94a3b8';
+            new Chart(document.getElementById(`chart-${idUnique}`), {
+                type: 'bar',
+                data: {
+                    labels: labelsExibicao,
+                    datasets: [
+                        { label: 'MOI', data: vMOI, backgroundColor: corMOI, stack: 's1' },
+                        { label: 'MOD', data: vMOD, backgroundColor: corMOD, stack: 's1' }
+                    ]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: {
+                            display: true, position: 'top', align: 'end',
+                            labels: { boxWidth: 12, useBorderRadius: true, borderRadius: 3, font: { size: 12, weight: '600', family: "'Segoe UI', sans-serif" }, padding: 15 }
+                        },
+                        datalabels: { 
+                            color: '#ffffff',
+                            formatter: (v) => v > 0 ? v : '',
+                            font: { weight: 'bold' }
+                        } 
+                    },
+                    scales: { x: { stacked: true }, y: { stacked: true } } 
+                }
+            });
+        }, 150);
+    }
+
+    // FUNÇÃO ADICIONADA: Gera os gráficos específicos e isolados por turnos (MOD ou MOI)
+    function criarGraficoTurnosEmpilhadosEspecifico(titulo, categoriaFiltro) {
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
         
-        // Puxa do escopo global todas as linhas da planilha que batem com "MOD" ou "MOI"
         const linhasCategoria = dadosGlobais.filter(ln => {
             const indNormalizado = normalizar(ln.Indicador);
             const procNormalizado = normalizar(ln.Processo);
@@ -215,12 +263,10 @@
 
         if (linhasCategoria.length === 0) return;
 
-        // Separa internamente por turnos com filtros limpos
         const dadosT1 = linhasCategoria.filter(ln => normalizar(ln.Indicador).includes("1º TURNO") || normalizar(ln.Processo).includes("1º TURNO"));
         const dadosT2 = linhasCategoria.filter(ln => normalizar(ln.Indicador).includes("2º TURNO") || normalizar(ln.Processo).includes("2º TURNO"));
         const dadosT3 = linhasCategoria.filter(ln => normalizar(ln.Indicador).includes("3º TURNO") || normalizar(ln.Processo).includes("3º TURNO"));
 
-        // Se o usuário selecionou um turno específico no filtro do topo, zeramos a exibição visual dos outros
         if (turnoSelecionado !== 'TODOS') {
             if (turnoSelecionado === '1º TURNO') { dadosT2.length = 0; dadosT3.length = 0; }
             if (turnoSelecionado === '2º TURNO') { dadosT1.length = 0; dadosT3.length = 0; }
@@ -231,10 +277,10 @@
         document.getElementById('container-graficos').innerHTML += `
             <div class="card">
                 <h2>${titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
-                <p class="sub">Grupo Coplac | Visão por Turnos</p>
+                <p class="sub">Grupo Coplac | Visão Geral por Turnos</p>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box"><b>DETALHAMENTO</b> Divisão empilhada mensal baseada no contingente ativo do setor.</div>
+                    <div class="info-box"><b>DETALHAMENTO</b> Valores mensais distribuídos de forma empilhada por turnos de produção (1º, 2º e 3º).</div>
                 </div>
             </div>`;
 
@@ -248,9 +294,9 @@
                 data: {
                     labels: labelsExibicao,
                     datasets: [
-                        { label: '3º Turno', data: vT3, backgroundColor: '#f59e0b', stack: 'sTurno', borderRadius: 4 },
-                        { label: '2º Turno', data: vT2, backgroundColor: '#000000', stack: 'sTurno', borderRadius: 4 },
-                        { label: '1º Turno', data: vT1, backgroundColor: '#0284c7', stack: 'sTurno', borderRadius: 4 }
+                        { label: '3º Turno', data: vT3, backgroundColor: '#f59e0b', stack: 'stackReal', borderRadius: 4 },
+                        { label: '2º Turno', data: vT2, backgroundColor: '#000000', stack: 'stackReal', borderRadius: 4 },
+                        { label: '1º Turno', data: vT1, backgroundColor: '#0284c7', stack: 'stackReal', borderRadius: 4 }
                     ]
                 },
                 options: {
@@ -274,9 +320,9 @@
 
     function renderizarDashboard() {
         document.getElementById('container-graficos').innerHTML = "";
-        calcularResumo();
+        calcularResSummary();
         
-        // 1. Indicadores de Performance padrão
+        // 1. Indicadores iniciais de performance
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
         criarGraficoPerformance({ chave: "> 180", titulo: "TURNOVER PA > 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados > 180 dias/ ativos" });
         criarGraficoPerformance({ chave: "< 180", titulo: "TURNOVER PA < 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados < 180 dias/ ativos" });
@@ -286,17 +332,31 @@
             chaveAlternativa: "SOLICITACAO DE DESLIGAMENTO",
             titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS", 
             tipo: "MENOR_MELHOR", 
-            nota: "Quantidade total de solicitações de desligamento voluntário.",
+            nota: "Quantidade total de solicitações de desligamento voluntário voluntário mapeadas.",
             ignorarTurno: true 
         });
 
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
 
-        // 2. SEUS DOIS NOVOS GRÁFICOS SEPARADOS (Substituindo a listagem antiga que conflitava)
-        criarGraficoTurnoSeparado("INDICADORES DE PESSOAL - MOD", "MOD");
-        criarGraficoTurnoSeparado("INDICADORES DE PESSOAL - MOI", "MOI");
+        // 2. TODOS os seus gráficos consolidados de Turnover originais voltaram para cá intactos!
+        const itensConsolidados = [
+            { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
+            { t: "PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - SOLICITAÇÃO GERAL NO MÊS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", h: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS" }
+        ];
+        itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
-        // 3. Indicadores Finais de Capacitação e Retenção
+        // 3. SEUS DOIS GRÁFICOS NOVOS EXCLUSIVOS: MOD e MOI separados com empilhamento de turnos
+        criarGraficoTurnosEmpilhadosEspecifico("INDICADORES DE PESSOAL - MOD", "MOD");
+        criarGraficoTurnosEmpilhadosEspecifico("INDICADORES DE PESSOAL - MOI", "MOI");
+
+        // 4. Indicadores finais de Treinamento e Retenção
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
         criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Índice de promoções." });

@@ -86,7 +86,6 @@
 </head>
 <body>
 
-    <!-- Menu Lateral Fixo -->
     <div class="sidebar">
         <div class="sidebar-brand">
             <h2>Portal DHO</h2>
@@ -100,10 +99,8 @@
         </div>
     </div>
 
-    <!-- Conteúdo Principal Dinâmico -->
     <div class="main-content">
         
-        <!-- ABA 1: DASHBOARD DE INDICADORES -->
         <div id="tab-dashboard" class="tab-content active">
             <div class="header-container">
                 <h1>GESTÃO DE INDICADORES - DHO</h1>
@@ -128,7 +125,6 @@
             <div id="container-graficos"></div>
         </div>
 
-        <!-- ABA 2: SIMULADORES E CALCULADORAS -->
         <div id="tab-calculadoras" class="tab-content">
             <h1>Simuladores de Apoio Operacional</h1>
             
@@ -169,42 +165,34 @@
             </div>
         </div>
 
-        <!-- ABA 3: ROTINAS E CHECKLISTS DINÂMICOS -->
         <div id="tab-processos" class="tab-content">
             <h1>Controle de Rotinas Operacionais</h1>
             
-            <!-- Bloco de Onboarding -->
             <div class="card">
                 <h2>Checklist de Integração (Onboarding)</h2>
                 <p style="color: #64748b; margin-bottom: 15px; font-size: 0.9rem;">Acompanhamento de novos colaboradores do setor operacional ou administrativo.</p>
                 
-                <!-- Input para nova tarefa -->
                 <div class="input-checklist-container">
                     <input type="text" id="inputOnboarding" class="input-checklist" placeholder="Digitar nova tarefa de entrada...">
                     <button class="btn-add-checklist" onclick="adicionarTarefa('onboarding')">+</button>
                 </div>
                 
-                <!-- Lista de Itens -->
                 <div id="listaOnboarding"></div>
             </div>
 
-            <!-- Bloco de Offboarding -->
             <div class="card">
                 <h2>Checklist de Desligamento (Offboarding)</h2>
-                <p style="color: #64748b; margin-bottom: 15px; font-size: 0.9rem;">Garantia de compliance nas saídas para mitigar riscos trabalhistas.</p>
+                <p style="color: #64748b; margin-bottom: 15px; font-size: 0.9rem;">Garantia de compliance nas saídas para mitigar risks trabalhistas.</p>
                 
-                <!-- Input para nova tarefa -->
                 <div class="input-checklist-container">
                     <input type="text" id="inputOffboarding" class="input-checklist" placeholder="Digitar nova tarefa de saída...">
                     <button class="btn-add-checklist" onclick="adicionarTarefa('offboarding')">+</button>
                 </div>
                 
-                <!-- Lista de Itens -->
                 <div id="listaOffboarding"></div>
             </div>
         </div>
 
-        <!-- ABA 4: CENTRAL DE LINKS ÚTEIS -->
         <div id="tab-links" class="tab-content">
             <h1>Central de Links de Acesso Rápido</h1>
             <p style="color: #64748b; margin-bottom: 20px;">Facilite seu fluxo de trabalho abrindo seus sistemas de apoio por aqui.</p>
@@ -229,8 +217,6 @@
 
 <script>
     // --- GERENCIAMENTO DE CHECKLISTS COM SALVAMENTO NO NAVEGADOR (LOCALSTORAGE) ---
-    
-    // Itens padrão caso o usuário abra pela primeira vez
     const padraoOnboarding = [
         { texto: "Liberação de acessos aos sistemas internos e crachá", checado: false },
         { texto: "Entrega e assinatura de EPIs específicos de cada Turno", checado: true },
@@ -245,7 +231,6 @@
         { texto: "Baixa definitiva nos sistemas e controle de arquivos", checado: false }
     ];
 
-    // Carregar dados ou aplicar os padrões
     let dadosOnboarding = JSON.parse(localStorage.getItem('coplac_onboarding')) || padraoOnboarding;
     let dadosOffboarding = JSON.parse(localStorage.getItem('coplac_offboarding')) || padraoOffboarding;
 
@@ -256,7 +241,6 @@
     }
 
     function renderizarListas() {
-        // Renderiza Onboarding
         const containerOnb = document.getElementById('listaOnboarding');
         containerOnb.innerHTML = '';
         dadosOnboarding.forEach((item, index) => {
@@ -268,7 +252,6 @@
                 </div>`;
         });
 
-        // Renderiza Offboarding
         const containerOff = document.getElementById('listaOffboarding');
         containerOff.innerHTML = '';
         dadosOffboarding.forEach((item, index) => {
@@ -314,7 +297,6 @@
         salvarETrabalharListas();
     }
 
-    // Permitir adicionar apertando "Enter" no teclado
     document.addEventListener("DOMContentLoaded", function() {
         renderizarListas();
         
@@ -324,8 +306,12 @@
         document.getElementById('inputOffboarding').addEventListener("keypress", function(e) {
             if (e.key === 'Enter') adicionarTarefa('offboarding');
         });
-    });
 
+        Papa.parse(planilhaDrive, {
+            download: true, header: true, skipEmptyLines: true,
+            complete: function(r) { dadosGlobais = r.data; renderizarDashboard(); }
+        });
+    });
 
     // --- MANUTENÇÃO INTEGRAL DE NAVEGAÇÃO E GRÁFICOS ---
     function switchTab(tabId, btn) {
@@ -351,7 +337,6 @@
     }
 
     Chart.register(ChartDataLabels);
-    const planilhaDrive = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
     
     let dadosGlobais = [];
     let anoSelecionado = 'TODOS';
@@ -367,6 +352,7 @@
         return parseFloat(num) || 0;
     }
 
+    // Filtro e normalização de strings robusto para aceitar tanto MOD quanto MOI nas leituras
     function normalizar(txt) {
         if (!txt) return "";
         let textoNormalizado = txt.toString().replace(/°/g, "º");
@@ -413,13 +399,14 @@
             
             let matchProcesso = false;
             if (chaveProcesso === "DESLIGAMENTOS") {
-                matchProcesso = nomeProc === "DESLIGAMENTO" && (nomeInd.includes("MOD -") || nomeProc.includes("MOD -"));
+                matchProcesso = (nomeProc === "DESLIGAMENTO" || nomeInd.includes("DESLIGAMENTO")) && 
+                                (nomeInd.includes("MOD") || nomeProc.includes("MOD") || nomeInd.includes("MOI") || nomeProc.includes("MOI"));
             } else {
                 matchProcesso = nomeProc.includes(normalizar(chaveProcesso)) || nomeInd.includes(normalizar(chaveProcesso));
             }
 
             if (["PEDIDO DE DELIGAMENTO EM 15 DIAS", "PEDIDOS DE DESLIGAMENTO MES", "SOLICITACAO", "INICIATIVA"].some(termo => nomeProc.includes(normalizar(termo)) || nomeInd.includes(normalizar(termo)))) {
-                if ((nomeProc.includes("TURNO") || nomeInd.includes("TURNO")) && !(nomeProc.includes("MOD") || nomeInd.includes("MOD"))) {
+                if ((nomeProc.includes("TURNO") || nomeInd.includes("TURNO")) && !(nomeProc.includes("MOD") || nomeInd.includes("MOD") || nomeProc.includes("MOI") || nomeInd.includes("MOI"))) {
                     return false; 
                 }
             }
@@ -504,54 +491,109 @@
         }, 150);
     }
 
+    // --- REESTRUTURAÇÃO COMPLETA DO CONSOLIDADO: COLUNAS MOI vs MOD COM SUPORTE A TOTALIZADORES ---
     function criarGraficoConsolidado(titulo, termo) {
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
         const dadosBase = obterDadosBase(termo, false);
         if (dadosBase.length === 0) return;
 
-        const dT1 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("1º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("1º TURNO"));
-        const dT2 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("2º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("2º TURNO"));
-        const dT3 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("3º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("3º TURNO"));
+        // Função de filtro que busca por Turno e por Tipo Estrutural (MOI ou MOD) de maneira acumulada
+        const filtrarSoma = (turno, tipo) => {
+            return dadosBase
+                .filter(ln => {
+                    const ind = normalizar(ln.Indicador || ln.INDICADOR || "");
+                    const proc = normalizar(ln.Processo || ln.PROCESSO || "");
+                    const mesLn = ln.mes || ln.MES || "";
+                    
+                    const matchTurno = ind.includes(normalizar(turno)) || proc.includes(normalizar(turno));
+                    const matchTipo = ind.includes(tipo) || proc.includes(tipo);
+                    const matchAno = labelsExibicao.includes(mesLn);
+                    
+                    return matchTurno && matchTipo && matchAno;
+                })
+                .reduce((acc, curr) => acc + limparNumero(extrairValor(curr)), 0);
+        };
 
-        if (turnoSelecionado !== 'TODOS') {
-            if (normalizar(turnoSelecionado) === '1º TURNO') { dT2.length = 0; dT3.length = 0; }
-            if (normalizar(turnoSelecionado) === '2º TURNO') { dT1.length = 0; dT3.length = 0; }
-            if (normalizar(turnoSelecionado) === '3º TURNO') { dT1.length = 0; dT2.length = 0; }
-        }
+        // Geração dos valores empilhados para MOI e MOD respeitando os 3 Turnos
+        const vT1_MOI = filtrarSoma("1º Turno", "MOI");
+        const vT2_MOI = filtrarSoma("2º Turno", "MOI");
+        const vT3_MOI = filtrarSoma("3º Turno", "MOI");
+
+        const vT1_MOD = filtrarSoma("1º Turno", "MOD");
+        const vT2_MOD = filtrarSoma("2º Turno", "MOD");
+        const vT3_MOD = filtrarSoma("3º Turno", "MOD");
 
         const idUnique = Math.random().toString(36).substr(2, 9);
         document.getElementById('container-graficos').innerHTML += `
             <div class="card">
                 <h2>${titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
-                <p class="sub">Grupo Coplac | Visão por Turnos</p>
+                <p class="sub">Grupo Coplac | Estrutura Operacional</p>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box"><b>DETALHAMENTO</b> Mapeamento mensal empilhado por turnos (1º, 2º e 3º).</div>
+                    <div class="info-box"><b>DETALHAMENTO</b> Gráfico customizado de barras empilhadas para comparação direta de saídas por categoria funcional.</div>
                 </div>
             </div>`;
 
         setTimeout(() => {
-            const vT1 = labelsExibicao.map(m => limparNumero(extrairValor(dT1.find(ln => (ln.mes || ln.MES) === m) || {})));
-            const vT2 = labelsExibicao.map(m => limparNumero(extrairValor(dT2.find(ln => (ln.mes || ln.MES) === m) || {})));
-            const vT3 = labelsExibicao.map(m => limparNumero(extrairValor(dT3.find(ln => (ln.mes || ln.MES) === m) || {})));
-            const vTotais = labelsExibicao.map((_, idx) => vT1[idx] + vT2[idx] + vT3[idx]);
-
             new Chart(document.getElementById(`chart-${idUnique}`), {
                 type: 'bar',
                 data: {
-                    labels: labelsExibicao,
+                    labels: ['MOI', 'MOD'], // Substituído os meses por MOI e MOD na base do eixo X
                     datasets: [
-                        { label: '3º Turno', data: vT3, backgroundColor: '#f59e0b', stack: 's1' }, 
-                        { label: '2º Turno', data: vT2, backgroundColor: '#000000', stack: 's1' }, 
-                        { label: '1º Turno', data: vT1, backgroundColor: '#0284c7', stack: 's1' },
-                        { label: 'Total', data: vTotais, type: 'bar', stack: 's2', backgroundColor: 'transparent', borderColor: 'transparent', grouped: false, datalabels: { color: '#1e293b', anchor: 'end', align: 'top', offset: 2, formatter: (v) => v > 0 ? v : '', font: { weight: 'bold', size: 12 } } }
+                        {
+                            label: '2º Turno',
+                            data: [vT2_MOI, vT2_MOD],
+                            backgroundColor: '#000000', // Preto na base
+                            stack: 's1'
+                        },
+                        {
+                            label: '1º Turno',
+                            data: [vT1_MOI, vT1_MOD],
+                            backgroundColor: '#4272d0', // Azul no meio
+                            stack: 's1'
+                        },
+                        {
+                            label: '3º Turno',
+                            data: [vT3_MOI, vT3_MOD],
+                            backgroundColor: '#f17e38', // Laranja no topo
+                            stack: 's1'
+                        }
                     ]
                 },
-                options: { 
-                    responsive: true, maintainAspectRatio: false, 
-                    plugins: { legend: { display: true, position: 'top', align: 'end', labels: { filter: (item) => item.text !== 'Total', boxWidth: 12 } }, datalabels: { color: '#ffffff', formatter: (v) => v > 0 ? v : '', font: { weight: 'bold' } } },
-                    scales: { x: { stacked: true }, y: { stacked: true } }
-                }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, beginAtZero: true }
+                    },
+                    plugins: {
+                        datalabels: {
+                            display: true,
+                            color: '#ffffff', // Números brancos dentro dos blocos
+                            font: { weight: 'bold', size: 13 },
+                            formatter: (v) => v > 0 ? v : ''
+                        }
+                    }
+                },
+                plugins: [{
+                    id: 'topLabels',
+                    afterDatasetsDraw(chart) {
+                        const { ctx, scales: { x, y } } = chart;
+                        chart.data.labels.forEach((label, index) => {
+                            let total = 0;
+                            chart.data.datasets.forEach(dataset => {
+                                total += dataset.data[index] || 0;
+                            });
+                            if (total > 0) {
+                                ctx.fillStyle = '#000000'; // Rótulo da soma total em preto fora da barra
+                                ctx.font = 'bold 14px sans-serif';
+                                ctx.textAlign = 'center';
+                                ctx.fillText(total, x.getPixelForValue(index), y.getPixelForValue(total) - 10);
+                            }
+                        });
+                    }
+                }]
             });
         }, 150);
     }
@@ -566,6 +608,7 @@
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
         criarGraficoPerformance({ chave: "DESLIGAMENTO PEDIDOS", titulo: "DESLIGAMENTO PEDIDOS (TOTAL)", tipo: "MENOR_MELHOR", ignorarTurno: true, nota: "Volume mensal consolidado de solicitações de desligamento." });
 
+        // Listagem dos consolidados que agora renderizam agregados por MOI vs MOD
         const itensConsolidados = [
             { t: "DESLIGAMENTOS", h: "TURNOVER - DESLIGAMENTOS" },
             { t: "PEDIDO DE DELIGAMENTO EM 15 DIAS", h: "TURNOVER - PEDIDO DE DESLIGAMENTO EM 15 DIAS" },
@@ -587,11 +630,6 @@
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
         criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Quantidade total de promoções." });
     }
-
-    Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
-        download: true, header: true, skipEmptyLines: true,
-        complete: function(r) { dadosGlobais = r.data; renderizarDashboard(); }
-    });
 </script>
 </body>
 </html>

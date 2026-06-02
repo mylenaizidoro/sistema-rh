@@ -123,6 +123,13 @@
                 matchProcesso = nomeProc.includes(normalizar(chaveProcesso)) || nomeInd.includes(normalizar(chaveProcesso));
             }
 
+            // Regra Crítica: Para os indicadores de sub-turnover em tabelas consolidadas, focar apenas em MOD se a linha contiver informações de turno
+            if (["PEDIDO DE DELIGAMENTO EM 15 DIAS", "SOLICITACAO", "INICIATIVA"].some(termo => nomeProc.includes(termo) || nomeInd.includes(termo))) {
+                if ((nomeProc.includes("TURNO") || nomeInd.includes("TURNO")) && !(nomeProc.includes("MOD") || nomeInd.includes("MOD"))) {
+                    return false; 
+                }
+            }
+
             const matchAno = anoSelecionado === 'TODOS' || (ln.mes || ln.MES || "").includes(anoSelecionado);
             let matchTurno = true;
             if (aplicarTurno && turnoSelecionado !== 'TODOS') {
@@ -316,10 +323,7 @@
         // 2. Gráficos Consolidados (Empilhados por Turno)
         const itensConsolidados = [
             { t: "DESLIGAMENTOS", h: "TURNOVER - DESLIGAMENTOS" },
-            
-            // CHAVE CORRIGIDA CONSIDERANDO A GRAFIA EXATA SEM "S" DA PLANILHA:
             { t: "PEDIDO DE DELIGAMENTO EM 15 DIAS", h: "TURNOVER - PEDIDO DE DESLIGAMENTO EM 15 DIAS" },
-            
             { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },

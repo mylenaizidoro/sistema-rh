@@ -154,7 +154,6 @@
         const idUnique = Math.random().toString(36).substr(2, 9);
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
         
-        // CORREÇÃO: "RETENÇÃO" removido desta lista para exibir o número cru (quantidade), não porcentagem
         const exibirPct = ["ABSENTEISMO", "TURNOVER", "UNIVERSAL", "APROVADOS", "> 180", "< 180"].some(t => itemConfig.chave.includes(t));
 
         container.innerHTML += `
@@ -185,16 +184,18 @@
                     ]
                 },
                 options: {
-                    responsive: true, maintainAspectRatio: false,
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    layout: { padding: { top: 30 } },
                     plugins: { 
                         legend: {
                             display: true, position: 'top', align: 'end',
                             labels: { boxWidth: 12, useBorderRadius: true, borderRadius: 3, font: { size: 12, weight: '600', family: "'Segoe UI', sans-serif" }, padding: 15 }
                         },
                         datalabels: { 
-                            color: '#000000', anchor: 'end', align: 'top', 
+                            color: '#000000', anchor: 'end', align: 'top', offset: 4,
                             formatter: (v) => v ? v + (exibirPct ? '%' : '') : '', 
-                            font: { weight: 'bold' }, rotation: -90 
+                            font: { weight: 'bold', size: 11 }, rotation: -90 
                         } 
                     }
                 }
@@ -264,7 +265,8 @@
                     ]
                 },
                 options: { 
-                    responsive: true, maintainAspectRatio: false, 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
                     plugins: { 
                         legend: {
                             display: true, position: 'top', align: 'end',
@@ -279,7 +281,10 @@
                             font: { weight: 'bold' }
                         } 
                     },
-                    scales: { x: { stacked: true }, y: { stacked: true } } 
+                    scales: { 
+                        x: { stacked: true }, 
+                        y: { stacked: true } 
+                    }
                 }
             });
         }, 150);
@@ -289,39 +294,33 @@
         document.getElementById('container-graficos').innerHTML = "";
         calcularResumo();
         
+        // 1. Gráficos de Performance Simples
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
         criarGraficoPerformance({ chave: "> 180", titulo: "TURNOVER PA > 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados > 180 dias/ ativos" });
         criarGraficoPerformance({ chave: "< 180", titulo: "TURNOVER PA < 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados < 180 dias/ ativos" });
-
-        criarGraficoPerformance({ 
-            chave: "PEDIDOS DE DESLIGAMENTO MES", 
-            chaveAlternativa: "SOLICITACAO DE DESLIGAMENTO",
-            titulo: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTOS", 
-            tipo: "MENOR_MELHOR", 
-            nota: "Quantidade total de solicitações de desligamento voluntário mapeadas.",
-            ignorarTurno: true 
-        });
-
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
 
+        // 2. Gráficos Consolidados (Empilhados por Turno)
         const itensConsolidados = [
+            // INTEGRADO AQUI: O indicador geral de desligamentos agora mapeado por Turnos (1º, 2º e 3º)
+            { t: "DESLIGAMENTO", h: "TURNOVER - SOLICITAÇÃO GERAL DE DESLIGAMENTOS" },
+            
             { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
-            { t: "PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - SOLICITAÇÃO GERAL NO MÊS" },
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", h: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS" },
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA acima de 90 dias", h: "TURNOVER - INICIATIVA EMPRESA ACIMA DE 90 DIAS" },
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS" }
         ];
+        
         itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
+        // 3. Demais Gráficos de Performance do painel
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
-        
-        // Mantido como MAIOR_MELHOR para a lógica de cor, mas agora exibe quantidade absoluta
         criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Quantidade total de promoções." });
     }
 

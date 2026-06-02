@@ -55,8 +55,9 @@
 
         /* Formulários e Utilitários das Novas Abas */
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 20px; }
-        .form-grid label { font-size: 0.85rem; font-weight: 700; color: #475569; text-transform: uppercase; }
-        .form-grid input, .form-grid select { padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 1rem; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label { font-size: 0.85rem; font-weight: 700; color: #475569; text-transform: uppercase; }
+        .form-group input, .form-group select { padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 1rem; }
         .result-box { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 20px; border-radius: 12px; margin-top: 15px; color: #166534; font-weight: bold; font-size: 1.1rem; }
         
         /* Checklists Dinâmicos */
@@ -135,15 +136,15 @@
                 <h2>Cálculo Prévio de Turnover</h2>
                 <p style="color: #64748b; margin-bottom: 20px; font-size: 0.9rem;">Simule o índice do mês antes de inserir na planilha oficial.</p>
                 <div class="form-grid">
-                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div class="form-group">
                         <label>Admissões no Mês</label>
                         <input type="number" id="simAdm" value="0" oninput="calcularSimulacaoTurnover()">
                     </div>
-                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div class="form-group">
                         <label>Desligamentos no Mês</label>
                         <input type="number" id="simDesl" value="0" oninput="calcularSimulacaoTurnover()">
                     </div>
-                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div class="form-group">
                         <label>Ativos no Início do Mês</label>
                         <input type="number" id="simAtivos" value="100" oninput="calcularSimulacaoTurnover()">
                     </div>
@@ -155,11 +156,11 @@
                 <h2>Cálculo Prévio de Absenteísmo</h2>
                 <p style="color: #64748b; margin-bottom: 20px; font-size: 0.9rem;">Avalie o impacto bruto de ausências (faltas, atrasos e atestados).</p>
                 <div class="form-grid">
-                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div class="form-group">
                         <label>Total de Horas Perdidas</label>
                         <input type="number" id="simHorasPerdidas" value="0" oninput="calcularSimulacaoAbsenteismo()">
                     </div>
-                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div class="form-group">
                         <label>Total de Horas Planejadas/Trabalhadas</label>
                         <input type="number" id="simHorasTrabalhadas" value="1000" oninput="calcularSimulacaoAbsenteismo()">
                     </div>
@@ -323,17 +324,6 @@
         document.getElementById('inputOffboarding').addEventListener("keypress", function(e) {
             if (e.key === 'Enter') adicionarTarefa('offboarding');
         });
-        
-        // Inicializa o carregamento do CSV do Google Drive
-        Papa.parse(planilhaDrive, {
-            download: true,
-            header: true,
-            skipEmptyLines: true,
-            complete: function(results) {
-                dadosGlobais = results.data;
-                renderizarDashboard();
-            }
-        });
     });
 
 
@@ -423,13 +413,13 @@
             
             let matchProcesso = false;
             if (chaveProcesso === "DESLIGAMENTOS") {
-                matchProcesso = nomeProc === "DESLIGAMENTO" && (nomeInd.includes("MOD -") || nomeProc.includes("MOD -") || nomeInd.includes("MOI -") || nomeProc.includes("MOI -"));
+                matchProcesso = nomeProc === "DESLIGAMENTO" && (nomeInd.includes("MOD -") || nomeProc.includes("MOD -"));
             } else {
                 matchProcesso = nomeProc.includes(normalizar(chaveProcesso)) || nomeInd.includes(normalizar(chaveProcesso));
             }
 
             if (["PEDIDO DE DELIGAMENTO EM 15 DIAS", "PEDIDOS DE DESLIGAMENTO MES", "SOLICITACAO", "INICIATIVA"].some(termo => nomeProc.includes(normalizar(termo)) || nomeInd.includes(normalizar(termo)))) {
-                if ((nomeProc.includes("TURNO") || nomeInd.includes("TURNO")) && !(nomeProc.includes("MOD") || nomeInd.includes("MOD") || nomeProc.includes("MOI") || nomeInd.includes("MOI"))) {
+                if ((nomeProc.includes("TURNO") || nomeInd.includes("TURNO")) && !(nomeProc.includes("MOD") || nomeInd.includes("MOD"))) {
                     return false; 
                 }
             }
@@ -519,92 +509,89 @@
         const dadosBase = obterDadosBase(termo, false);
         if (dadosBase.length === 0) return;
 
-        const dMOD = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("MOD") || normalizar(ln.Processo || ln.PROCESSO || "").includes("MOD"));
-        const dMOI = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("MOI") || normalizar(ln.Processo || ln.PROCESSO || "").includes("MOI"));
+        const dT1 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("1º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("1º TURNO"));
+        const dT2 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("2º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("2º TURNO"));
+        const dT3 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("3º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("3º TURNO"));
+
+        if (turnoSelecionado !== 'TODOS') {
+            if (normalizar(turnoSelecionado) === '1º TURNO') { dT2.length = 0; dT3.length = 0; }
+            if (normalizar(turnoSelecionado) === '2º TURNO') { dT1.length = 0; dT3.length = 0; }
+            if (normalizar(turnoSelecionado) === '3º TURNO') { dT1.length = 0; dT2.length = 0; }
+        }
 
         const idUnique = Math.random().toString(36).substr(2, 9);
         document.getElementById('container-graficos').innerHTML += `
             <div class="card">
                 <h2>${titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
-                <p class="sub">Grupo Coplac | Visão Mão de Obra</p>
+                <p class="sub">Grupo Coplac | Visão por Turnos</p>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box"><b>DETALHAMENTO</b> Mapeamento mensal empilhado por tipo de mão de obra (MOD e MOI).</div>
+                    <div class="info-box"><b>DETALHAMENTO</b> Mapeamento mensal empilhado por turnos (1º, 2º e 3º).</div>
                 </div>
             </div>`;
 
         setTimeout(() => {
-            const vMOD = labelsExibicao.map(m => limparNumero(extrairValor(dMOD.find(ln => (ln.mes || ln.MES) === m) || {})));
-            const vMOI = labelsExibicao.map(m => limparNumero(extrairValor(dMOI.find(ln => (ln.mes || ln.MES) === m) || {})));
-            const vTotais = labelsExibicao.map((_, idx) => vMOD[idx] + vMOI[idx]);
+            const vT1 = labelsExibicao.map(m => limparNumero(extrairValor(dT1.find(ln => (ln.mes || ln.MES) === m) || {})));
+            const vT2 = labelsExibicao.map(m => limparNumero(extrairValor(dT2.find(ln => (ln.mes || ln.MES) === m) || {})));
+            const vT3 = labelsExibicao.map(m => limparNumero(extrairValor(dT3.find(ln => (ln.mes || ln.MES) === m) || {})));
+            const vTotais = labelsExibicao.map((_, idx) => vT1[idx] + vT2[idx] + vT3[idx]);
 
             new Chart(document.getElementById(`chart-${idUnique}`), {
                 type: 'bar',
                 data: {
                     labels: labelsExibicao,
                     datasets: [
-                        { label: 'MOI', data: vMOI, backgroundColor: '#f59e0b', stack: 's1' }, 
-                        { label: 'MOD', data: vMOD, backgroundColor: '#0284c7', stack: 's1' },
+                        { label: '3º Turno', data: vT3, backgroundColor: '#f59e0b', stack: 's1' }, 
+                        { label: '2º Turno', data: vT2, backgroundColor: '#000000', stack: 's1' }, 
+                        { label: '1º Turno', data: vT1, backgroundColor: '#0284c7', stack: 's1' },
                         { label: 'Total', data: vTotais, type: 'bar', stack: 's2', backgroundColor: 'transparent', borderColor: 'transparent', grouped: false, datalabels: { color: '#1e293b', anchor: 'end', align: 'top', offset: 2, formatter: (v) => v > 0 ? v : '', font: { weight: 'bold', size: 12 } } }
                     ]
                 },
                 options: { 
-                    responsive: true, maintainAspectRatio: false,
-                    scales: { x: { stacked: true }, y: { stacked: false } },
-                    plugins: { 
-                        legend: { display: true, position: 'top', align: 'end' },
-                        datalabels: { color: '#ffffff', anchor: 'center', align: 'center', formatter: (v) => v > 0 ? v : '' }
-                    }
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { display: true, position: 'top', align: 'end', labels: { filter: (item) => item.text !== 'Total', boxWidth: 12 } }, datalabels: { color: '#ffffff', formatter: (v) => v > 0 ? v : '', font: { weight: 'bold' } } },
+                    scales: { x: { stacked: true }, y: { stacked: true } }
                 }
             });
         }, 150);
     }
 
     function renderizarDashboard() {
-        document.getElementById('container-graficos').innerHTML = '';
+        document.getElementById('container-graficos').innerHTML = "";
         calcularResumo();
+        
+        criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
+        criarGraficoPerformance({ chave: "> 180", titulo: "TURNOVER PA > 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados > 180 dias/ ativos" });
+        criarGraficoPerformance({ chave: "< 180", titulo: "TURNOVER PA < 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados < 180 dias/ ativos" });
+        criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
+        criarGraficoPerformance({ chave: "DESLIGAMENTO PEDIDOS", titulo: "DESLIGAMENTO PEDIDOS (TOTAL)", tipo: "MENOR_MELHOR", ignorarTurno: true, nota: "Volume mensal consolidado de solicitações de desligamento." });
 
-        criarGraficoPerformance({
-            titulo: "Índice de Absenteísmo Global",
-            chave: "ABSENTEISMO",
-            tipo: "MENOR_MELHOR",
-            nota: "Meta operacional estabelecida abaixo do limite acordado para assegurar a continuidade nas linhas."
-        });
+        const itensConsolidados = [
+            { t: "DESLIGAMENTOS", h: "TURNOVER - DESLIGAMENTOS" },
+            { t: "PEDIDO DE DELIGAMENTO EM 15 DIAS", h: "TURNOVER - PEDIDO DE DESLIGAMENTO EM 15 DIAS" },
+            { t: "TURNOVER - PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - PEDIDOS DE DESLIGAMENTO MÊS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", h: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA acima de 90 dias", h: "TURNOVER - INICIATIVA EMPRESA ACIMA DE 90 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS" }
+        ];
+        
+        itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
-        criarGraficoPerformance({
-            titulo: "Índice de Turnover Universal",
-            chave: "UNIVERSAL",
-            chaveAlternativa: "TURNOVER",
-            tipo: "MENOR_MELHOR",
-            nota: "Acompanhamento estratégico global da movimentação e retenção de profissionais no Grupo Coplac."
-        });
-
-        criarGraficoConsolidado("Volume de Desligamentos (MOD vs MOI)", "DESLIGAMENTOS");
-
-        criarGraficoPerformance({
-            titulo: "Total de Horas de Treinamento",
-            chave: "HORAS DE TREINAMENTO",
-            tipo: "MAIOR_MELHOR",
-            nota: "Indicador de qualificação continuada das equipes produtivas acumulado no mês de referência.",
-            ignorarTurno: true
-        });
-
-        criarGraficoPerformance({
-            titulo: "Percentual de Aprovados em Treinamento",
-            chave: "APROVADOS EM TREINAMENTO",
-            tipo: "MAIOR_MELHOR",
-            nota: "Eficácia e aproveitamento técnico das integrações e capacitações fornecidas ao time de fábrica.",
-            ignorarTurno: true
-        });
-
-        criarGraficoPerformance({
-            titulo: "Retenção de Colaboradores > 180 Dias",
-            chave: "RETENCAO DE COLABORADORES > 180 DIAS",
-            tipo: "MAIOR_MELHOR",
-            nota: "Mapeamento da estabilidade do pessoal após o período inicial de adaptação na planta industrial.",
-            ignorarTurno: true
-        });
+        criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
+        criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
+        criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Quantidade total de promoções." });
     }
+
+    Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
+        download: true, header: true, skipEmptyLines: true,
+        complete: function(r) { dadosGlobais = r.data; renderizarDashboard(); }
+    });
 </script>
 </body>
 </html>

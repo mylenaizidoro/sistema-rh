@@ -109,7 +109,7 @@
         return dadosGlobais.filter(ln => {
             const nomeProc = normalizar(ln.Processo);
             const nomeInd = normalizar(ln.Indicador);
-            const matchProcesso = nomeProc.includes(normalizar(chaveProcesso));
+            const matchProcesso = nomeProc.includes(normalizar(chaveProcesso)) || nomeInd.includes(normalizar(chaveProcesso));
             const matchAno = anoSelecionado === 'TODOS' || ln.mes.includes(anoSelecionado);
             let matchTurno = true;
             if (aplicarTurno && turnoSelecionado !== 'TODOS') {
@@ -302,8 +302,8 @@
 
         // 2. Gráficos Consolidados (Empilhados por Turno)
         const itensConsolidados = [
-            // INTEGRADO AQUI: O indicador geral de desligamentos agora mapeado por Turnos (1º, 2º e 3º)
-            { t: "DESLIGAMENTO", h: "TURNOVER - SOLICITAÇÃO GERAL DE DESLIGAMENTOS" },
+            // BUSCA ATUALIZADA PARA "MOD -": Vai direto nas linhas novas (1378+) coletar o histórico correto por turnos
+            { t: "MOD -", h: "TURNOVER - SOLICITAÇÃO GERAL DE DESLIGAMENTOS" },
             
             { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },

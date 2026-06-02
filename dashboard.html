@@ -117,7 +117,6 @@
             const nomeInd = normalizar(ln.Indicador || ln.INDICADOR || "");
             
             let matchProcesso = false;
-            // Se a chave for "DESLIGAMENTOS", faz o cruzamento exato das linhas MOD de desligamento da planilha
             if (chaveProcesso === "DESLIGAMENTOS") {
                 matchProcesso = nomeProc === "DESLIGAMENTO" && (nomeInd.includes("MOD -") || nomeProc.includes("MOD -"));
             } else {
@@ -316,8 +315,10 @@
 
         // 2. Gráficos Consolidados (Empilhados por Turno)
         const itensConsolidados = [
-            // CHAVE AJUSTADA E EXPLICITAMENTE ADAPTADA PARA "DESLIGAMENTOS"
             { t: "DESLIGAMENTOS", h: "TURNOVER - DESLIGAMENTOS" },
+            
+            // NOVO INDICADOR INCLUÍDO AQUI:
+            { t: "pedido de desligamento em 15 dias", h: "TURNOVER - PEDIDO DE DESLIGAMENTO EM 15 DIAS" },
             
             { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },

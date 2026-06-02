@@ -123,8 +123,8 @@
                 matchProcesso = nomeProc.includes(normalizar(chaveProcesso)) || nomeInd.includes(normalizar(chaveProcesso));
             }
 
-            // Regra Crítica: Para os indicadores de sub-turnover em tabelas consolidadas, focar apenas em MOD se a linha contiver informações de turno
-            if (["PEDIDO DE DELIGAMENTO EM 15 DIAS", "SOLICITACAO", "INICIATIVA"].some(termo => nomeProc.includes(termo) || nomeInd.includes(termo))) {
+            // Regra Crítica: Focar apenas nas linhas operacionais MOD (1º, 2º e 3º turno), ignorando ADM ou MOI se houver divisão por turnos
+            if (["PEDIDO DE DELIGAMENTO EM 15 DIAS", "PEDIDOS DE DESLIGAMENTO MES", "SOLICITACAO", "INICIATIVA"].some(termo => nomeProc.includes(normalizar(termo)) || nomeInd.includes(normalizar(termo)))) {
                 if ((nomeProc.includes("TURNO") || nomeInd.includes("TURNO")) && !(nomeProc.includes("MOD") || nomeInd.includes("MOD"))) {
                     return false; 
                 }
@@ -324,6 +324,10 @@
         const itensConsolidados = [
             { t: "DESLIGAMENTOS", h: "TURNOVER - DESLIGAMENTOS" },
             { t: "PEDIDO DE DELIGAMENTO EM 15 DIAS", h: "TURNOVER - PEDIDO DE DESLIGAMENTO EM 15 DIAS" },
+            
+            // INCLUSÃO DO SEU NOVO INDICADOR CONFORME SOLICITADO:
+            { t: "TURNOVER - PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - PEDIDOS DE DESLIGAMENTO MÊS" },
+            
             { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },

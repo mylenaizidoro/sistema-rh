@@ -73,11 +73,12 @@
     }
 
     function normalizar(txt) {
-        return txt ? txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
+        if (!txt) return "";
+        let textoNormalizado = txt.toString().replace(/°/g, "º");
+        return textoNormalizado.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
     }
 
     function extrairValor(ln) {
-        // Puxa de qualquer coluna de valor que possa estar preenchida na planilha
         return ln['Valor Real'] || ln['Qtd'] || ln['Quantidade'] || ln['VALOR REAL'] || ln['QTD'] || 0;
     }
 
@@ -115,10 +116,10 @@
             const nomeProc = normalizar(ln.Processo || ln.PROCESSO || "");
             const nomeInd = normalizar(ln.Indicador || ln.INDICADOR || "");
             
-            // Validação especial para o indicador novo de turnos
             let matchProcesso = false;
-            if (chaveProcesso === "NOVO_DESLIGAMENTO_TURNO") {
-                matchProcesso = nomeProc.includes("DESLIGAMENTO") && nomeInd.includes("MOD -");
+            // Se a chave for "DESLIGAMENTOS", faz o cruzamento exato das linhas MOD de desligamento da planilha
+            if (chaveProcesso === "DESLIGAMENTOS") {
+                matchProcesso = nomeProc === "DESLIGAMENTO" && (nomeInd.includes("MOD -") || nomeProc.includes("MOD -"));
             } else {
                 matchProcesso = nomeProc.includes(normalizar(chaveProcesso)) || nomeInd.includes(normalizar(chaveProcesso));
             }
@@ -133,8 +134,8 @@
     }
 
     function definirCorBarra(valor, meta, itemTipo) {
-        if (turnoSelecionado === '1º TURNO') return '#0284c7'; 
-        if (turnoSelecionado === '3º TURNO') return '#f59e0b'; 
+        if (normalizar(turnoSelecionado) === '1º TURNO') return '#0284c7'; 
+        if (normalizar(turnoSelecionado) === '3º TURNO') return '#f59e0b'; 
         let atingiu = (itemTipo === "MENOR_MELHOR") ? (valor <= meta) : (valor >= meta);
         return atingiu ? '#10b981' : '#f43f5e';
     }
@@ -227,9 +228,9 @@
         const dT3 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("3º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("3º TURNO"));
 
         if (turnoSelecionado !== 'TODOS') {
-            if (turnoSelecionado === '1º TURNO') { dT2.length = 0; dT3.length = 0; }
-            if (turnoSelecionado === '2º TURNO') { dT1.length = 0; dT3.length = 0; }
-            if (turnoSelecionado === '3º TURNO') { dT1.length = 0; dT2.length = 0; }
+            if (normalizar(turnoSelecionado) === '1º TURNO') { dT2.length = 0; dT3.length = 0; }
+            if (normalizar(turnoSelecionado) === '2º TURNO') { dT1.length = 0; dT3.length = 0; }
+            if (normalizar(turnoSelecionado) === '3º TURNO') { dT1.length = 0; dT2.length = 0; }
         }
 
         const idUnique = Math.random().toString(36).substr(2, 9);
@@ -315,8 +316,8 @@
 
         // 2. Gráficos Consolidados (Empilhados por Turno)
         const itensConsolidados = [
-            // CHAVE SECRETA DE EXTRAÇÃO ULTRA-ESTÁVEL: Coleta as novas linhas cruzando as informações.
-            { t: "NOVO_DESLIGAMENTO_TURNO", h: "TURNOVER - SOLICITAÇÃO GERAL DE DESLIGAMENTOS" },
+            // CHAVE AJUSTADA E EXPLICITAMENTE ADAPTADA PARA "DESLIGAMENTOS"
+            { t: "DESLIGAMENTOS", h: "TURNOVER - DESLIGAMENTOS" },
             
             { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },

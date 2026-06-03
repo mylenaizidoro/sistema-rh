@@ -586,26 +586,11 @@
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
         criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Quantidade total de promoções." });
-   // --- FUNÇÃO FINAL DE RENDERIZAÇÃO ---
-    function renderizarDashboard() {
-        document.getElementById('container-graficos').innerHTML = '';
-        calcularResumo();
-
-        criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "Absenteísmo", tipo: "MENOR_MELHOR", nota: "Acompanhamento mensal" });
-        
-        criarGraficoConsolidado("INDICADOR MOI", "MOI");
-        criarGraficoConsolidado("INDICADOR MOD", "MOD");
     }
 
-    // --- INICIALIZAÇÃO ÚNICA ---
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
-        download: true, 
-        header: true, 
-        skipEmptyLines: true,
-        complete: function(results) { 
-            dadosGlobais = results.data; 
-            renderizarDashboard(); 
-        }
+        download: true, header: true, skipEmptyLines: true,
+        complete: function(r) { dadosGlobais = r.data; renderizarDashboard(); }
     });
 </script>
 </body>

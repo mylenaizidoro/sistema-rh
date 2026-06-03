@@ -556,44 +556,37 @@
         }, 150);
     }
 
-   // --- FUNÇÃO FINAL DE RENDERIZAÇÃO ---
     function renderizarDashboard() {
-        const container = document.getElementById('container-graficos');
-        container.innerHTML = ''; // Limpa antes de renderizar
-        
+        document.getElementById('container-graficos').innerHTML = "";
         calcularResumo();
+        
+        criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
+        criarGraficoPerformance({ chave: "> 180", titulo: "TURNOVER PA > 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados > 180 dias/ ativos" });
+        criarGraficoPerformance({ chave: "< 180", titulo: "TURNOVER PA < 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados < 180 dias/ ativos" });
+        criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
+        criarGraficoPerformance({ chave: "DESLIGAMENTO PEDIDOS", titulo: "DESLIGAMENTO PEDIDOS (TOTAL)", tipo: "MENOR_MELHOR", ignorarTurno: true, nota: "Volume mensal consolidado de solicitações de desligamento." });
 
-        // 1. Gráficos de Turnover (Consolidados)
         const itensConsolidados = [
-            { t: "DESLIGAMENTOS", h: "DESLIGAMENTO" },
-            { t: "PEDIDO DE DELIGAMENTO EM 15 DIAS", h: "PEDIDO DE DESLIGAMENTO EM 15 DIAS" },
-            // ... (coloque os outros itens aqui)
+            { t: "DESLIGAMENTOS", h: "TURNOVER - DESLIGAMENTOS" },
+            { t: "PEDIDO DE DELIGAMENTO EM 15 DIAS", h: "TURNOVER - PEDIDO DE DESLIGAMENTO EM 15 DIAS" },
+            { t: "TURNOVER - PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - PEDIDOS DE DESLIGAMENTO MÊS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", h: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA acima de 90 dias", h: "TURNOVER - INICIATIVA EMPRESA ACIMA DE 90 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS" }
         ];
         
         itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
-        // 2. Gráficos de MOI e MOD (Empilhados por Turno)
-        // Usamos o termo que aparece na sua planilha: "MOD" e "MOI"
-        criarGraficoConsolidado("INDICADOR MOI", "MOI");
-        criarGraficoConsolidado("INDICADOR MOD", "MOD");
-
-        // 3. Gráficos de Performance
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
         criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Quantidade total de promoções." });
-        criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "Absenteísmo", tipo: "MENOR_MELHOR", nota: "Acompanhamento mensal" });
     }
-
-    // --- INICIALIZAÇÃO ÚNICA ---
-    Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
-        download: true, 
-        header: true, 
-        skipEmptyLines: true,
-        complete: function(results) { 
-            dadosGlobais = results.data; 
-            renderizarDashboard(); 
-        }
-    );
 
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
         download: true, header: true, skipEmptyLines: true,

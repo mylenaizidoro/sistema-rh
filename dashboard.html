@@ -1,100 +1,314 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Dashboard Coplac</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-</head>
-<body>
-    <div id="container-graficos"></div>
+ function adicionarTarefa(tipo) {
+        if (tipo === 'onboarding') {
+            const input = document.getElementById('inputOnboarding');
+            if (input.value.trim() === '') return;
+            dadosOnboarding.push({ texto: input.value.trim(), checado: false });
+            input.value = '';
+        } else {
+            const input = document.getElementById('inputOffboarding');
+            if (input.value.trim() === '') return;
+            dadosOffboarding.push({ texto: input.value.trim(), checado: false });
+            input.value = '';
+        }
+        salvarETrabalharListas();
+    }
 
-    <script>
-        // --- VARIÁVEIS E FUNÇÕES DE APOIO ---
-        let dadosGlobais = [];
-        let anoSelecionado = 'TODOS';
-        let turnoSelecionado = 'TODOS';
-        const labelsTodos = Array.from({length: 24}, (_, i) => {
-            const m = (i % 12) + 1;
-            const a = i < 12 ? '2025' : '2026';
-            return `${m.toString().padStart(2,'0')}/${a}`;
+    function alternarCheck(tipo, index) {
+        if (tipo === 'onboarding') {
+            dadosOnboarding[index].checado = !dadosOnboarding[index].checado;
+        } else {
+            dadosOffboarding[index].checado = !dadosOffboarding[index].checado;
+        }
+        salvarETrabalharListas();
+    }
+
+    function deletarTarefa(tipo, index) {
+        if (tipo === 'onboarding') {
+            dadosOnboarding.splice(index, 1);
+        } else {
+            dadosOffboarding.splice(index, 1);
+        }
+        salvarETrabalharListas();
+    }
+
+    // Permitir adicionar apertando "Enter" no teclado
+    document.addEventListener("DOMContentLoaded", function() {
+        renderizarListas();
+        
+        document.getElementById('inputOnboarding').addEventListener("keypress", function(e) {
+            if (e.key === 'Enter') adicionarTarefa('onboarding');
         });
+        document.getElementById('inputOffboarding').addEventListener("keypress", function(e) {
+            if (e.key === 'Enter') adicionarTarefa('offboarding');
+        });
+    });
 
-        function limparNumero(v) { if (!v) return 0; return parseFloat(v.toString().replace(/\s/g, '').replace(',', '.').replace('%', '')) || 0; }
-        function normalizar(txt) { return txt ? txt.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : ""; }
-        function extrairValor(ln) { return ln['Valor Real'] || ln['Qtd'] || ln['Quantidade'] || ln['VALOR REAL'] || ln['QTD'] || 0; }
 
-        // --- FUNÇÕES DE GRÁFICOS ---
-        function renderizarGraficoDesligamentoSeparado(tipo, titulo) {
-            const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-            const dadosFiltrados = dadosGlobais.filter(ln => {
-                const proc = normalizar(ln.Processo || ln.PROCESSO || "");
-                const ind = normalizar(ln.Indicador || ln.INDICADOR || "");
-                return proc === "DESLIGAMENTO" && (proc.includes(tipo) || ind.includes(tipo));
-            });
+    // --- MANUTENÇÃO INTEGRAL DE NAVEGAÇÃO E GRÁFICOS ---
+    function switchTab(tabId, btn) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        btn.classList.add('active');
+    }
 
-            const idUnique = 'chart-' + tipo + Math.random().toString(36).substr(2, 5);
-            document.getElementById('container-graficos').innerHTML += `<div class="card"><h2>${titulo}</h2><div style="height:300px;"><canvas id="${idUnique}"></canvas></div></div>`;
+    function calcularSimulacaoTurnover() {
+        const adm = parseFloat(document.getElementById('simAdm').value) || 0;
+        const desl = parseFloat(document.getElementById('simDesl').value) || 0;
+        const ativos = parseFloat(document.getElementById('simAtivos').value) || 1;
+        const resultado = (((adm + desl) / 2) / ativos) * 100;
+        document.getElementById('resTurnover').innerText = `Turnover Simulado: ${resultado.toFixed(2)}%`;
+    }
 
-            setTimeout(() => {
-                const getData = (t) => labelsExibicao.map(m => limparNumero(extrairValor(dadosFiltrados.find(ln => (ln.mes||ln.MES) === m && (normalizar(ln.Indicador||ln.INDICADOR).includes(t) || normalizar(ln.Processo||ln.PROCESSO).includes(t))) || {})));
-                new Chart(document.getElementById(idUnique), {
-                    type: 'bar',
-                    data: {
-                        labels: labelsExibicao,
-                        datasets: [
-                            { label: '3º Turno', data: getData("3º TURNO"), backgroundColor: '#f59e0b', stack: 's1' },
-                            { label: '2º Turno', data: getData("2º TURNO"), backgroundColor: '#000000', stack: 's1' },
-                            { label: '1º Turno', data: getData("1º TURNO"), backgroundColor: '#0284c7', stack: 's1' }
-                        ]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
-                });
-            }, 100);
-        }
+    function calcularSimulacaoAbsenteismo() {
+        const perdidas = parseFloat(document.getElementById('simHorasPerdidas').value) || 0;
+        const trabalhadas = parseFloat(document.getElementById('simHorasTrabalhadas').value) || 1;
+        const resultado = (perdidas / trabalhadas) * 100;
+        document.getElementById('resAbsenteismo').innerText = `Absenteísmo Simulado: ${resultado.toFixed(2)}%`;
+    }
 
-        function criarGraficoPerformance(cfg) { 
-            /* Insira aqui sua lógica original completa de criarGraficoPerformance */ 
-        }
-        function criarGraficoConsolidado(titulo, termo) { 
-            /* Insira aqui sua lógica original completa de criarGraficoConsolidado */ 
-        }
-        function calcularResumo() { 
-            /* Insira aqui sua lógica original completa de calcularResumo */ 
-        }
+    Chart.register(ChartDataLabels);
+    const planilhaDrive = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
+    
+    let dadosGlobais = [];
+    let anoSelecionado = 'TODOS';
+    let turnoSelecionado = 'TODOS';
 
-        // --- DASHBOARD PRINCIPAL COM TODOS OS INDICADORES ---
-        function renderizarDashboard() {
-            document.getElementById('container-graficos').innerHTML = "";
-            calcularResumo();
+    const labelsTodos = [];
+    for(let m=1; m<=12; m++) labelsTodos.push(`${m.toString().padStart(2,'0')}/2025`);
+    for(let m=1; m<=12; m++) labelsTodos.push(`${m.toString().padStart(2,'0')}/2026`);
+
+    function limparNumero(v) {
+        if (!v || v.toString().trim() === "") return 0;
+        let num = v.toString().replace(/\s/g, '').replace(',', '.').replace('%', '');
+        return parseFloat(num) || 0;
+    }
+
+    function normalizar(txt) {
+        if (!txt) return "";
+        let textoNormalizado = txt.toString().replace(/°/g, "º");
+        return textoNormalizado.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+    }
+
+    function extrairValor(ln) {
+        return ln['Valor Real'] || ln['Qtd'] || ln['Quantidade'] || ln['VALOR REAL'] || ln['QTD'] || 0;
+    }
+
+    function filtrarAno(ano, btn) {
+        anoSelecionado = ano;
+        document.querySelectorAll('.controls .btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderizarDashboard();
+    }
+
+    function filtrarTurno() {
+        turnoSelecionado = document.getElementById('selectTurno').value;
+        renderizarDashboard();
+    }
+
+    function enviarRelatorio() {
+        const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbwveKNROClrWbJOYCW45GE-kNgqesZ5AhE_2bumyoogeb5NhnaALv4db6pe9NYMLxVV/exec"; 
+        const email = document.getElementById('emailDestino').value;
+        if (!email) { alert("Por favor, insira um e-mail válido."); return; }
+        const kpis = document.querySelectorAll('#kpi-summary .kpi-card div');
+        const dadosEmail = {
+            destinatario: email,
+            absenteismo: kpis[0] ? kpis[0].innerText : "N/A",
+            turnover: kpis[1] ? kpis[1].innerText : "N/A",
+            treinamento: kpis[2] ? kpis[2].innerText : "N/A",
+            aprovacao: kpis[3] ? kpis[3].innerText : "N/A",
+            timestamp: new Date().toLocaleString()
+        };
+        fetch(URL_SCRIPT, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(dadosEmail) });
+        alert("Solicitação de envio disparada para: " + email);
+    }
+
+    function obterDadosBase(chaveProcesso, aplicarTurno = true) {
+        return dadosGlobais.filter(ln => {
+            const nomeProc = normalizar(ln.Processo || ln.PROCESSO || "");
+            const nomeInd = normalizar(ln.Indicador || ln.INDICADOR || "");
             
-            // Gráficos Separados MOD e MOI
-            renderizarGraficoDesligamentoSeparado("MOD", "DESLIGAMENTOS - MOD");
-            renderizarGraficoDesligamentoSeparado("MOI", "DESLIGAMENTOS - MOI");
+            let matchProcesso = false;
+            if (chaveProcesso === "DESLIGAMENTOS") {
+                matchProcesso = nomeProc === "DESLIGAMENTO" && (nomeInd.includes("MOD -") || nomeProc.includes("MOD -"));
+            } else {
+                matchProcesso = nomeProc.includes(normalizar(chaveProcesso)) || nomeInd.includes(normalizar(chaveProcesso));
+            }
 
-            // Indicadores originais
-            criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR" });
-            criarGraficoPerformance({ chave: "> 180", titulo: "TURNOVER PA > 180 DIAS", tipo: "MENOR_MELHOR" });
-            criarGraficoPerformance({ chave: "< 180", titulo: "TURNOVER PA < 180 DIAS", tipo: "MENOR_MELHOR" });
-            criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR" });
+            if (["PEDIDO DE DELIGAMENTO EM 15 DIAS", "PEDIDOS DE DESLIGAMENTO MES", "SOLICITACAO", "INICIATIVA"].some(termo => nomeProc.includes(normalizar(termo)) || nomeInd.includes(normalizar(termo)))) {
+                if ((nomeProc.includes("TURNO") || nomeInd.includes("TURNO")) && !(nomeProc.includes("MOD") || nomeInd.includes("MOD"))) {
+                    return false; 
+                }
+            }
 
-            const itens = [
-                { t: "PEDIDO DE DELIGAMENTO EM 15 DIAS", h: "TURNOVER - PEDIDO DE DESLIGAMENTO EM 15 DIAS" },
-                { t: "TURNOVER - PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - PEDIDOS DE DESLIGAMENTO MÊS" },
-                { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
-                { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
-                { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
-                { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" }
-            ];
-            itens.forEach(i => criarGraficoConsolidado(i.h, i.t));
+            const matchAno = anoSelecionado === 'TODOS' || (ln.mes || ln.MES || "").includes(anoSelecionado);
+            let matchTurno = true;
+            if (aplicarTurno && turnoSelecionado !== 'TODOS') {
+                matchTurno = nomeInd.includes(normalizar(turnoSelecionado)) || nomeProc.includes(normalizar(turnoSelecionado));
+            }
+            return matchProcesso && matchAno && matchTurno;
+        });
+    }
 
-            criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR" });
-            criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR" });
+    function definirCorBarra(valor, meta, itemTipo) {
+        if (normalizar(turnoSelecionado) === '1º TURNO') return '#0284c7'; 
+        if (normalizar(turnoSelecionado) === '3º TURNO') return '#f59e0b'; 
+        let atingiu = (itemTipo === "MENOR_MELHOR") ? (valor <= meta) : (valor >= meta);
+        return atingiu ? '#10b981' : '#f43f5e';
+    }
+
+    function calcularResumo() {
+        const getMedia = (chave) => {
+            let filtrados = obterDadosBase(chave, true);
+            if (filtrados.length === 0) filtrados = obterDadosBase(chave, false);
+            if (!filtrados.length) return "0";
+            const soma = filtrados.reduce((acc, curr) => acc + limparNumero(extrairValor(curr)), 0);
+            return (soma / filtrados.length).toFixed(1);
+        };
+        document.getElementById('kpi-summary').innerHTML = `
+            <div class="kpi-card"><small>Média Absenteísmo</small><div>${getMedia("ABSENTEISMO")}%</div></div>
+            <div class="kpi-card"><small>Média Turnover Universal</small><div>${getMedia("UNIVERSAL")}%</div></div>
+            <div class="kpi-card"><small>Total Horas Treinamento</small><div>${getMedia("HORAS DE TREINAMENTO")}h</div></div>
+            <div class="kpi-card"><small>Aprovação Média</small><div>${getMedia("APROVADOS EM TREINAMENTO")}%</div></div>`;
+    }
+
+    function criarGraficoPerformance(itemConfig) {
+        const container = document.getElementById('container-graficos');
+        let dados = obterDadosBase(itemConfig.chave, itemConfig.ignorarTurno ? false : true);
+        if (dados.length === 0 && itemConfig.chaveAlternativa) dados = obterDadosBase(itemConfig.chaveAlternativa, itemConfig.ignorarTurno ? false : true);
+        if (dados.length === 0) return;
+
+        const idUnique = Math.random().toString(36).substr(2, 9);
+        const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
+        const exibirPct = ["ABSENTEISMO", "TURNOVER", "UNIVERSAL", "APROVADOS", "> 180", "< 180"].some(t => itemConfig.chave.includes(t));
+
+        container.innerHTML += `
+            <div class="card">
+                <h2>${itemConfig.titulo} ${(!itemConfig.ignorarTurno && turnoSelecionado !== 'TODOS') ? '- ' + turnoSelecionado : ''}</h2>
+                <p class="sub">Grupo Coplac | Performance</p>
+                <div class="grid-info">
+                    <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
+                    <div class="info-box"><b>DETALHAMENTO</b> ${itemConfig.nota}</div>
+                </div>
+            </div>`;
+        
+        setTimeout(() => {
+            const metas = labelsExibicao.map(m => limparNumero(dados.find(ln => (ln.mes || ln.MES) === m)?.Objetivo || dados.find(ln => (ln.mes || ln.MES) === m)?.OBJETIVO));
+            const dFinal = labelsExibicao.map(mes => {
+                const r = dados.find(ln => (ln.mes || ln.MES) === mes);
+                const valor = r ? limparNumero(extrairValor(r)) : null;
+                return valor === 0 ? null : valor;
+            });
+            const corBarras = dFinal.map((valor, idx) => definirCorBarra(valor, metas[idx], itemConfig.tipo));
+            new Chart(document.getElementById(`chart-${idUnique}`), {
+                type: 'bar',
+                data: {
+                    labels: labelsExibicao,
+                    datasets: [
+                        { label: 'Realizado', data: dFinal, backgroundColor: corBarras, borderRadius: 6 },
+                        { label: 'Meta', data: metas, type: 'line', borderColor: '#f97316', borderWidth: 2, borderDash: [5, 5], fill: false, datalabels: { display: false } }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    layout: { padding: { top: 30 } },
+                    plugins: { 
+                        legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 12, padding: 15 } },
+                        datalabels: { color: '#000000', anchor: 'end', align: 'top', offset: 4, formatter: (v) => v ? v + (exibirPct ? '%' : '') : '', font: { weight: 'bold', size: 11 }, rotation: -90 } 
+                    }
+                }
+            });
+        }, 150);
+    }
+
+    function criarGraficoConsolidado(titulo, termo) {
+        const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
+        const dadosBase = obterDadosBase(termo, false);
+        if (dadosBase.length === 0) return;
+
+        const dT1 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("1º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("1º TURNO"));
+        const dT2 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("2º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("2º TURNO"));
+        const dT3 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("3º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("3º TURNO"));
+
+        if (turnoSelecionado !== 'TODOS') {
+            if (normalizar(turnoSelecionado) === '1º TURNO') { dT2.length = 0; dT3.length = 0; }
+            if (normalizar(turnoSelecionado) === '2º TURNO') { dT1.length = 0; dT3.length = 0; }
+            if (normalizar(turnoSelecionado) === '3º TURNO') { dT1.length = 0; dT2.length = 0; }
         }
 
-        const planilhaDrive = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrXO0btL1oimgW_DDA7OZHFb-eZqkt_x66Z6phMPNtKMlKAKq7IGuDbIisw4TPyK76OZ1sC8YVTux4/pub?output=csv";
-        Papa.parse(planilhaDrive, { download: true, header: true, complete: r => { dadosGlobais = r.data; renderizarDashboard(); } });
-    </script>
+        const idUnique = Math.random().toString(36).substr(2, 9);
+        document.getElementById('container-graficos').innerHTML += `
+            <div class="card">
+                <h2>${titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
+                <p class="sub">Grupo Coplac | Visão por Turnos</p>
+                <div class="grid-info">
+                    <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
+                    <div class="info-box"><b>DETALHAMENTO</b> Mapeamento mensal empilhado por turnos (1º, 2º e 3º).</div>
+                </div>
+            </div>`;
+
+        setTimeout(() => {
+            const vT1 = labelsExibicao.map(m => limparNumero(extrairValor(dT1.find(ln => (ln.mes || ln.MES) === m) || {})));
+            const vT2 = labelsExibicao.map(m => limparNumero(extrairValor(dT2.find(ln => (ln.mes || ln.MES) === m) || {})));
+            const vT3 = labelsExibicao.map(m => limparNumero(extrairValor(dT3.find(ln => (ln.mes || ln.MES) === m) || {})));
+            const vTotais = labelsExibicao.map((_, idx) => vT1[idx] + vT2[idx] + vT3[idx]);
+
+            new Chart(document.getElementById(`chart-${idUnique}`), {
+                type: 'bar',
+                data: {
+                    labels: labelsExibicao,
+                    datasets: [
+                        { label: '3º Turno', data: vT3, backgroundColor: '#f59e0b', stack: 's1' }, 
+                        { label: '2º Turno', data: vT2, backgroundColor: '#000000', stack: 's1' }, 
+                        { label: '1º Turno', data: vT1, backgroundColor: '#0284c7', stack: 's1' },
+                        { label: 'Total', data: vTotais, type: 'bar', stack: 's2', backgroundColor: 'transparent', borderColor: 'transparent', grouped: false, datalabels: { color: '#1e293b', anchor: 'end', align: 'top', offset: 2, formatter: (v) => v > 0 ? v : '', font: { weight: 'bold', size: 12 } } }
+                    ]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { display: true, position: 'top', align: 'end', labels: { filter: (item) => item.text !== 'Total', boxWidth: 12 } }, datalabels: { color: '#ffffff', formatter: (v) => v > 0 ? v : '', font: { weight: 'bold' } } },
+                    scales: { x: { stacked: true }, y: { stacked: true } }
+                }
+            });
+        }, 150);
+    }
+
+    function renderizarDashboard() {
+        document.getElementById('container-graficos').innerHTML = "";
+        calcularResumo();
+        
+        criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
+        criarGraficoPerformance({ chave: "> 180", titulo: "TURNOVER PA > 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados > 180 dias/ ativos" });
+        criarGraficoPerformance({ chave: "< 180", titulo: "TURNOVER PA < 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados < 180 dias/ ativos" });
+        criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
+        criarGraficoPerformance({ chave: "DESLIGAMENTO PEDIDOS", titulo: "DESLIGAMENTO PEDIDOS (TOTAL)", tipo: "MENOR_MELHOR", ignorarTurno: true, nota: "Volume mensal consolidado de solicitações de desligamento." });
+
+        const itensConsolidados = [
+            { t: "DESLIGAMENTOS", h: "TURNOVER - DESLIGAMENTOS" },
+            { t: "PEDIDO DE DELIGAMENTO EM 15 DIAS", h: "TURNOVER - PEDIDO DE DESLIGAMENTO EM 15 DIAS" },
+            { t: "TURNOVER - PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - PEDIDOS DE DESLIGAMENTO MÊS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", h: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA acima de 90 dias", h: "TURNOVER - INICIATIVA EMPRESA ACIMA DE 90 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS" }
+        ];
+        
+        itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
+
+        criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
+        criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
+        criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Quantidade total de promoções." });
+    }
+
+    Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
+        download: true, header: true, skipEmptyLines: true,
+        complete: function(r) { dadosGlobais = r.data; renderizarDashboard(); }
+    });
+</script>
 </body>
 </html>

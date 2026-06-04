@@ -454,28 +454,6 @@
             <div class="kpi-card"><small>Total Horas Treinamento</small><div>${getMedia("HORAS DE TREINAMENTO")}h</div></div>
             <div class="kpi-card"><small>Aprovação Média</small><div>${getMedia("APROVADOS EM TREINAMENTO")}%</div></div>`;
     }
-<script>
-    // --- LÓGICA DE PLANO DE AÇÃO ---
-    function salvarPlano(idGrafico) {
-        const texto = document.getElementById('input-plano-' + idGrafico).value;
-        localStorage.setItem('plano_' + idGrafico, texto);
-        alert("Plano de ação salvo com sucesso!");
-    }
-
-    function excluirPlano(idGrafico) {
-        document.getElementById('input-plano-' + idGrafico).value = '';
-        localStorage.removeItem('plano_' + idGrafico);
-    }
-
-    // --- MANUTENÇÃO INTEGRAL DE NAVEGAÇÃO E GRÁFICOS ---
-    function switchTab(tabId, btn) {
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active');
-        btn.classList.add('active');
-    }
-
-    // ... [MANTENHA AQUI SUAS FUNÇÕES: calcularSimulacaoTurnover, calcularSimulacaoAbsenteismo, etc.]
 
     function criarGraficoPerformance(itemConfig) {
         const container = document.getElementById('container-graficos');
@@ -484,7 +462,6 @@
         if (dados.length === 0) return;
 
         const idUnique = Math.random().toString(36).substr(2, 9);
-        const idPlano = itemConfig.chave.replace(/\s+/g, '-'); // ID único para o plano
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
         const exibirPct = ["ABSENTEISMO", "TURNOVER", "UNIVERSAL", "APROVADOS", "> 180", "< 180"].some(t => itemConfig.chave.includes(t));
 
@@ -494,26 +471,16 @@
                 <p class="sub">Grupo Coplac | Performance</p>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box">
-                        <b>DETALHAMENTO</b><br>${itemConfig.nota}
-                        <hr style="margin:10px 0;">
-                        <b>PLANO DE AÇÃO:</b>
-                        <textarea id="input-plano-${idPlano}" style="width:100%; height:80px; margin:5px 0; border:1px solid #ccc; border-radius:4px; padding:5px;">${localStorage.getItem('plano_' + idPlano) || ''}</textarea>
-                        <button onclick="salvarPlano('${idPlano}')" class="btn" style="background:#0284c7; color:white; padding:5px 10px;">Salvar</button>
-                        <button onclick="excluirPlano('${idPlano}')" class="btn" style="background:#f43f5e; color:white; padding:5px 10px;">Excluir</button>
-                    </div>
+                    <div class="info-box"><b>DETALHAMENTO</b> ${itemConfig.nota}</div>
                 </div>
             </div>`;
         
-        // ... [MANTENHA AQUI O SEU setTimeout COM A LÓGICA DO CHART.JS]
         setTimeout(() => {
-            // (Sua lógica original de criação de gráfico permanece aqui)
-        }, 150);
-    }
-
-    // ... [MANTENHA AQUI AS DEMAIS FUNÇÕES: criarGraficoConsolidado, renderizarDashboard, Papa.parse, etc.]
-</script>
-    
+            const metas = labelsExibicao.map(m => limparNumero(dados.find(ln => (ln.mes || ln.MES) === m)?.Objetivo || dados.find(ln => (ln.mes || ln.MES) === m)?.OBJETIVO));
+            const dFinal = labelsExibicao.map(mes => {
+                const r = dados.find(ln => (ln.mes || ln.MES) === mes);
+                const valor = r ? limparNumero(extrairValor(r)) : null;
+                return valor === 0 ? null : valor;
             });
             const corBarras = dFinal.map((valor, idx) => definirCorBarra(valor, metas[idx], itemConfig.tipo));
             new Chart(document.getElementById(`chart-${idUnique}`), {

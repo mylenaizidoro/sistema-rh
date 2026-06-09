@@ -509,96 +509,85 @@
         const dadosBase = obterDadosBase(termo, false);
         if (dadosBase.length === 0) return;
 
-    const dT1 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("1º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("1º TURNO"));
-    const dT2 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("2º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("2º TURNO"));
-    const dT3 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("3º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("3º TURNO"));
-    const dT4 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("ADM") || normalizar(ln.Processo || ln.PROCESSO || "").includes("ADM"));
+        const dT1 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("1º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("1º TURNO"));
+        const dT2 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("2º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("2º TURNO"));
+        const dT3 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("3º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("3º TURNO"));
 
-    if (turnoSelecionado !== 'TODOS') {
-        if (normalizar(turnoSelecionado) === '1º TURNO') { dT2.length = 0; dT3.length = 0; dT4.length = 0; }
-        if (normalizar(turnoSelecionado) === '2º TURNO') { dT1.length = 0; dT3.length = 0; dT4.length = 0; }
-        if (normalizar(turnoSelecionado) === '3º TURNO') { dT1.length = 0; dT2.length = 0; dT4.length = 0; }
-        if (normalizar(turnoSelecionado) === 'ADM') { dT1.length = 0; dT2.length = 0; dT3.length = 0; }
-    }
+        if (turnoSelecionado !== 'TODOS') {
+            if (normalizar(turnoSelecionado) === '1º TURNO') { dT2.length = 0; dT3.length = 0; }
+            if (normalizar(turnoSelecionado) === '2º TURNO') { dT1.length = 0; dT3.length = 0; }
+            if (normalizar(turnoSelecionado) === '3º TURNO') { dT1.length = 0; dT2.length = 0; }
+        }
 
         const idUnique = Math.random().toString(36).substr(2, 9);
         document.getElementById('container-graficos').innerHTML += `
             <div class="card">
                 <h2>${titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
-                <p class="sub">Grupo Coplac | Visão por Turnos e ADM</p>
+                <p class="sub">Grupo Coplac | Visão por Turnos</p>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box"><b>DETALHAMENTO</b> Mapeamento mensal empilhado por turnos (1º, 2º e 3º) e ADM.</div>
+                    <div class="info-box"><b>DETALHAMENTO</b> Mapeamento mensal empilhado por turnos (1º, 2º e 3º).</div>
                 </div>
             </div>`;
-        
+
         setTimeout(() => {
             const vT1 = labelsExibicao.map(m => limparNumero(extrairValor(dT1.find(ln => (ln.mes || ln.MES) === m) || {})));
             const vT2 = labelsExibicao.map(m => limparNumero(extrairValor(dT2.find(ln => (ln.mes || ln.MES) === m) || {})));
             const vT3 = labelsExibicao.map(m => limparNumero(extrairValor(dT3.find(ln => (ln.mes || ln.MES) === m) || {})));
             const vTotais = labelsExibicao.map((_, idx) => vT1[idx] + vT2[idx] + vT3[idx]);
 
-           new Chart(document.getElementById('chart-' + idUnique), {
-        type: 'bar',
-        data: {
-            labels: labelsExibicao, // Isso traz os meses de volta para o eixo X
-            datasets: [
-                { label: '1º Turno', data: vT1, backgroundColor: '#36A2EB' },
-                { label: '2º Turno', data: vT2, backgroundColor: '#000000' },
-                { label: '3º Turno', data: vT3, backgroundColor: '#FFCE56' },
-                { label: 'ADM', data: vT4, backgroundColor: '#FF9900' }
-            ]
-        },
-        options: {
-            scales: { 
-                x: { stacked: true }, 
-                y: { stacked: true } 
-            }
-        }
-    });
+            new Chart(document.getElementById(`chart-${idUnique}`), {
+                type: 'bar',
+                data: {
+                    labels: labelsExibicao,
+                    datasets: [
+                        { label: '3º Turno', data: vT3, backgroundColor: '#f59e0b', stack: 's1' }, 
+                        { label: '2º Turno', data: vT2, backgroundColor: '#000000', stack: 's1' }, 
+                        { label: '1º Turno', data: vT1, backgroundColor: '#0284c7', stack: 's1' },
+                        { label: 'Total', data: vTotais, type: 'bar', stack: 's2', backgroundColor: 'transparent', borderColor: 'transparent', grouped: false, datalabels: { color: '#1e293b', anchor: 'end', align: 'top', offset: 2, formatter: (v) => v > 0 ? v : '', font: { weight: 'bold', size: 12 } } }
+                    ]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { display: true, position: 'top', align: 'end', labels: { filter: (item) => item.text !== 'Total', boxWidth: 12 } }, datalabels: { color: '#ffffff', formatter: (v) => v > 0 ? v : '', font: { weight: 'bold' } } },
+                    scales: { x: { stacked: true }, y: { stacked: true } }
+                }
+            });
         }, 150);
     }
-function renderizarDashboard() {
-    document.getElementById('container-graficos').innerHTML = "";
-    calcularResumo();
-    
-    // Gráficos de Turnover
-    criarGraficoPerformance({ chave: "> 180", titulo: "TURNOVER PA > 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados > 180 dias/ ativos" });
-    criarGraficoPerformance({ chave: "< 180", titulo: "TURNOVER PA < 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados < 180 dias/ ativos" });
-    criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
-    
-   const itensConsolidados = [
-        { t: "PEDIDO DE DELIGAMENTO EM 15 DIAS", h: "TURNOVER - PEDIDO DE DESLIGAMENTO EM 15 DIAS" },
-        { t: "TURNOVER - SOLICITACAO DE DESLIGAMENTO DE 30 DIAS", h: "TURNOVER - SOLICITACAO DE DESLIGAMENTO DE 30 DIAS" },
-        { t: "SOLICITACAO DE DESLIGAMENTO ATÉ 90 DIAS", h: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO ATÉ 90 DIAS" },
-        { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
-        { t: "TURNOVER - PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - PEDIDOS DE DESLIGAMENTO MÊS" },
-        { t: "TURNOVER - INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
-        { t: "DESLIGAMENTOS", h: "TURNOVER - DESLIGAMENTOS" },
-        { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
-        { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
-        { t: "TURNOVER - INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 90 dias", h: "TURNOVER - INICIATIVA EMPRESA 90 DIAS" },
-        { t: "TURNOVER - INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS" },
-        { t: "NUMERO GERAL DE DESLIGAMENTOS MES PEDIDOS + MANDADOS", h: "TURNOVER - GERAL PEDIDOS + MANDADOS" },
-        { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA acima de 90 dias", h: "TURNOVER - INICIATIVA EMPRESA ACIMA DE 90 DIAS" },
-        { t: "QUANTIDADE TOTAL DE DESLIGAMENTOS", h: "TURNOVER - QUANTIDADE TOTAL DESLIGAMENTOS" }
-    ];
-    
-    itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
-    
-    // Indicadores de Performance
-    criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
-    criarGraficoPerformance({ chave: "DESLIGAMENTO PEDIDOS", titulo: "DESLIGAMENTO PEDIDOS (TOTAL)", tipo: "MENOR_MELHOR", ignorarTurno: true, nota: "Volume mensal consolidado de solicitações de desligamento." });
-    criarGraficoPerformance({ 
-        chave: "TOTAL DE HORAS DE TREINAMENTO", 
-        titulo: "TOTAL DE HORAS DE TREINAMENTO", 
-        tipo: "MAIOR_MELHOR", 
-        ignorarTurno: true, 
-        nota: "Total de horas acumuladas." 
-    });
-    criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
-    criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Quantidade total de promoções." });
-}
+
+    function renderizarDashboard() {
+        document.getElementById('container-graficos').innerHTML = "";
+        calcularResumo();
+        
+        criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
+        criarGraficoPerformance({ chave: "> 180", titulo: "TURNOVER PA > 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados > 180 dias/ ativos" });
+        criarGraficoPerformance({ chave: "< 180", titulo: "TURNOVER PA < 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados < 180 dias/ ativos" });
+        criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
+        criarGraficoPerformance({ chave: "DESLIGAMENTO PEDIDOS", titulo: "DESLIGAMENTO PEDIDOS (TOTAL)", tipo: "MENOR_MELHOR", ignorarTurno: true, nota: "Volume mensal consolidado de solicitações de desligamento." });
+
+        const itensConsolidados = [
+            { t: "DESLIGAMENTOS", h: "TURNOVER - DESLIGAMENTOS" },
+            { t: "PEDIDO DE DELIGAMENTO EM 15 DIAS", h: "TURNOVER - PEDIDO DE DESLIGAMENTO EM 15 DIAS" },
+            { t: "TURNOVER - PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - PEDIDOS DE DESLIGAMENTO MÊS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
+            { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", h: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA acima de 90 dias", h: "TURNOVER - INICIATIVA EMPRESA ACIMA DE 90 DIAS" },
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS" }
+        ];
+        
+        itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
+
+        criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
+        criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
+        criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Quantidade total de promoções." });
+    }
+
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
         download: true, header: true, skipEmptyLines: true,
         complete: function(r) { dadosGlobais = r.data; renderizarDashboard(); }

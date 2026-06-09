@@ -541,7 +541,7 @@
            new Chart(document.getElementById('chart-' + idUnique), {
         type: 'bar',
         data: {
-            labels: labelsExibicao, // Meses do ano
+            labels: labelsExibicao, // Isso traz os meses de volta para o eixo X
             datasets: [
                 { label: '1º Turno', data: vT1, backgroundColor: '#36A2EB' },
                 { label: '2º Turno', data: vT2, backgroundColor: '#000000' },
@@ -550,7 +550,10 @@
             ]
         },
         options: {
-            scales: { x: { stacked: true }, y: { stacked: true } } // Mantém o gráfico empilhado
+            scales: { 
+                x: { stacked: true }, 
+                y: { stacked: true } 
+            }
         }
     });
         }, 150);

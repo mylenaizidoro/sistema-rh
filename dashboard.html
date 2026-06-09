@@ -525,13 +525,13 @@
         document.getElementById('container-graficos').innerHTML += `
             <div class="card">
                 <h2>${titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
-                <p class="sub">Grupo Coplac | Visão por Turnos</p>
+                <p class="sub">Grupo Coplac | Visão por Turnos e ADM</p>
                 <div class="grid-info">
                     <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box"><b>DETALHAMENTO</b> Mapeamento mensal empilhado por turnos (1º, 2º e 3º).</div>
+                    <div class="info-box"><b>DETALHAMENTO</b> Mapeamento mensal empilhado por turnos (1º, 2º e 3º) e ADM.</div>
                 </div>
             </div>`;
-
+        
         setTimeout(() => {
             const vT1 = labelsExibicao.map(m => limparNumero(extrairValor(dT1.find(ln => (ln.mes || ln.MES) === m) || {})));
             const vT2 = labelsExibicao.map(m => limparNumero(extrairValor(dT2.find(ln => (ln.mes || ln.MES) === m) || {})));

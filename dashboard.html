@@ -555,27 +555,16 @@
             });
         }, 150);
     }
-
-    function renderizarDashboard() {
+function renderizarDashboard() {
         document.getElementById('container-graficos').innerHTML = "";
         calcularResumo();
         
-        // 1. Turnover > 180 (Maturação)
+        // 1º, 2º e 3º: Os três principais Turnovers
         criarGraficoPerformance({ chave: "> 180", titulo: "TURNOVER PA > 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados > 180 dias/ ativos" });
-        
-        // 2. Turnover < 180 (Adaptação)
         criarGraficoPerformance({ chave: "< 180", titulo: "TURNOVER PA < 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados < 180 dias/ ativos" });
-        
-        // 3. Turnover Universal (Agora é o terceiro)
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
         
-        // 4. Absenteísmo (Saúde operacional)
-        criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
-        
-        // 5. Desligamentos consolidados (Este será o 5º gráfico)
-        criarGraficoPerformance({ chave: "DESLIGAMENTO PEDIDOS", titulo: "DESLIGAMENTO PEDIDOS (TOTAL)", tipo: "MENOR_MELHOR", ignorarTurno: true, nota: "Volume mensal consolidado de solicitações de desligamento." });
-
-        // Lista de gráficos de turnos - O "PEDIDO DE DELIGAMENTO EM 15 DIAS" foi movido para o topo da lista
+        // 4º: O seu gráfico de "PEDIDO DE DESLIGAMENTO EM 15 DIAS" (agora o primeiro da lista)
         const itensConsolidados = [
             { t: "PEDIDO DE DELIGAMENTO EM 15 DIAS", h: "TURNOVER - PEDIDO DE DESLIGAMENTO EM 15 DIAS" },
             { t: "DESLIGAMENTOS", h: "TURNOVER - DESLIGAMENTOS" },
@@ -593,11 +582,13 @@
         
         itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
+        // Gráficos restantes
+        criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
+        criarGraficoPerformance({ chave: "DESLIGAMENTO PEDIDOS", titulo: "DESLIGAMENTO PEDIDOS (TOTAL)", tipo: "MENOR_MELHOR", ignorarTurno: true, nota: "Volume mensal consolidado de solicitações de desligamento." });
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
         criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
         criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Quantidade total de promoções." });
     }
-
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
         download: true, header: true, skipEmptyLines: true,
         complete: function(r) { dadosGlobais = r.data; renderizarDashboard(); }

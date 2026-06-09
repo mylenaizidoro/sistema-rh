@@ -572,13 +572,13 @@
         // 4. Absenteísmo (Saúde operacional)
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
         
-        // 5. Desligamentos consolidados
+        // 5. Desligamentos consolidados (Este será o 5º gráfico)
         criarGraficoPerformance({ chave: "DESLIGAMENTO PEDIDOS", titulo: "DESLIGAMENTO PEDIDOS (TOTAL)", tipo: "MENOR_MELHOR", ignorarTurno: true, nota: "Volume mensal consolidado de solicitações de desligamento." });
 
-        // Lista de gráficos de turnos e outros detalhes
+        // Lista de gráficos de turnos - O "PEDIDO DE DELIGAMENTO EM 15 DIAS" foi movido para o topo da lista
         const itensConsolidados = [
-            { t: "DESLIGAMENTOS", h: "TURNOVER - DESLIGAMENTOS" },
             { t: "PEDIDO DE DELIGAMENTO EM 15 DIAS", h: "TURNOVER - PEDIDO DE DESLIGAMENTO EM 15 DIAS" },
+            { t: "DESLIGAMENTOS", h: "TURNOVER - DESLIGAMENTOS" },
             { t: "TURNOVER - PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - PEDIDOS DE DESLIGAMENTO MÊS" },
             { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },

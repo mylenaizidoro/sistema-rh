@@ -560,18 +560,23 @@
         document.getElementById('container-graficos').innerHTML = "";
         calcularResumo();
         
-        // Indicador de prioridade movido para o topo
+        // 1. Turnover > 180 (Maturação)
         criarGraficoPerformance({ chave: "> 180", titulo: "TURNOVER PA > 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados > 180 dias/ ativos" });
         
-        // Demais indicadores em seguida
-        criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
+        // 2. Turnover < 180 (Adaptação)
         criarGraficoPerformance({ chave: "< 180", titulo: "TURNOVER PA < 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados < 180 dias/ ativos" });
+        
+        // 3. Absenteísmo (Saúde operacional)
+        criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
+        
+        // 4. Turnover Universal (Resumo geral)
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
+        
+        // 5. Desligamentos consolidados
         criarGraficoPerformance({ chave: "DESLIGAMENTO PEDIDOS", titulo: "DESLIGAMENTO PEDIDOS (TOTAL)", tipo: "MENOR_MELHOR", ignorarTurno: true, nota: "Volume mensal consolidado de solicitações de desligamento." });
 
-        // (O restante do código que chama os itens consolidados, treinamentos, etc., deve continuar logo abaixo)
+        // Lista de gráficos de turnos e outros detalhes
         const itensConsolidados = [
-         
             { t: "DESLIGAMENTOS", h: "TURNOVER - DESLIGAMENTOS" },
             { t: "PEDIDO DE DELIGAMENTO EM 15 DIAS", h: "TURNOVER - PEDIDO DE DESLIGAMENTO EM 15 DIAS" },
             { t: "TURNOVER - PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - PEDIDOS DE DESLIGAMENTO MÊS" },

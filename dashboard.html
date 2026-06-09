@@ -564,13 +564,13 @@ function renderizarDashboard() {
         criarGraficoPerformance({ chave: "< 180", titulo: "TURNOVER PA < 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados < 180 dias/ ativos" });
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
         
-        // 4º: O seu gráfico de "PEDIDO DE DESLIGAMENTO EM 15 DIAS" (agora o primeiro da lista)
+        // Lista consolidada (Iniciando no 4º indicador)
         const itensConsolidados = [
-            { t: "PEDIDO DE DELIGAMENTO EM 15 DIAS", h: "TURNOVER - PEDIDO DE DESLIGAMENTO EM 15 DIAS" },
+            { t: "PEDIDO DE DELIGAMENTO EM 15 DIAS", h: "TURNOVER - PEDIDO DE DESLIGAMENTO EM 15 DIAS" }, // 4º
+            { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },       // 5º
             { t: "DESLIGAMENTOS", h: "TURNOVER - DESLIGAMENTOS" },
             { t: "TURNOVER - PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - PEDIDOS DE DESLIGAMENTO MÊS" },
             { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
-            { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
@@ -582,7 +582,7 @@ function renderizarDashboard() {
         
         itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
 
-        // Gráficos restantes
+        // Indicadores restantes
         criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
         criarGraficoPerformance({ chave: "DESLIGAMENTO PEDIDOS", titulo: "DESLIGAMENTO PEDIDOS (TOTAL)", tipo: "MENOR_MELHOR", ignorarTurno: true, nota: "Volume mensal consolidado de solicitações de desligamento." });
         criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });

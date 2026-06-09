@@ -538,22 +538,21 @@
             const vT3 = labelsExibicao.map(m => limparNumero(extrairValor(dT3.find(ln => (ln.mes || ln.MES) === m) || {})));
             const vTotais = labelsExibicao.map((_, idx) => vT1[idx] + vT2[idx] + vT3[idx]);
 
-            new Chart(document.getElementById('chart-' + idUnique), {
-            type: 'bar',
-            data: {
-                // Adicione 'ADM' aqui:
-                labels: ['1º Turno', '2º Turno', '3º Turno', 'ADM'], 
-                datasets: [{
-                    label: 'Quantidade',
-                    // Adicione o dT4.length aqui:
-                    data: [dT1.length, dT2.length, dT3.length, dT4.length], 
-                    backgroundColor: ['#36A2EB', '#000000', '#FFCE56', '#FF9900'] // Adicionei uma cor para o ADM
-                }]
-            },
-            options: {
-                // ... (mantenha suas configurações de opções aqui)
-            }
-        });
+           new Chart(document.getElementById('chart-' + idUnique), {
+        type: 'bar',
+        data: {
+            labels: labelsExibicao, // Meses do ano
+            datasets: [
+                { label: '1º Turno', data: vT1, backgroundColor: '#36A2EB' },
+                { label: '2º Turno', data: vT2, backgroundColor: '#000000' },
+                { label: '3º Turno', data: vT3, backgroundColor: '#FFCE56' },
+                { label: 'ADM', data: vT4, backgroundColor: '#FF9900' }
+            ]
+        },
+        options: {
+            scales: { x: { stacked: true }, y: { stacked: true } } // Mantém o gráfico empilhado
+        }
+    });
         }, 150);
     }
 function renderizarDashboard() {

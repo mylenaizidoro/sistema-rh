@@ -564,15 +564,16 @@ function renderizarDashboard() {
         criarGraficoPerformance({ chave: "< 180", titulo: "TURNOVER PA < 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados < 180 dias/ ativos" });
         criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
         
-        // Lista consolidada (Iniciando no 4º indicador)
+        /// Lista consolidada (Iniciando no 4º indicador)
         const itensConsolidados = [
             { t: "PEDIDO DE DELIGAMENTO EM 15 DIAS", h: "TURNOVER - PEDIDO DE DESLIGAMENTO EM 15 DIAS" },       // 4º
             { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },             // 5º
             { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },             // 6º
             { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },     // 7º
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" }, // 8º
             { t: "DESLIGAMENTOS", h: "TURNOVER - DESLIGAMENTOS" },
             { t: "TURNOVER - PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - PEDIDOS DE DESLIGAMENTO MÊS" },
+            // Agora o novo indicador está logo abaixo:
+            { t: "TURNOVER - INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
             { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA de 31 a 90 dias", h: "TURNOVER - INICIATIVA EMPRESA 31 A 90 DIAS" },

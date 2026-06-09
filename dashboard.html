@@ -564,11 +564,10 @@ function renderizarDashboard() {
     criarGraficoPerformance({ chave: "< 180", titulo: "TURNOVER PA < 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados < 180 dias/ ativos" });
     criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
     
-    // Lista Consolidada (Linha do RETENÇÃO PLANO DE VALORIZAÇÃO foi removida)
-    const itensConsolidados = [
+   const itensConsolidados = [
         { t: "PEDIDO DE DELIGAMENTO EM 15 DIAS", h: "TURNOVER - PEDIDO DE DESLIGAMENTO EM 15 DIAS" },
         { t: "TURNOVER - SOLICITACAO DE DESLIGAMENTO DE 30 DIAS", h: "TURNOVER - SOLICITACAO DE DESLIGAMENTO DE 30 DIAS" },
-        { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
+        { t: "SOLICITACAO DE DESLIGAMENTO ATÉ 90 DIAS", h: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO ATÉ 90 DIAS" },
         { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
         { t: "TURNOVER - PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - PEDIDOS DE DESLIGAMENTO MÊS" },
         { t: "TURNOVER - INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },

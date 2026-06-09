@@ -509,15 +509,17 @@
         const dadosBase = obterDadosBase(termo, false);
         if (dadosBase.length === 0) return;
 
-        const dT1 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("1º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("1º TURNO"));
-        const dT2 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("2º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("2º TURNO"));
-        const dT3 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("3º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("3º TURNO"));
+    const dT1 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("1º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("1º TURNO"));
+    const dT2 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("2º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("2º TURNO"));
+    const dT3 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("3º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("3º TURNO"));
+    const dT4 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("ADM") || normalizar(ln.Processo || ln.PROCESSO || "").includes("ADM"));
 
-        if (turnoSelecionado !== 'TODOS') {
-            if (normalizar(turnoSelecionado) === '1º TURNO') { dT2.length = 0; dT3.length = 0; }
-            if (normalizar(turnoSelecionado) === '2º TURNO') { dT1.length = 0; dT3.length = 0; }
-            if (normalizar(turnoSelecionado) === '3º TURNO') { dT1.length = 0; dT2.length = 0; }
-        }
+    if (turnoSelecionado !== 'TODOS') {
+        if (normalizar(turnoSelecionado) === '1º TURNO') { dT2.length = 0; dT3.length = 0; dT4.length = 0; }
+        if (normalizar(turnoSelecionado) === '2º TURNO') { dT1.length = 0; dT3.length = 0; dT4.length = 0; }
+        if (normalizar(turnoSelecionado) === '3º TURNO') { dT1.length = 0; dT2.length = 0; dT4.length = 0; }
+        if (normalizar(turnoSelecionado) === 'ADM') { dT1.length = 0; dT2.length = 0; dT3.length = 0; }
+    }
 
         const idUnique = Math.random().toString(36).substr(2, 9);
         document.getElementById('container-graficos').innerHTML += `

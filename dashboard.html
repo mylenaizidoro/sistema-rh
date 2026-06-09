@@ -556,41 +556,41 @@
         }, 150);
     }
 function renderizarDashboard() {
-        document.getElementById('container-graficos').innerHTML = "";
-        calcularResumo();
-        
-        // 1º, 2º e 3º: Os três principais Turnovers
-        criarGraficoPerformance({ chave: "> 180", titulo: "TURNOVER PA > 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados > 180 dias/ ativos" });
-        criarGraficoPerformance({ chave: "< 180", titulo: "TURNOVER PA < 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados < 180 dias/ ativos" });
-        criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
-        
-        const itensConsolidados = [
-    { t: "PEDIDO DE DELIGAMENTO EM 15 DIAS", h: "TURNOVER - PEDIDO DE DESLIGAMENTO EM 15 DIAS" },
-    { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
-    { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
-    { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
-    { t: "TURNOVER - PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - PEDIDOS DE DESLIGAMENTO MÊS" },
-    { t: "TURNOVER - INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
-    { t: "DESLIGAMENTOS", h: "TURNOVER - DESLIGAMENTOS" },
-    { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
-    { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
-    { t: "TURNOVER - INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 90 dias", h: "TURNOVER - INICIATIVA EMPRESA 90 DIAS" },
-    { t: "TURNOVER - INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS" },
-    { t: "NUMERO GERAL DE DESLIGAMENTOS MES PEDIDOS + MANDADOS", h: "TURNOVER - GERAL PEDIDOS + MANDADOS" },
-    { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA acima de 90 dias", h: "TURNOVER - INICIATIVA EMPRESA ACIMA DE 90 DIAS" },
-    { t: "QUANTIDADE TOTAL DE DESLIGAMENTOS", h: "TURNOVER - QUANTIDADE TOTAL DESLIGAMENTOS" },
-    { t: "TOTAL DE HORAS DE TREINAMENTO", h: "TOTAL DE HORAS DE TREINAMENTO" },
-    { t: "RETENÇÃO PLANO DE VALORIZAÇÃO", h: "RETENÇÃO - PLANO DE VALORIZAÇÃO" }
-];
-        
-        itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
-        // Indicadores restantes
-        criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
-        criarGraficoPerformance({ chave: "DESLIGAMENTO PEDIDOS", titulo: "DESLIGAMENTO PEDIDOS (TOTAL)", tipo: "MENOR_MELHOR", ignorarTurno: true, nota: "Volume mensal consolidado de solicitações de desligamento." });
-        criarGraficoPerformance({ chave: "HORAS DE TREINAMENTO", titulo: "HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas." });
-        criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
-        criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Quantidade total de promoções." });
-    }
+    document.getElementById('container-graficos').innerHTML = "";
+    calcularResumo();
+    
+    // 1º, 2º e 3º: Os três principais Turnovers
+    criarGraficoPerformance({ chave: "> 180", titulo: "TURNOVER PA > 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados > 180 dias/ ativos" });
+    criarGraficoPerformance({ chave: "< 180", titulo: "TURNOVER PA < 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados < 180 dias/ ativos" });
+    criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
+    
+    const itensConsolidados = [
+        { t: "PEDIDO DE DELIGAMENTO EM 15 DIAS", h: "TURNOVER - PEDIDO DE DESLIGAMENTO EM 15 DIAS" },
+        { t: "SOLICITACAO DE DESLIGAMENTO 16 A 30", h: "TURNOVER - SOLICITAÇÃO 16 A 30 DIAS" },
+        { t: "SOLICITACAO DE DESLIGAMENTO 31 A 90", h: "TURNOVER - SOLICITAÇÃO 31 A 90 DIAS" },
+        { t: "SOLICITACAO DE DESLIGAMENTO ACIMA DE 90", h: "TURNOVER - SOLICITAÇÃO ACIMA DE 90 DIAS" },
+        { t: "TURNOVER - PEDIDOS DE DESLIGAMENTO MES", h: "TURNOVER - PEDIDOS DE DESLIGAMENTO MÊS" },
+        { t: "TURNOVER - INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 15 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 15 DIAS" },
+        { t: "DESLIGAMENTOS", h: "TURNOVER - DESLIGAMENTOS" },
+        { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
+        { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
+        { t: "TURNOVER - INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 90 dias", h: "TURNOVER - INICIATIVA EMPRESA 90 DIAS" },
+        { t: "TURNOVER - INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS" },
+        { t: "NUMERO GERAL DE DESLIGAMENTOS MES PEDIDOS + MANDADOS", h: "TURNOVER - GERAL PEDIDOS + MANDADOS" },
+        { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA acima de 90 dias", h: "TURNOVER - INICIATIVA EMPRESA ACIMA DE 90 DIAS" },
+        { t: "QUANTIDADE TOTAL DE DESLIGAMENTOS", h: "TURNOVER - QUANTIDADE TOTAL DESLIGAMENTOS" },
+        { t: "RETENÇÃO PLANO DE VALORIZAÇÃO", h: "RETENÇÃO - PLANO DE VALORIZAÇÃO" }
+    ];
+    
+    itensConsolidados.forEach(i => criarGraficoConsolidados(i.h, i.t));
+    
+    // Indicadores de Performance (incluindo o de Horas de Treinamento agora)
+    criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
+    criarGraficoPerformance({ chave: "DESLIGAMENTO PEDIDOS", titulo: "DESLIGAMENTO PEDIDOS (TOTAL)", tipo: "MENOR_MELHOR", ignorarTurno: true, nota: "Volume mensal consolidado de solicitações de desligamento." });
+    criarGraficoPerformance({ chave: "TOTAL DE HORAS DE TREINAMENTO", titulo: "TOTAL DE HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "Total de horas acumuladas por mês." });
+    criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
+    criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Quantidade total de promoções." });
+}
     Papa.parse(planilhaDrive + "&t=" + new Date().getTime(), {
         download: true, header: true, skipEmptyLines: true,
         complete: function(r) { dadosGlobais = r.data; renderizarDashboard(); }

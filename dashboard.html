@@ -578,12 +578,12 @@ function renderizarDashboard() {
             { t: "SOLICITACAO DE DESLIGAMENTO ATE 15", h: "TURNOVER - SOLICITAÇÃO ATÉ 15 DIAS" },
             
             { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 30 dias", h: "TURNOVER - INICIATIVA EMPRESA ATÉ 30 DIAS" },
-            
-            // Agora apenas o novo indicador com o identificador 'h' exclusivo:
             { t: "TURNOVER - INICIATIVA DE DESLIGAMENTO DA EMPRESA dentro de 90 dias", h: "TURNOVER - INICIATIVA EMPRESA 90 DIAS" }, 
             
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA acima de 90 dias", h: "TURNOVER - INICIATIVA EMPRESA ACIMA DE 90 DIAS" },
-            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS" }
+            // Novo indicador incluído aqui:
+            { t: "TURNOVER - INICIATIVA DE DESLIGAMENTO DA EMPRESA geral mes", h: "TURNOVER - INICIATIVA EMPRESA GERAL NO MÊS" },
+            
+            { t: "INICIATIVA DE DESLIGAMENTO DA EMPRESA acima de 90 dias", h: "TURNOVER - INICIATIVA EMPRESA ACIMA DE 90 DIAS" }
         ];
         
         itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));

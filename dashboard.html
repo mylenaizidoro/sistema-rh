@@ -505,32 +505,20 @@ MANIPULADO
             });
         }, 150);
     }
-
-    function criarGraficoConsolidado(titulo, termo) {
+function criarGraficoConsolidado(titulo, termo) {
     const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
+    const dadosBase = dadosGlobais.filter(ln => normalizar(ln.Processo || ln.PROCESSO || "").includes(normalizar(termo)));
     
-    // Versão "tolerante": remove espaços, hifens e acentos para garantir a comparação
-    const dadosBase = dadosGlobais.filter(ln => {
-        let proc = (ln.Processo || ln.PROCESSO || "").toString();
-        let procLimpo = normalizar(proc).replace(/[^a-zA-Z0-9]/g, "");
-        let termoLimpo = normalizar(termo).replace(/[^a-zA-Z0-9]/g, "");
-        return procLimpo.includes(termoLimpo);
-    });
-    
-    if (dadosBase.length === 0) {
-        console.warn("Nenhum dado encontrado para: " + termo);
-        return;
-    }
+    if (dadosBase.length === 0) return;
 
-    // Categorias baseadas na Coluna C (Indicador)
-    const dADM = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("ADM"));
-    const dT1 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("1º TURNO"));
-    const dT2 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("2º TURNO"));
-    const dT3 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("3º TURNO"));
+    // Filtros específicos para MOD e MOI
+    // Aqui estamos procurando na coluna "Indicador" (ou processo) tanto o Turno/ADM quanto o tipo (MOD ou MOI)
+    const filtrar = (turno, tipo) => dadosBase.filter(ln => {
+        const ind = normalizar(ln.Indicador || ln.INDICADOR || "");
+        return ind.includes(turno) && ind.includes(tipo);
+    });
 
     const idUnique = Math.random().toString(36).substr(2, 9);
-    
-    // Adicionamos a estrutura para o gráfico na tela
     document.getElementById('container-graficos').innerHTML += `
         <div class="card">
             <h2>${titulo}</h2>
@@ -538,32 +526,26 @@ MANIPULADO
         </div>`;
 
     setTimeout(() => {
-        const vADM = labelsExibicao.map(m => limparNumero(extrairValor(dADM.find(ln => (ln.mes || ln.MES) === m) || {})));
-        const vT1 = labelsExibicao.map(m => limparNumero(extrairValor(dT1.find(ln => (ln.mes || ln.MES) === m) || {})));
-        const vT2 = labelsExibicao.map(m => limparNumero(extrairValor(dT2.find(ln => (ln.mes || ln.MES) === m) || {})));
-        const vT3 = labelsExibicao.map(m => limparNumero(extrairValor(dT3.find(ln => (ln.mes || ln.MES) === m) || {})));
+        // Mapeamento dos dados
+        const getV = (t, tp) => labelsExibicao.map(m => limparNumero(extrairValor(filtrar(t, tp).find(ln => (ln.mes || ln.MES) === m) || {})));
 
         new Chart(document.getElementById(`chart-${idUnique}`), {
             type: 'bar',
             data: {
                 labels: labelsExibicao,
                 datasets: [
-                    { label: '3º Turno', data: vT3, backgroundColor: '#f59e0b', stack: 's1' },
-                    { label: '2º Turno', data: vT2, backgroundColor: '#000000', stack: 's1' },
-                    { label: '1º Turno', data: vT1, backgroundColor: '#0284c7', stack: 's1' },
-                    { label: 'ADM', data: vADM, backgroundColor: '#94a3b8', stack: 's1' }
+                    { label: 'MOD 3º', data: getV("3º TURNO", "MOD"), backgroundColor: '#f59e0b', stack: 'MOD' },
+                    { label: 'MOD 2º', data: getV("2º TURNO", "MOD"), backgroundColor: '#000000', stack: 'MOD' },
+                    { label: 'MOD 1º', data: getV("1º TURNO", "MOD"), backgroundColor: '#0284c7', stack: 'MOD' },
+                    { label: 'MOD ADM', data: getV("ADM", "MOD"), backgroundColor: '#94a3b8', stack: 'MOD' },
+                    // Separando MOI com cores diferentes ou opacidade
+                    { label: 'MOI 3º', data: getV("3º TURNO", "MOI"), backgroundColor: '#fca5a5', stack: 'MOI' },
+                    { label: 'MOI 2º', data: getV("2º TURNO", "MOI"), backgroundColor: '#7f1d1d', stack: 'MOI' }
                 ]
             },
             options: {
-                responsive: true, 
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'top' }
-                },
-                scales: { 
-                    x: { stacked: true }, 
-                    y: { stacked: true, beginAtZero: true } 
-                }
+                responsive: true, maintainAspectRatio: false,
+                scales: { x: { stacked: true }, y: { stacked: true } }
             }
         });
     }, 150);

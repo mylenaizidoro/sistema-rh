@@ -510,29 +510,25 @@ MANIPULADO
     function criarGraficoConsolidado(titulo, termo) {
     const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
     const dadosBase = obterDadosBase(termo, false);
+    
     if (dadosBase.length === 0) return;
-
-    // Filtra agrupando por MOD e MOI, ignorando turnos específicos nesta visão
-    const dMOD = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("MOD"));
-    const dMOI = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("MOI"));
 
     const idUnique = Math.random().toString(36).substr(2, 9);
     document.getElementById('container-graficos').innerHTML += `
         <div class="card">
             <h2>${titulo}</h2>
-            <p class="sub">Grupo Coplac | Comparativo MOD vs MOI</p>
             <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
         </div>`;
 
     setTimeout(() => {
-        // Soma os valores de cada mês para MOD e MOI
-        const vMOD = labelsExibicao.map(m => {
-            const itens = dMOD.filter(ln => (ln.mes || ln.MES) === m);
-            return itens.reduce((soma, item) => soma + limparNumero(extrairValor(item)), 0);
-        });
-        const vMOI = labelsExibicao.map(m => {
-            const itens = dMOI.filter(ln => (ln.mes || ln.MES) === m);
-            return itens.reduce((soma, item) => soma + limparNumero(extrairValor(item)), 0);
+        // Esta função busca exatamente como está na sua planilha
+        const getValores = (tipo, sufixo) => labelsExibicao.map(m => {
+            const item = dadosBase.find(ln => {
+                const ind = (ln.Indicador || ln.INDICADOR || "").toUpperCase();
+                // Procura pelo Tipo (MOD/MOI) e pelo sufixo (ex: ADM, 1º TURNO)
+                return (ln.mes || ln.MES) === m && ind.includes(tipo) && ind.includes(sufixo);
+            });
+            return item ? limparNumero(extrairValor(item)) : 0;
         });
 
         new Chart(document.getElementById(`chart-${idUnique}`), {
@@ -540,14 +536,23 @@ MANIPULADO
             data: {
                 labels: labelsExibicao,
                 datasets: [
-                    { label: 'MOD (Direta)', data: vMOD, backgroundColor: '#0284c7' },
-                    { label: 'MOI (Indireta)', data: vMOI, backgroundColor: '#f59e0b' }
+                    { label: 'MOD 1º TURNO', data: getValores("MOD", "1º TURNO"), backgroundColor: '#4a7eb0', stack: 'MOD' },
+                    { label: 'MOD 2º TURNO', data: getValores("MOD", "2º TURNO"), backgroundColor: '#ffc107', stack: 'MOD' },
+                    { label: 'MOD 3º TURNO', data: getValores("MOD", "3º TURNO"), backgroundColor: '#ef7d31', stack: 'MOD' },
+                    { label: 'MOD ADM', data: getValores("MOD", "ADM"), backgroundColor: '#a6a6a6', stack: 'MOD' },
+                    { label: 'MOI 1º TURNO', data: getValores("MOI", "1º TURNO"), backgroundColor: '#4a7eb0', stack: 'MOI' },
+                    { label: 'MOI 2º TURNO', data: getValores("MOI", "2º TURNO"), backgroundColor: '#ffc107', stack: 'MOI' },
+                    { label: 'MOI 3º TURNO', data: getValores("MOI", "3º TURNO"), backgroundColor: '#ef7d31', stack: 'MOI' },
+                    { label: 'MOI ADM', data: getValores("MOI", "ADM"), backgroundColor: '#a6a6a6', stack: 'MOI' }
                 ]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { position: 'top' } },
-                scales: { y: { beginAtZero: true } }
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, beginAtZero: true }
+                },
+                plugins: { legend: { position: 'top' } }
             }
         });
     }, 150);

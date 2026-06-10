@@ -458,54 +458,56 @@ MANIPULADO
     }
 
    function criarGraficoConsolidado(titulo, termo) {
-    const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-    const dadosBase = obterDadosBase(termo, false);
-    if (dadosBase.length === 0) return;
+        const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
+        const dadosBase = obterDadosBase(termo, false);
+        if (dadosBase.length === 0) return;
 
-    const idUnique = Math.random().toString(36).substr(2, 9);
-    document.getElementById('container-graficos').innerHTML += `
-        <div class="card">
-            <h2>${titulo}</h2>
-            <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-        </div>`;
+        const dT1 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("1º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("1º TURNO"));
+        const dT2 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("2º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("2º TURNO"));
+        const dT3 = dadosBase.filter(ln => normalizar(ln.Indicador || ln.INDICADOR || "").includes("3º TURNO") || normalizar(ln.Processo || ln.PROCESSO || "").includes("3º TURNO"));
 
-    setTimeout(() => {
-        // Função para somar valores por Tipo (MOD/MOI) e Turno
-        const getValores = (tipo, turno) => labelsExibicao.map(m => {
-            const item = dadosBase.find(ln => 
-                (ln.mes || ln.MES) === m && 
-                normalizar(ln.Indicador || ln.INDICADOR || "").includes(tipo) && 
-                normalizar(ln.Indicador || ln.INDICADOR || "").includes(turno)
-            );
-            return item ? limparNumero(extrairValor(item)) : 0;
-        });
+        if (turnoSelecionado !== 'TODOS') {
+            if (normalizar(turnoSelecionado) === '1º TURNO') { dT2.length = 0; dT3.length = 0; }
+            if (normalizar(turnoSelecionado) === '2º TURNO') { dT1.length = 0; dT3.length = 0; }
+            if (normalizar(turnoSelecionado) === '3º TURNO') { dT1.length = 0; dT2.length = 0; }
+        }
 
-        new Chart(document.getElementById(`chart-${idUnique}`), {
-            type: 'bar',
-            data: {
-                labels: labelsExibicao,
-                datasets: [
-                    { label: 'MOD 1º Turno', data: getValores("MOD", "1º"), backgroundColor: '#4a7eb0', stack: 'MOD' },
-                    { label: 'MOD 2º Turno', data: getValores("MOD", "2º"), backgroundColor: '#ffc107', stack: 'MOD' },
-                    { label: 'MOD 3º Turno', data: getValores("MOD", "3º"), backgroundColor: '#ef7d31', stack: 'MOD' },
-                    { label: 'MOD ADM', data: getValores("MOD", "ADM"), backgroundColor: '#a6a6a6', stack: 'MOD' },
-                    { label: 'MOI 1º Turno', data: getValores("MOI", "1º"), backgroundColor: '#4a7eb0', stack: 'MOI' },
-                    { label: 'MOI 2º Turno', data: getValores("MOI", "2º"), backgroundColor: '#ffc107', stack: 'MOI' },
-                    { label: 'MOI 3º Turno', data: getValores("MOI", "3º"), backgroundColor: '#ef7d31', stack: 'MOI' },
-                    { label: 'MOI ADM', data: getValores("MOI", "ADM"), backgroundColor: '#a6a6a6', stack: 'MOI' }
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: {
-                    x: { stacked: true },
-                    y: { stacked: true }
+        const idUnique = Math.random().toString(36).substr(2, 9);
+        document.getElementById('container-graficos').innerHTML += `
+            <div class="card">
+                <h2>${titulo} ${turnoSelecionado !== 'TODOS' ? '- ' + turnoSelecionado : ''}</h2>
+                <p class="sub">Grupo Coplac | Visão por Turnos</p>
+                <div class="grid-info">
+                    <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
+                    <div class="info-box"><b>DETALHAMENTO</b> Mapeamento mensal empilhado por turnos (1º, 2º e 3º).</div>
+                </div>
+            </div>`;
+
+        setTimeout(() => {
+            const vT1 = labelsExibicao.map(m => limparNumero(extrairValor(dT1.find(ln => (ln.mes || ln.MES) === m) || {})));
+            const vT2 = labelsExibicao.map(m => limparNumero(extrairValor(dT2.find(ln => (ln.mes || ln.MES) === m) || {})));
+            const vT3 = labelsExibicao.map(m => limparNumero(extrairValor(dT3.find(ln => (ln.mes || ln.MES) === m) || {})));
+            const vTotais = labelsExibicao.map((_, idx) => vT1[idx] + vT2[idx] + vT3[idx]);
+
+            new Chart(document.getElementById(`chart-${idUnique}`), {
+                type: 'bar',
+                data: {
+                    labels: labelsExibicao,
+                    datasets: [
+                        { label: '3º Turno', data: vT3, backgroundColor: '#f59e0b', stack: 's1' }, 
+                        { label: '2º Turno', data: vT2, backgroundColor: '#000000', stack: 's1' }, 
+                        { label: '1º Turno', data: vT1, backgroundColor: '#0284c7', stack: 's1' },
+                        { label: 'Total', data: vTotais, type: 'bar', stack: 's2', backgroundColor: 'transparent', borderColor: 'transparent', grouped: false, datalabels: { color: '#1e293b', anchor: 'end', align: 'top', offset: 2, formatter: (v) => v > 0 ? v : '', font: { weight: 'bold', size: 12 } } }
+                    ]
                 },
-                plugins: { legend: { position: 'top' } }
-            }
-        });
-    }, 150);
-}
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { display: true, position: 'top', align: 'end', labels: { filter: (item) => item.text !== 'Total', boxWidth: 12 } }, datalabels: { color: '#ffffff', formatter: (v) => v > 0 ? v : '', font: { weight: 'bold' } } },
+                    scales: { x: { stacked: true }, y: { stacked: true } }
+                }
+            });
+        }, 150);
+    }
 
     function criarGraficoConsolidado(titulo, termo) {
     const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));

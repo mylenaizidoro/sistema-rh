@@ -565,47 +565,52 @@ function renderizarGrafico(id, termo, tipo) {
             responsive: true, maintainAspectRatio: false,
             scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } },
             animation: {
-                onComplete: function() {
-                    const ctx = this.ctx;
-                    ctx.textAlign = 'center';
-                    
-                    // 1. DENTRO DAS BARRAS: BRANCO
-                    ctx.font = 'bold 12px Arial';
-                    ctx.fillStyle = 'white'; 
-                    this.data.datasets.forEach((dataset, i) => {
-                        const meta = this.getDatasetMeta(i);
-                        meta.data.forEach((bar, index) => {
-                            if (dataset.data[index] > 0) ctx.fillText(dataset.data[index], bar.x, bar.y + (bar.height/2) + 5);
-                        });
-                    });
-
-                    // 2. ACUMULADO NO TOPO: PRETO
-                    ctx.font = 'bold 15px Arial';
-                    ctx.fillStyle = 'black'; 
-                    this.data.labels.forEach((_, index) => {
-                        ['MOD', 'MOI'].forEach(stackType => {
-                            let total = 0;
-                            let topY = null;
-                            let barX = null;
-                            this.data.datasets.forEach((ds, i) => {
-                                if (ds.stack === stackType) {
-                                    total += (ds.data[index] || 0);
-                                    const meta = this.getDatasetMeta(i);
-                                    if (meta.data[index] && meta.data[index].height > 0) {
-                                        topY = (topY === null) ? meta.data[index].y : Math.min(topY, meta.data[index].y);
-                                        barX = meta.data[index].x;
-                                    }
-                                }
-                            });
-                            if (total > 0 && topY !== null) {
-                                ctx.fillText(total, barX, topY - 10);
-                            }
-                        });
-                    });
+    onComplete: function() {
+        const ctx = this.ctx;
+        ctx.textAlign = 'center';
+        
+        // 1. DENTRO DAS BARRAS: BRANCO
+        ctx.font = 'bold 12px Arial';
+        ctx.fillStyle = 'white'; 
+        this.data.datasets.forEach((dataset, i) => {
+            const meta = this.getDatasetMeta(i);
+            meta.data.forEach((bar, index) => {
+                // Apenas desenha se o valor for maior que 0
+                const val = dataset.data[index];
+                if (val > 0) {
+                    ctx.fillText(val, bar.x, bar.y + (bar.height/2) + 5);
                 }
-            }
-        }
-    });
+            });
+        });
+
+        // 2. ACUMULADO NO TOPO: PRETO
+        ctx.font = 'bold 15px Arial';
+        ctx.fillStyle = 'black'; 
+        this.data.labels.forEach((_, index) => {
+            ['MOD', 'MOI'].forEach(stackType => {
+                let total = 0;
+                let topY = null;
+                let barX = null;
+                
+                this.data.datasets.forEach((ds, i) => {
+                    if (ds.stack === stackType) {
+                        const val = ds.data[index] || 0;
+                        total += val;
+                        const meta = this.getDatasetMeta(i);
+                        // Consideramos a altura da barra para definir o topo
+                        if (meta.data[index] && val > 0) {
+                            topY = (topY === null || meta.data[index].y < topY) ? meta.data[index].y : topY;
+                            barX = meta.data[index].x;
+                        }
+                    }
+                });
+                
+                if (total > 0 && topY !== null) {
+                    ctx.fillText(total, barX, topY - 10);
+                }
+            });
+        });
+    }
 }
     function renderizarDashboard() {
     document.getElementById('container-graficos').innerHTML = "";

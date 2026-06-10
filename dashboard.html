@@ -457,7 +457,56 @@ MANIPULADO
             <div class="kpi-card"><small>Aprovação Média</small><div>${getMedia("APROVADOS EM TREINAMENTO")}%</div></div>`;
     }
 
-   function criarGraficoConsolidado(titulo, termo) {
+    function criarGraficoPerformance(itemConfig) {
+        const container = document.getElementById('container-graficos');
+        let dados = obterDadosBase(itemConfig.chave, itemConfig.ignorarTurno ? false : true);
+        if (dados.length === 0 && itemConfig.chaveAlternativa) dados = obterDadosBase(itemConfig.chaveAlternativa, itemConfig.ignorarTurno ? false : true);
+        if (dados.length === 0) return;
+
+        const idUnique = Math.random().toString(36).substr(2, 9);
+        const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
+        const exibirPct = ["ABSENTEISMO", "TURNOVER", "UNIVERSAL", "APROVADOS", "> 180", "< 180"].some(t => itemConfig.chave.includes(t));
+
+        container.innerHTML += `
+            <div class="card">
+                <h2>${itemConfig.titulo} ${(!itemConfig.ignorarTurno && turnoSelecionado !== 'TODOS') ? '- ' + turnoSelecionado : ''}</h2>
+                <p class="sub">Grupo Coplac | Performance</p>
+                <div class="grid-info">
+                    <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
+                    <div class="info-box"><b>DETALHAMENTO</b> ${itemConfig.nota}</div>
+                </div>
+            </div>`;
+        
+        setTimeout(() => {
+            const metas = labelsExibicao.map(m => limparNumero(dados.find(ln => (ln.mes || ln.MES) === m)?.Objetivo || dados.find(ln => (ln.mes || ln.MES) === m)?.OBJETIVO));
+            const dFinal = labelsExibicao.map(mes => {
+                const r = dados.find(ln => (ln.mes || ln.MES) === mes);
+                const valor = r ? limparNumero(extrairValor(r)) : null;
+                return valor === 0 ? null : valor;
+            });
+            const corBarras = dFinal.map((valor, idx) => definirCorBarra(valor, metas[idx], itemConfig.tipo));
+            new Chart(document.getElementById(`chart-${idUnique}`), {
+                type: 'bar',
+                data: {
+                    labels: labelsExibicao,
+                    datasets: [
+                        { label: 'Realizado', data: dFinal, backgroundColor: corBarras, borderRadius: 6 },
+                        { label: 'Meta', data: metas, type: 'line', borderColor: '#f97316', borderWidth: 2, borderDash: [5, 5], fill: false, datalabels: { display: false } }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    layout: { padding: { top: 30 } },
+                    plugins: { 
+                        legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 12, padding: 15 } },
+                        datalabels: { color: '#000000', anchor: 'end', align: 'top', offset: 4, formatter: (v) => v ? v + (exibirPct ? '%' : '') : '', font: { weight: 'bold', size: 11 }, rotation: -90 } 
+                    }
+                }
+            });
+        }, 150);
+    }
+
+    function criarGraficoConsolidado(titulo, termo) {
         const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
         const dadosBase = obterDadosBase(termo, false);
         if (dadosBase.length === 0) return;
@@ -509,56 +558,6 @@ MANIPULADO
         }, 150);
     }
 
-    function criarGraficoConsolidado(titulo, termo) {
-    const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-    const dadosBase = obterDadosBase(termo, false);
-    
-    if (dadosBase.length === 0) return;
-
-    const idUnique = Math.random().toString(36).substr(2, 9);
-    document.getElementById('container-graficos').innerHTML += `
-        <div class="card">
-            <h2>${titulo}</h2>
-            <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-        </div>`;
-
-    setTimeout(() => {
-        // Esta função busca exatamente como está na sua planilha
-        const getValores = (tipo, sufixo) => labelsExibicao.map(m => {
-            const item = dadosBase.find(ln => {
-                const ind = (ln.Indicador || ln.INDICADOR || "").toUpperCase();
-                // Procura pelo Tipo (MOD/MOI) e pelo sufixo (ex: ADM, 1º TURNO)
-                return (ln.mes || ln.MES) === m && ind.includes(tipo) && ind.includes(sufixo);
-            });
-            return item ? limparNumero(extrairValor(item)) : 0;
-        });
-
-        new Chart(document.getElementById(`chart-${idUnique}`), {
-            type: 'bar',
-            data: {
-                labels: labelsExibicao,
-                datasets: [
-                    { label: 'MOD 1º TURNO', data: getValores("MOD", "1º TURNO"), backgroundColor: '#4a7eb0', stack: 'MOD' },
-                    { label: 'MOD 2º TURNO', data: getValores("MOD", "2º TURNO"), backgroundColor: '#ffc107', stack: 'MOD' },
-                    { label: 'MOD 3º TURNO', data: getValores("MOD", "3º TURNO"), backgroundColor: '#ef7d31', stack: 'MOD' },
-                    { label: 'MOD ADM', data: getValores("MOD", "ADM"), backgroundColor: '#a6a6a6', stack: 'MOD' },
-                    { label: 'MOI 1º TURNO', data: getValores("MOI", "1º TURNO"), backgroundColor: '#4a7eb0', stack: 'MOI' },
-                    { label: 'MOI 2º TURNO', data: getValores("MOI", "2º TURNO"), backgroundColor: '#ffc107', stack: 'MOI' },
-                    { label: 'MOI 3º TURNO', data: getValores("MOI", "3º TURNO"), backgroundColor: '#ef7d31', stack: 'MOI' },
-                    { label: 'MOI ADM', data: getValores("MOI", "ADM"), backgroundColor: '#a6a6a6', stack: 'MOI' }
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: {
-                    x: { stacked: true },
-                    y: { stacked: true, beginAtZero: true }
-                },
-                plugins: { legend: { position: 'top' } }
-            }
-        });
-    }, 150);
-}
     function renderizarDashboard() {
     document.getElementById('container-graficos').innerHTML = "";
     calcularResumo();

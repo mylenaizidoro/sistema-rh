@@ -542,14 +542,12 @@ function renderizarGrafico(id, termo, tipo) {
     const v = (t, tp) => labelsExibicao.map(m => limparNumero(extrairValor(getDados(t, tp).find(ln => (ln.mes || ln.MES) === m) || {})));
 
     let datasets = [];
-
     if (tipo === 'TODOS' || tipo === 'MOD') {
         datasets.push({ label: 'MOD 3º Turno', data: v("3º TURNO", "MOD"), backgroundColor: '#ea580c', stack: 'MOD' });
         datasets.push({ label: 'MOD 2º Turno', data: v("2º TURNO", "MOD"), backgroundColor: '#fbbf24', stack: 'MOD' });
         datasets.push({ label: 'MOD 1º Turno', data: v("1º TURNO", "MOD"), backgroundColor: '#2563eb', stack: 'MOD' });
         datasets.push({ label: 'MOD ADM', data: v("ADM", "MOD"), backgroundColor: '#9ca3af', stack: 'MOD' });
     }
-
     if (tipo === 'TODOS' || tipo === 'MOI') {
         datasets.push({ label: 'MOI 3º Turno', data: v("3º TURNO", "MOI"), backgroundColor: '#c2410c', stack: 'MOI' });
         datasets.push({ label: 'MOI 2º Turno', data: v("2º TURNO", "MOI"), backgroundColor: '#d97706', stack: 'MOI' });
@@ -564,26 +562,40 @@ function renderizarGrafico(id, termo, tipo) {
         type: 'bar',
         data: { labels: labelsExibicao, datasets: datasets },
         options: { 
-            responsive: true, 
-            maintainAspectRatio: false,
-            scales: { x: { stacked: true }, y: { stacked: true } },
+            responsive: true, maintainAspectRatio: false,
+            scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } },
             animation: {
-                onComplete: function(animation) {
+                onComplete: function() {
                     const ctx = this.ctx;
                     ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.font = 'bold 14px Arial'; 
-                    ctx.fillStyle = 'black'; 
+                    ctx.fillStyle = 'black';
+                    ctx.font = 'bold 15px Arial';
 
-                    this.data.datasets.forEach(function(dataset, i) {
-                        const meta = this.getDatasetMeta(i);
-                        meta.data.forEach(function(bar, index) {
-                            const data = dataset.data[index];
-                            if (data > 0) {
-                                ctx.fillText(data, bar.x, bar.y);
+                    // Itera apenas sobre os meses (labels)
+                    this.data.labels.forEach((_, index) => {
+                        ['MOD', 'MOI'].forEach(stackType => {
+                            let total = 0;
+                            let topY = null;
+                            let barX = null;
+
+                            // Soma os valores daquela pilha naquele mês
+                            this.data.datasets.forEach((ds, i) => {
+                                if (ds.stack === stackType) {
+                                    total += (ds.data[index] || 0);
+                                    const meta = this.getDatasetMeta(i);
+                                    if (meta.data[index] && meta.data[index].height > 0) {
+                                        topY = (topY === null) ? meta.data[index].y : Math.min(topY, meta.data[index].y);
+                                        barX = meta.data[index].x;
+                                    }
+                                }
+                            });
+
+                            // Desenha o total apenas se houver algo para somar
+                            if (total > 0 && topY !== null) {
+                                ctx.fillText(total, barX, topY - 10);
                             }
                         });
-                    }, this);
+                    });
                 }
             }
         }

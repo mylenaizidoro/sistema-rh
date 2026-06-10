@@ -507,15 +507,19 @@ MANIPULADO
     }
 function criarGraficoConsolidado(titulo, termo) {
     const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-    const dadosBase = dadosGlobais.filter(ln => normalizar(ln.Processo || ln.PROCESSO || "").includes(normalizar(termo)));
-    
+    const dadosBase = dadosGlobais.filter(ln => {
+        let proc = (ln.Processo || ln.PROCESSO || "").toString();
+        let procLimpo = normalizar(proc).replace(/[^a-zA-Z0-9]/g, "");
+        let termoLimpo = normalizar(termo).replace(/[^a-zA-Z0-9]/g, "");
+        return procLimpo.includes(termoLimpo);
+    });
+
     if (dadosBase.length === 0) return;
 
-    // Filtros específicos para MOD e MOI
-    // Aqui estamos procurando na coluna "Indicador" (ou processo) tanto o Turno/ADM quanto o tipo (MOD ou MOI)
-    const filtrar = (turno, tipo) => dadosBase.filter(ln => {
+    // Função de busca precisa: busca pelo TURNO e pelo TIPO (MOD ou MOI)
+    const getDados = (turno, tipo) => dadosBase.filter(ln => {
         const ind = normalizar(ln.Indicador || ln.INDICADOR || "");
-        return ind.includes(turno) && ind.includes(tipo);
+        return ind.includes(normalizar(turno)) && ind.includes(normalizar(tipo));
     });
 
     const idUnique = Math.random().toString(36).substr(2, 9);
@@ -526,21 +530,25 @@ function criarGraficoConsolidado(titulo, termo) {
         </div>`;
 
     setTimeout(() => {
-        // Mapeamento dos dados
-        const getV = (t, tp) => labelsExibicao.map(m => limparNumero(extrairValor(filtrar(t, tp).find(ln => (ln.mes || ln.MES) === m) || {})));
+        // Mapeia valores para cada combinação
+        const v = (t, tp) => labelsExibicao.map(m => limparNumero(extrairValor(getDados(t, tp).find(ln => (ln.mes || ln.MES) === m) || {})));
 
         new Chart(document.getElementById(`chart-${idUnique}`), {
             type: 'bar',
             data: {
                 labels: labelsExibicao,
                 datasets: [
-                    { label: 'MOD 3º', data: getV("3º TURNO", "MOD"), backgroundColor: '#f59e0b', stack: 'MOD' },
-                    { label: 'MOD 2º', data: getV("2º TURNO", "MOD"), backgroundColor: '#000000', stack: 'MOD' },
-                    { label: 'MOD 1º', data: getV("1º TURNO", "MOD"), backgroundColor: '#0284c7', stack: 'MOD' },
-                    { label: 'MOD ADM', data: getV("ADM", "MOD"), backgroundColor: '#94a3b8', stack: 'MOD' },
-                    // Separando MOI com cores diferentes ou opacidade
-                    { label: 'MOI 3º', data: getV("3º TURNO", "MOI"), backgroundColor: '#fca5a5', stack: 'MOI' },
-                    { label: 'MOI 2º', data: getV("2º TURNO", "MOI"), backgroundColor: '#7f1d1d', stack: 'MOI' }
+                    // Pilha MOD
+                    { label: 'MOD 3º Turno', data: v("3º TURNO", "MOD"), backgroundColor: '#ea580c', stack: 'MOD' },
+                    { label: 'MOD 2º Turno', data: v("2º TURNO", "MOD"), backgroundColor: '#fbbf24', stack: 'MOD' },
+                    { label: 'MOD 1º Turno', data: v("1º TURNO", "MOD"), backgroundColor: '#2563eb', stack: 'MOD' },
+                    { label: 'MOD ADM', data: v("ADM", "MOD"), backgroundColor: '#9ca3af', stack: 'MOD' },
+                    
+                    // Pilha MOI (stack diferente = coluna separada lado a lado)
+                    { label: 'MOI 3º Turno', data: v("3º TURNO", "MOI"), backgroundColor: '#c2410c', stack: 'MOI' },
+                    { label: 'MOI 2º Turno', data: v("2º TURNO", "MOI"), backgroundColor: '#d97706', stack: 'MOI' },
+                    { label: 'MOI 1º Turno', data: v("1º TURNO", "MOI"), backgroundColor: '#1e40af', stack: 'MOI' },
+                    { label: 'MOI ADM', data: v("ADM", "MOI"), backgroundColor: '#6b7280', stack: 'MOI' }
                 ]
             },
             options: {

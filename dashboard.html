@@ -568,17 +568,25 @@ function renderizarGrafico(id, termo, tipo) {
                 onComplete: function() {
                     const ctx = this.ctx;
                     ctx.textAlign = 'center';
-                    ctx.fillStyle = 'black';
-                    ctx.font = 'bold 15px Arial';
+                    
+                    // 1. DENTRO DAS BARRAS: BRANCO
+                    ctx.font = 'bold 12px Arial';
+                    ctx.fillStyle = 'white'; 
+                    this.data.datasets.forEach((dataset, i) => {
+                        const meta = this.getDatasetMeta(i);
+                        meta.data.forEach((bar, index) => {
+                            if (dataset.data[index] > 0) ctx.fillText(dataset.data[index], bar.x, bar.y + (bar.height/2) + 5);
+                        });
+                    });
 
-                    // Itera apenas sobre os meses (labels)
+                    // 2. ACUMULADO NO TOPO: PRETO
+                    ctx.font = 'bold 15px Arial';
+                    ctx.fillStyle = 'black'; 
                     this.data.labels.forEach((_, index) => {
                         ['MOD', 'MOI'].forEach(stackType => {
                             let total = 0;
                             let topY = null;
                             let barX = null;
-
-                            // Soma os valores daquela pilha naquele mês
                             this.data.datasets.forEach((ds, i) => {
                                 if (ds.stack === stackType) {
                                     total += (ds.data[index] || 0);
@@ -589,8 +597,6 @@ function renderizarGrafico(id, termo, tipo) {
                                     }
                                 }
                             });
-
-                            // Desenha o total apenas se houver algo para somar
                             if (total > 0 && topY !== null) {
                                 ctx.fillText(total, barX, topY - 10);
                             }

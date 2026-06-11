@@ -456,26 +456,25 @@ MANIPULADO
             <div class="kpi-card"><small>Total Horas Treinamento</small><div>${getMedia("HORAS DE TREINAMENTO")}h</div></div>
             <div class="kpi-card"><small>Aprovação Média</small><div>${getMedia("APROVADOS EM TREINAMENTO")}%</div></div>`;
     }
+function criarGraficoPerformance(itemConfig) {
+    const idUnique = Math.random().toString(36).substr(2, 9);
+    const container = document.getElementById('container-graficos');
 
-    function criarGraficoPerformance(itemConfig) {
-        const container = document.getElementById('container-graficos');
-        let dados = obterDadosBase(itemConfig.chave, itemConfig.ignorarTurno ? false : true);
-        if (dados.length === 0 && itemConfig.chaveAlternativa) dados = obterDadosBase(itemConfig.chaveAlternativa, itemConfig.ignorarTurno ? false : true);
-        if (dados.length === 0) return;
-
-        const idUnique = Math.random().toString(36).substr(2, 9);
-        const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-        const exibirPct = ["ABSENTEISMO", "TURNOVER", "UNIVERSAL", "APROVADOS", "> 180", "< 180"].some(t => itemConfig.chave.includes(t));
-
-        container.innerHTML += `
-            <div class="card">
-                <h2>${itemConfig.titulo} ${(!itemConfig.ignorarTurno && turnoSelecionado !== 'TODOS') ? '- ' + turnoSelecionado : ''}</h2>
-                <p class="sub">Grupo Coplac | Performance</p>
-                <div class="grid-info">
-                    <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box"><b>DETALHAMENTO</b> ${itemConfig.nota}</div>
-                </div>
-            </div>`;
+    container.innerHTML += `
+        <div class="card">
+            <h2>${itemConfig.titulo}</h2>
+            <div style="margin-bottom: 10px;">
+                <select onchange="renderizarGrafico('${idUnique}', '${itemConfig.chave}', this.value)">
+                    <option value="TODOS">Ver MOD + MOI</option>
+                    <option value="MOD">Apenas MOD</option>
+                    <option value="MOI">Apenas MOI</option>
+                </select>
+            </div>
+            <div class="grid-info">
+                <div class="chart-container" style="height: 300px;"><canvas id="chart-${idUnique}"></canvas></div>
+                <div class="info-box"><b>DETALHAMENTO</b> ${itemConfig.nota}</div>
+            </div>
+        </div>`;
         
         setTimeout(() => {
             const metas = labelsExibicao.map(m => limparNumero(dados.find(ln => (ln.mes || ln.MES) === m)?.Objetivo || dados.find(ln => (ln.mes || ln.MES) === m)?.OBJETIVO));

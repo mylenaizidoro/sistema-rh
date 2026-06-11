@@ -574,11 +574,25 @@ function atualizarGraficoConsolidado(id, termo, filtro, btnElement = null) {
     window[`chartObj_${id}`] = new Chart(ctx, {
         type: 'bar',
         data: { labels: labelsExibicao, datasets: datasets },
-        options: { 
-            responsive: true, 
-            maintainAspectRatio: false, 
-            scales: { x: { stacked: true }, y: { stacked: true } } 
-        }
+        options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { x: { stacked: true }, y: { stacked: true } },
+                    plugins: {
+                        legend: { position: 'top' },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            color: '#000',
+                            font: { weight: 'bold', size: 10 },
+                            formatter: function(value, context) {
+                                const allData = context.chart.data.datasets.map(ds => ds.data[context.dataIndex] || 0);
+                                const total = allData.reduce((a, b) => a + b, 0);
+                                return (context.datasetIndex === context.chart.data.datasets.length - 1 && total > 0) ? total.toFixed(1) : null;
+                            }
+                        }
+                    }
+                }
     });
 }
     function renderizarDashboard() {

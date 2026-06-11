@@ -570,37 +570,34 @@ function atualizarGraficoConsolidado(id, termo, filtro, btnElement = null) {
     const ctx = document.getElementById(`chart-${id}`);
     if (window[`chartObj_${id}`]) window[`chartObj_${id}`].destroy();
 
-    // Cria o gráfico
-    window[`chartObj_${id}`] = new Chart(ctx, {
+   window[`chartObj_${id}`] = new Chart(ctx, {
         type: 'bar',
         data: { labels: labelsExibicao, datasets: datasets },
         options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { x: { stacked: true }, y: { stacked: true } },
-                    plugins: {
-                        legend: { position: 'top' },
-                        datalabels: {
-                            anchor: 'center',
-                            align: 'center',
-                            color: '#fff',
-                            font: { weight: 'bold', size: 10 },
-                            display: 'auto', // Garante que o Chart.js tente exibir
-                            formatter: function(value, context) {
-                                const datasets = context.chart.data.datasets;
-                                const total = datasets.reduce((sum, ds) => sum + (ds.data[context.dataIndex] || 0), 0);
-                                
-                                // Se for o último segmento (topo)
-                                if (context.datasetIndex === datasets.length - 1 && total > 0) {
-                                    return [value, "Total: " + total.toFixed(0)]; // Array cria quebra de linha nativa
-                                }
-                                
-                                // Se for do meio, mostra o valor
-                                return value > 0 ? value : null;
-                            }
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { x: { stacked: true }, y: { stacked: true } },
+            plugins: {
+                legend: { position: 'top' },
+                datalabels: {
+                    anchor: 'center',
+                    align: 'center',
+                    color: '#fff',
+                    font: { weight: 'bold', size: 10 },
+                    display: 'auto',
+                    formatter: function(value, context) {
+                        const datasets = context.chart.data.datasets;
+                        const total = datasets.reduce((sum, ds) => sum + (ds.data[context.dataIndex] || 0), 0);
+                        
+                        if (context.datasetIndex === datasets.length - 1 && total > 0) {
+                            return [value, "Total: " + total.toFixed(0)];
                         }
-                            }
-    });
+                        return value > 0 ? value : null;
+                    }
+                }
+            } // Fechamento do plugins
+        } // Fechamento do options
+    }); // Fechamento do new Chart
 }
     function renderizarDashboard() {
     document.getElementById('container-graficos').innerHTML = "";

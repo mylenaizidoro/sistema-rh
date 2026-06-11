@@ -6,7 +6,7 @@ MANIPULADO
     <meta charset="UTF-8">
     <title>Portal de DHO - Grupo Coplac</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-Fdatalabels@2.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         :root {
@@ -570,34 +570,16 @@ function atualizarGraficoConsolidado(id, termo, filtro, btnElement = null) {
     const ctx = document.getElementById(`chart-${id}`);
     if (window[`chartObj_${id}`]) window[`chartObj_${id}`].destroy();
 
-   window[`chartObj_${id}`] = new Chart(ctx, {
+    // Cria o gráfico
+    window[`chartObj_${id}`] = new Chart(ctx, {
         type: 'bar',
         data: { labels: labelsExibicao, datasets: datasets },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: { x: { stacked: true }, y: { stacked: true } },
-            plugins: {
-                legend: { position: 'top' },
-                datalabels: {
-                    anchor: 'center',
-                    align: 'center',
-                    color: '#fff',
-                    font: { weight: 'bold', size: 10 },
-                    display: 'auto',
-                    formatter: function(value, context) {
-                        const datasets = context.chart.data.datasets;
-                        const total = datasets.reduce((sum, ds) => sum + (ds.data[context.dataIndex] || 0), 0);
-                        
-                        if (context.datasetIndex === datasets.length - 1 && total > 0) {
-                            return [value, "Total: " + total.toFixed(0)];
-                        }
-                        return value > 0 ? value : null;
-                    }
-                }
-            } // Fechamento do plugins
-        } // Fechamento do options
-    }); // Fechamento do new Chart
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            scales: { x: { stacked: true }, y: { stacked: true } } 
+        }
+    });
 }
     function renderizarDashboard() {
     document.getElementById('container-graficos').innerHTML = "";

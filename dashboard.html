@@ -6,7 +6,7 @@ MANIPULADO
     <meta charset="UTF-8">
     <title>Portal de DHO - Grupo Coplac</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-Fdatalabels@2.0.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         :root {
@@ -581,18 +581,23 @@ function atualizarGraficoConsolidado(id, termo, filtro, btnElement = null) {
                     plugins: {
                         legend: { position: 'top' },
                         datalabels: {
-                            anchor: 'end',
-                            align: 'top',
-                            color: '#000',
-                            font: { weight: 'bold', size: 10 },
-                            formatter: function(value, context) {
-                                const allData = context.chart.data.datasets.map(ds => ds.data[context.dataIndex] || 0);
-                                const total = allData.reduce((a, b) => a + b, 0);
-                                return (context.datasetIndex === context.chart.data.datasets.length - 1 && total > 0) ? total.toFixed(1) : null;
+                                anchor: 'center', // centraliza nas fatias
+                                align: 'center',
+                                color: '#fff', // cor do texto dentro da barra
+                                font: { weight: 'bold', size: 10 },
+                                formatter: function(value, context) {
+                                    const datasets = context.chart.data.datasets;
+                                    const total = datasets.reduce((sum, ds) => sum + (ds.data[context.dataIndex] || 0), 0);
+                                    
+                                    // Se for o último segmento (topo), mostra o valor dele + o total acumulado
+                                    if (context.datasetIndex === datasets.length - 1 && total > 0) {
+                                        return `${value} \n Total: ${total.toFixed(0)}`;
+                                    }
+                                    
+                                    // Se for segmento do meio e o valor for relevante, mostra o valor
+                                    return value > 0 ? value : null;
+                                }
                             }
-                        }
-                    }
-                }
     });
 }
     function renderizarDashboard() {

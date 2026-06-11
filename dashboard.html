@@ -510,8 +510,11 @@ MANIPULADO
         });
     }, 150);
 }
+    
 function criarGraficoConsolidado(titulo, termo) {
     const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
+    const tipoSelecionado = document.getElementById('selectTipo').value; // Novo Filtro
+
     const dadosBase = dadosGlobais.filter(ln => {
         let proc = (ln.Processo || ln.PROCESSO || "").toString();
         let procLimpo = normalizar(proc).replace(/[^a-zA-Z0-9]/g, "");
@@ -521,7 +524,6 @@ function criarGraficoConsolidado(titulo, termo) {
 
     if (dadosBase.length === 0) return;
 
-    // Função de busca precisa: busca pelo TURNO e pelo TIPO (MOD ou MOI)
     const getDados = (turno, tipo) => dadosBase.filter(ln => {
         const ind = normalizar(ln.Indicador || ln.INDICADOR || "");
         return ind.includes(normalizar(turno)) && ind.includes(normalizar(tipo));
@@ -535,21 +537,23 @@ function criarGraficoConsolidado(titulo, termo) {
         </div>`;
 
     setTimeout(() => {
-        // Mapeia valores para cada combinação
-        const v = (t, tp) => labelsExibicao.map(m => limparNumero(extrairValor(getDados(t, tp).find(ln => (ln.mes || ln.MES) === m) || {})));
+        const v = (t, tp) => {
+            if (tipoSelecionado !== "TODOS" && tipoSelecionado !== tp) return labelsExibicao.map(() => null);
+            return labelsExibicao.map(m => {
+                const valor = limparNumero(extrairValor(getDados(t, tp).find(ln => (ln.mes || ln.MES) === m) || {}));
+                return valor === 0 ? null : valor;
+            });
+        };
 
         new Chart(document.getElementById(`chart-${idUnique}`), {
             type: 'bar',
             data: {
                 labels: labelsExibicao,
                 datasets: [
-                    // Pilha MOD
                     { label: 'MOD 3º Turno', data: v("3º TURNO", "MOD"), backgroundColor: '#ea580c', stack: 'MOD' },
                     { label: 'MOD 2º Turno', data: v("2º TURNO", "MOD"), backgroundColor: '#fbbf24', stack: 'MOD' },
                     { label: 'MOD 1º Turno', data: v("1º TURNO", "MOD"), backgroundColor: '#2563eb', stack: 'MOD' },
                     { label: 'MOD ADM', data: v("ADM", "MOD"), backgroundColor: '#9ca3af', stack: 'MOD' },
-                    
-                    // Pilha MOI (stack diferente = coluna separada lado a lado)
                     { label: 'MOI 3º Turno', data: v("3º TURNO", "MOI"), backgroundColor: '#c2410c', stack: 'MOI' },
                     { label: 'MOI 2º Turno', data: v("2º TURNO", "MOI"), backgroundColor: '#d97706', stack: 'MOI' },
                     { label: 'MOI 1º Turno', data: v("1º TURNO", "MOI"), backgroundColor: '#1e40af', stack: 'MOI' },
@@ -558,21 +562,27 @@ function criarGraficoConsolidado(titulo, termo) {
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                scales: { x: { stacked: true }, y: { stacked: true } }
+                scales: { x: { stacked: true }, y: { stacked: true } },
+                plugins: {
+                    datalabels: {
+                        color: '#ffffff', anchor: 'center', align: 'center', font: { size: 10, weight: 'bold' },
+                        formatter: (v) => (v === 0 || v === null) ? '' : v
+                    }
+                }
             }
         });
     }, 150);
 }
-    function renderizarDashboard() {
+
+function renderizarDashboard() {
     document.getElementById('container-graficos').innerHTML = "";
     calcularResumo();
     
-    // Gráficos de Turnover
     criarGraficoPerformance({ chave: "> 180", titulo: "TURNOVER PA > 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados > 180 dias/ ativos" });
     criarGraficoPerformance({ chave: "< 180", titulo: "TURNOVER PA < 180 DIAS", tipo: "MENOR_MELHOR", nota: "turnover PA desligados < 180 dias/ ativos" });
     criarGraficoPerformance({ chave: "UNIVERSAL", titulo: "TURNOVER CÁLCULO UNIVERSAL", tipo: "MENOR_MELHOR", nota: "(Adm+Desl)/2 / Total Ativos." });
     
-   const itensConsolidados = [
+    const itensConsolidados = [
         { t: "PEDIDO DE DELIGAMENTO EM 15 DIAS", h: "TURNOVER - PEDIDO DE DESLIGAMENTO EM 15 DIAS" },
         { t: "TURNOVER - SOLICITACAO DE DESLIGAMENTO DE 30 DIAS", h: "TURNOVER - SOLICITACAO DE DESLIGAMENTO DE 30 DIAS" },
         { t: "SOLICITACAO DE DESLIGAMENTO ATÉ 90 DIAS", h: "TURNOVER - SOLICITAÇÃO DE DESLIGAMENTO ATÉ 90 DIAS" },
@@ -589,18 +599,11 @@ function criarGraficoConsolidado(titulo, termo) {
         { t: "QUANTIDADE TOTAL DE DESLIGAMENTOS", h: "TURNOVER - QUANTIDADE TOTAL DESLIGAMENTOS" }
     ];
 
-     itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
+    itensConsolidados.forEach(i => criarGraficoConsolidado(i.h, i.t));
     
-    // Indicadores de Performance
     criarGraficoPerformance({ chave: "ABSENTEISMO", titulo: "ABSENTEÍSMO PA - 03", tipo: "MENOR_MELHOR", nota: "Horas Ausentes / Horas Programadas." });
     criarGraficoPerformance({ chave: "DESLIGAMENTO PEDIDOS", titulo: "DESLIGAMENTO PEDIDOS (TOTAL)", tipo: "MENOR_MELHOR", ignorarTurno: true, nota: "Volume mensal consolidado de solicitações de desligamento." });
-    criarGraficoPerformance({ 
-        chave: "TOTAL DE HORAS DE TREINAMENTO", 
-        titulo: "TOTAL DE HORAS DE TREINAMENTO", 
-        tipo: "MAIOR_MELHOR", 
-        ignorarTurno: true, 
-        nota: "Total de horas acumuladas." 
-    });
+    criarGraficoPerformance({ chave: "TOTAL DE HORAS DE TREINAMENTO", titulo: "TOTAL DE HORAS DE TREINAMENTO", tipo: "MAIOR_MELHOR", ignorarTurno: true, nota: "Total de horas acumuladas." });
     criarGraficoPerformance({ chave: "APROVADOS EM TREINAMENTO", titulo: "APROVADOS EM TREINAMENTO", tipo: "MAIOR_MELHOR", nota: "% de aproveitamento." });
     criarGraficoPerformance({ chave: "RETENÇÃO", titulo: "RETENÇÃO PLANO DE VALORIZAÇÃO", tipo: "MAIOR_MELHOR", nota: "Quantidade total de promoções." });
 }

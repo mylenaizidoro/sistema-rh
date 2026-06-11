@@ -458,53 +458,58 @@ MANIPULADO
     }
 
     function criarGraficoPerformance(itemConfig) {
-        const container = document.getElementById('container-graficos');
-        let dados = obterDadosBase(itemConfig.chave, itemConfig.ignorarTurno ? false : true);
-        if (dados.length === 0 && itemConfig.chaveAlternativa) dados = obterDadosBase(itemConfig.chaveAlternativa, itemConfig.ignorarTurno ? false : true);
-        if (dados.length === 0) return;
+    const container = document.getElementById('container-graficos');
+    let dados = obterDadosBase(itemConfig.chave, itemConfig.ignorarTurno ? false : true);
+    if (dados.length === 0 && itemConfig.chaveAlternativa) dados = obterDadosBase(itemConfig.chaveAlternativa, itemConfig.ignorarTurno ? false : true);
+    if (dados.length === 0) return;
 
-        const idUnique = Math.random().toString(36).substr(2, 9);
-        const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
-        const exibirPct = ["ABSENTEISMO", "TURNOVER", "UNIVERSAL", "APROVADOS", "> 180", "< 180"].some(t => itemConfig.chave.includes(t));
+    const idUnique = Math.random().toString(36).substr(2, 9);
+    const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
+    const exibirPct = ["ABSENTEISMO", "TURNOVER", "UNIVERSAL", "APROVADOS", "> 180", "< 180"].some(t => itemConfig.chave.includes(t));
 
-        container.innerHTML += `
-            <div class="card">
-                <h2>${itemConfig.titulo} ${(!itemConfig.ignorarTurno && turnoSelecionado !== 'TODOS') ? '- ' + turnoSelecionado : ''}</h2>
-                <p class="sub">Grupo Coplac | Performance</p>
-                <div class="grid-info">
-                    <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-                    <div class="info-box"><b>DETALHAMENTO</b> ${itemConfig.nota}</div>
-                </div>
-            </div>`;
-        
-        setTimeout(() => {
-            const metas = labelsExibicao.map(m => limparNumero(dados.find(ln => (ln.mes || ln.MES) === m)?.Objetivo || dados.find(ln => (ln.mes || ln.MES) === m)?.OBJETIVO));
-            const dFinal = labelsExibicao.map(mes => {
-                const r = dados.find(ln => (ln.mes || ln.MES) === mes);
-                const valor = r ? limparNumero(extrairValor(r)) : null;
-                return valor === 0 ? null : valor;
-            });
-            const corBarras = dFinal.map((valor, idx) => definirCorBarra(valor, metas[idx], itemConfig.tipo));
-            new Chart(document.getElementById(`chart-${idUnique}`), {
-                type: 'bar',
-                data: {
-                    labels: labelsExibicao,
-                    datasets: [
-                        { label: 'Realizado', data: dFinal, backgroundColor: corBarras, borderRadius: 6 },
-                        { label: 'Meta', data: metas, type: 'line', borderColor: '#f97316', borderWidth: 2, borderDash: [5, 5], fill: false, datalabels: { display: false } }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    layout: { padding: { top: 30 } },
-                    plugins: { 
-                        legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 12, padding: 15 } },
-                        datalabels: { color: '#000000', anchor: 'end', align: 'top', offset: 4, formatter: (v) => v ? v + (exibirPct ? '%' : '') : '', font: { weight: 'bold', size: 11 }, rotation: -90 } 
-                    }
+    container.innerHTML += `
+        <div class="card">
+            <h2>${itemConfig.titulo} ${(!itemConfig.ignorarTurno && turnoSelecionado !== 'TODOS') ? '- ' + turnoSelecionado : ''}</h2>
+            <p class="sub">Grupo Coplac | Performance</p>
+            <div class="grid-info">
+                <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
+                <div class="info-box"><b>DETALHAMENTO</b> ${itemConfig.nota}</div>
+            </div>
+        </div>`;
+    
+    setTimeout(() => {
+        const metas = labelsExibicao.map(m => limparNumero(dados.find(ln => (ln.mes || ln.MES) === m)?.Objetivo || dados.find(ln => (ln.mes || ln.MES) === m)?.OBJETIVO));
+        const dFinal = labelsExibicao.map(mes => {
+            const r = dados.find(ln => (ln.mes || ln.MES) === mes);
+            const valor = r ? limparNumero(extrairValor(r)) : null;
+            return valor === 0 ? null : valor;
+        });
+        const corBarras = dFinal.map((valor, idx) => definirCorBarra(valor, metas[idx], itemConfig.tipo));
+        new Chart(document.getElementById(`chart-${idUnique}`), {
+            type: 'bar',
+            data: {
+                labels: labelsExibicao,
+                datasets: [
+                    { label: 'Realizado', data: dFinal, backgroundColor: corBarras, borderRadius: 6 },
+                    { label: 'Meta', data: metas, type: 'line', borderColor: '#f97316', borderWidth: 2, borderDash: [5, 5], fill: false, datalabels: { display: false } }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                layout: { padding: { top: 30 } },
+                plugins: { 
+                    legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 12, padding: 15 } },
+                    datalabels: { 
+                        color: '#000000', anchor: 'end', align: 'top', offset: 4, font: { weight: 'bold', size: 11 }, rotation: -90,
+                        formatter: function(value) {
+                            return (value === 0 || value === null) ? '' : value + (exibirPct ? '%' : '');
+                        }
+                    } 
                 }
-            });
-        }, 150);
-    }
+            }
+        });
+    }, 150);
+}
 function criarGraficoConsolidado(titulo, termo) {
     const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
     const dadosBase = dadosGlobais.filter(ln => {

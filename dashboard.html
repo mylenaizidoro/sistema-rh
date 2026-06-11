@@ -581,22 +581,24 @@ function atualizarGraficoConsolidado(id, termo, filtro, btnElement = null) {
                     plugins: {
                         legend: { position: 'top' },
                         datalabels: {
-                                anchor: 'center', // centraliza nas fatias
-                                align: 'center',
-                                color: '#fff', // cor do texto dentro da barra
-                                font: { weight: 'bold', size: 10 },
-                                formatter: function(value, context) {
-                                    const datasets = context.chart.data.datasets;
-                                    const total = datasets.reduce((sum, ds) => sum + (ds.data[context.dataIndex] || 0), 0);
-                                    
-                                    // Se for o último segmento (topo), mostra o valor dele + o total acumulado
-                                    if (context.datasetIndex === datasets.length - 1 && total > 0) {
-                                        return `${value} \n Total: ${total.toFixed(0)}`;
-                                    }
-                                    
-                                    // Se for segmento do meio e o valor for relevante, mostra o valor
-                                    return value > 0 ? value : null;
+                            anchor: 'center',
+                            align: 'center',
+                            color: '#fff',
+                            font: { weight: 'bold', size: 10 },
+                            display: 'auto', // Garante que o Chart.js tente exibir
+                            formatter: function(value, context) {
+                                const datasets = context.chart.data.datasets;
+                                const total = datasets.reduce((sum, ds) => sum + (ds.data[context.dataIndex] || 0), 0);
+                                
+                                // Se for o último segmento (topo)
+                                if (context.datasetIndex === datasets.length - 1 && total > 0) {
+                                    return [value, "Total: " + total.toFixed(0)]; // Array cria quebra de linha nativa
                                 }
+                                
+                                // Se for do meio, mostra o valor
+                                return value > 0 ? value : null;
+                            }
+                        }
                             }
     });
 }

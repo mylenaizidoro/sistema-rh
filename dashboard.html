@@ -506,25 +506,21 @@ MANIPULADO
         }, 150);
     }
 function criarGraficoConsolidado(titulo, termo) {
-    const idUnique = Math.random().toString(36).substr(2, 9);
-    
-    // Adiciona o card com o botão seletor
-    document.getElementById('container-graficos').innerHTML += `
-        <div class="card">
-            <h2>${titulo}</h2>
-            <div style="margin-bottom: 10px;">
-                <select onchange="renderizarGrafico('${idUnique}', '${termo}', this.value)">
-                    <option value="TODOS">Ver MOD + MOI</option>
-                    <option value="MOD">Apenas MOD</option>
-                    <option value="MOI">Apenas MOI</option>
-                </select>
-            </div>
-            <div class="chart-container" style="height: 300px;"><canvas id="chart-${idUnique}"></canvas></div>
-        </div>`;
+    const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
+    const dadosBase = dadosGlobais.filter(ln => {
+        let proc = (ln.Processo || ln.PROCESSO || "").toString();
+        let procLimpo = normalizar(proc).replace(/[^a-zA-Z0-9]/g, "");
+        let termoLimpo = normalizar(termo).replace(/[^a-zA-Z0-9]/g, "");
+        return procLimpo.includes(termoLimpo);
+    });
 
-    // Chama a função que desenha o gráfico (aquela que tem a lógica dos números brancos/pretos)
-    renderizarGrafico(idUnique, termo, 'TODOS');
-}
+    if (dadosBase.length === 0) return;
+
+    // Função de busca precisa: busca pelo TURNO e pelo TIPO (MOD ou MOI)
+    const getDados = (turno, tipo) => dadosBase.filter(ln => {
+        const ind = normalizar(ln.Indicador || ln.INDICADOR || "");
+        return ind.includes(normalizar(turno)) && ind.includes(normalizar(tipo));
+    });
 
     const idUnique = Math.random().toString(36).substr(2, 9);
     document.getElementById('container-graficos').innerHTML += `

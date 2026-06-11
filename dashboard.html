@@ -506,57 +506,80 @@ MANIPULADO
         }, 150);
     }
 function criarGraficoConsolidado(titulo, termo) {
+    const idUnique = Math.random().toString(36).substr(2, 9);
+    const container = document.getElementById('container-graficos');
+
+    // 1. Injeta o HTML com os botões de controle dentro do card
+    container.innerHTML += `
+        <div class="card">
+            <h2>${titulo}</h2>
+            <div class="controls" style="margin-bottom: 15px; display: flex; justify-content: center; gap: 8px;">
+                <button class="btn active" onclick="atualizarGraficoConsolidado('${idUnique}', '${termo}', 'AMBOS', this)">📊 Ambos</button>
+                <button class="btn" onclick="atualizarGraficoConsolidado('${idUnique}', '${termo}', 'MOD', this)">🛠️ MOD</button>
+                <button class="btn" onclick="atualizarGraficoConsolidado('${idUnique}', '${termo}', 'MOI', this)">⚙️ MOI</button>
+            </div>
+            <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
+        </div>`;
+
+    // 2. Renderiza o estado inicial (AMBOS)
+    atualizarGraficoConsolidado(idUnique, termo, 'AMBOS');
+}
+
+function atualizarGraficoConsolidado(id, termo, filtro, btnElement = null) {
+    // Atualiza classe 'active' nos botões do card específico
+    if (btnElement) {
+        btnElement.parentElement.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+        btnElement.classList.add('active');
+    }
+
     const labelsExibicao = anoSelecionado === 'TODOS' ? labelsTodos : labelsTodos.filter(l => l.includes(anoSelecionado));
+    
+    // Busca dados baseados no termo
     const dadosBase = dadosGlobais.filter(ln => {
         let proc = (ln.Processo || ln.PROCESSO || "").toString();
-        let procLimpo = normalizar(proc).replace(/[^a-zA-Z0-9]/g, "");
-        let termoLimpo = normalizar(termo).replace(/[^a-zA-Z0-9]/g, "");
-        return procLimpo.includes(termoLimpo);
+        return normalizar(proc).replace(/[^a-zA-Z0-9]/g, "").includes(normalizar(termo).replace(/[^a-zA-Z0-9]/g, ""));
     });
 
-    if (dadosBase.length === 0) return;
-
-    // Função de busca precisa: busca pelo TURNO e pelo TIPO (MOD ou MOI)
     const getDados = (turno, tipo) => dadosBase.filter(ln => {
         const ind = normalizar(ln.Indicador || ln.INDICADOR || "");
         return ind.includes(normalizar(turno)) && ind.includes(normalizar(tipo));
     });
 
-    const idUnique = Math.random().toString(36).substr(2, 9);
-    document.getElementById('container-graficos').innerHTML += `
-        <div class="card">
-            <h2>${titulo}</h2>
-            <div class="chart-container"><canvas id="chart-${idUnique}"></canvas></div>
-        </div>`;
+    const v = (t, tp) => labelsExibicao.map(m => limparNumero(extrairValor(getDados(t, tp).find(ln => (ln.mes || ln.MES) === m) || {})));
 
-    setTimeout(() => {
-        // Mapeia valores para cada combinação
-        const v = (t, tp) => labelsExibicao.map(m => limparNumero(extrairValor(getDados(t, tp).find(ln => (ln.mes || ln.MES) === m) || {})));
+    // Define os datasets conforme o filtro
+    let datasets = [];
+    if (filtro === 'AMBOS' || filtro === 'MOD') {
+        datasets.push(
+            { label: 'MOD 3º Turno', data: v("3º TURNO", "MOD"), backgroundColor: '#ea580c', stack: 'MOD' },
+            { label: 'MOD 2º Turno', data: v("2º TURNO", "MOD"), backgroundColor: '#fbbf24', stack: 'MOD' },
+            { label: 'MOD 1º Turno', data: v("1º TURNO", "MOD"), backgroundColor: '#2563eb', stack: 'MOD' },
+            { label: 'MOD ADM', data: v("ADM", "MOD"), backgroundColor: '#9ca3af', stack: 'MOD' }
+        );
+    }
+    if (filtro === 'AMBOS' || filtro === 'MOI') {
+        datasets.push(
+            { label: 'MOI 3º Turno', data: v("3º TURNO", "MOI"), backgroundColor: '#c2410c', stack: 'MOI' },
+            { label: 'MOI 2º Turno', data: v("2º TURNO", "MOI"), backgroundColor: '#d97706', stack: 'MOI' },
+            { label: 'MOI 1º Turno', data: v("1º TURNO", "MOI"), backgroundColor: '#1e40af', stack: 'MOI' },
+            { label: 'MOI ADM', data: v("ADM", "MOI"), backgroundColor: '#6b7280', stack: 'MOI' }
+        );
+    }
 
-        new Chart(document.getElementById(`chart-${idUnique}`), {
-            type: 'bar',
-            data: {
-                labels: labelsExibicao,
-                datasets: [
-                    // Pilha MOD
-                    { label: 'MOD 3º Turno', data: v("3º TURNO", "MOD"), backgroundColor: '#ea580c', stack: 'MOD' },
-                    { label: 'MOD 2º Turno', data: v("2º TURNO", "MOD"), backgroundColor: '#fbbf24', stack: 'MOD' },
-                    { label: 'MOD 1º Turno', data: v("1º TURNO", "MOD"), backgroundColor: '#2563eb', stack: 'MOD' },
-                    { label: 'MOD ADM', data: v("ADM", "MOD"), backgroundColor: '#9ca3af', stack: 'MOD' },
-                    
-                    // Pilha MOI (stack diferente = coluna separada lado a lado)
-                    { label: 'MOI 3º Turno', data: v("3º TURNO", "MOI"), backgroundColor: '#c2410c', stack: 'MOI' },
-                    { label: 'MOI 2º Turno', data: v("2º TURNO", "MOI"), backgroundColor: '#d97706', stack: 'MOI' },
-                    { label: 'MOI 1º Turno', data: v("1º TURNO", "MOI"), backgroundColor: '#1e40af', stack: 'MOI' },
-                    { label: 'MOI ADM', data: v("ADM", "MOI"), backgroundColor: '#6b7280', stack: 'MOI' }
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { x: { stacked: true }, y: { stacked: true } }
-            }
-        });
-    }, 150);
+    // Se o gráfico já existir, destrói para redesenhar
+    const ctx = document.getElementById(`chart-${id}`);
+    if (window[`chartObj_${id}`]) window[`chartObj_${id}`].destroy();
+
+    // Cria o gráfico
+    window[`chartObj_${id}`] = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: labelsExibicao, datasets: datasets },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            scales: { x: { stacked: true }, y: { stacked: true } } 
+        }
+    });
 }
     function renderizarDashboard() {
     document.getElementById('container-graficos').innerHTML = "";
